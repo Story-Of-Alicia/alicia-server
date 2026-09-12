@@ -59,6 +59,14 @@ struct QuestReward
   std::vector<QuestRewardItem> items{};
 };
 
+struct NpcDress
+{
+  //! ID of the NPC to dress (From libconfig table)
+  uint32_t npcId{};
+  //! Dress ID to apply to the NPC (From libconfig table)
+  uint32_t dress{};
+};
+
 //! A single entry in the QuestRewardPoint table.
 //! Defines the items awarded when a player's accumulated quest points reach
 //! the corresponding threshold.
@@ -137,6 +145,7 @@ public:
   [[nodiscard]] std::optional<Quest> GetQuest(uint32_t tid) const;
   [[nodiscard]] std::optional<QuestReward> GetQuestReward(uint32_t id) const;
   [[nodiscard]] std::optional<QuestRewardPoint> GetQuestRewardPoint(uint32_t point) const;
+  [[nodiscard]] std::vector<NpcDress> GetNpcDress(uint32_t key) const;
   [[nodiscard]] const std::unordered_map<uint32_t, Quest>& GetQuests() const;
   [[nodiscard]] const std::unordered_map<uint32_t, QuestReward>& GetQuestRewards() const;
   [[nodiscard]] const std::unordered_map<uint32_t, QuestRewardPoint>& GetQuestRewardPoints() const;
@@ -145,6 +154,7 @@ private:
   std::unordered_map<uint32_t, Quest> _quests{};
   std::unordered_map<uint32_t, QuestReward> _rewards{};
   std::unordered_map<uint32_t, QuestRewardPoint> _rewardPoints{};
+  std::unordered_map<uint32_t, std::vector<NpcDress>> _npcDress{};
 };
 
 } // namespace server::registry

@@ -1626,7 +1626,10 @@ bool RanchDirector::HandleEnterRanch(
 
 void RanchDirector::HandleRanchLeave(ClientId clientId)
 {
-  const auto& clientContext = GetClientContext(clientId);
+  auto& clientContext = GetClientContext(clientId);
+
+  if (clientContext.visitingRancherUid == data::InvalidUid)
+    return;
 
   const auto ranchIter = _ranches.find(clientContext.visitingRancherUid);
   if (ranchIter == _ranches.cend())
@@ -1666,6 +1669,8 @@ void RanchDirector::HandleRanchLeave(ClientId clientId)
         return notify;
       });
   }
+
+  clientContext.visitingRancherUid = data::InvalidUid;
 }
 
 void RanchDirector::HandleChat(
@@ -7569,27 +7574,44 @@ void RanchDirector::HandleRequestQuestReward(
           });
         }
 
-        // Set NPC dress effect if specified
         if (reward.keyNpcDress > 0)
         {
-          response.npcEffects[0] = {command.npcId, reward.keyNpcDress};
-        }
-        else
-        {
-          response.npcEffects[0] = {command.npcId, 1}; // Default effect
+          const auto npcDressEntries = _serverInstance.GetQuestRegistry().GetNpcDress(
+            reward.keyNpcDress);
+
+          if (npcDressEntries.empty())
+          {
+            spdlog::warn(
+              "HandleRequestQuestReward: NPC dress key {} of quest reward {} is not in"
+              " the npcDress table, sending no dress effect",
+              reward.keyNpcDress,
+              quest.rewardId);
+          }
+
+          size_t npcEffectIndex = 0;
+          for (const auto& npcDressEntry : npcDressEntries)
+          {
+            if (npcEffectIndex >= response.npcEffects.size())
+            {
+              spdlog::warn(
+                "HandleRequestQuestReward: NPC dress key {} has more than {} entries,"
+                " the remaining ones are dropped",
+                reward.keyNpcDress,
+                response.npcEffects.size());
+              break;
+            }
+
+            response.npcEffects[npcEffectIndex++] = {
+              npcDressEntry.npcId,
+              npcDressEntry.dress};
+          }
         }
       }
       else
       {
-        spdlog::warn("HandleRequestQuestReward: Quest reward {} not found for quest {}", 
+        spdlog::warn("HandleRequestQuestReward: Quest reward {} not found for quest {}",
           quest.rewardId, command.questTid);
-        response.npcEffects[0] = {command.npcId, 1}; // Default effect
       }
-    }
-    else
-    {
-      // No reward ID, just use default effect
-      response.npcEffects[0] = {command.npcId, 1};
     }
   });
 

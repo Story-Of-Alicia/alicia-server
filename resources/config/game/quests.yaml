@@ -2222,3 +2222,53 @@ quests:
           count: 36
         - tid: 46011
           count: 1
+
+  # NPC dress table, mirrored from the client's `NpcDressInfo` table in
+  # other/ini/libconfig_c.dat. 
+  # client content actually has:
+  #   npc 1 (Grandpa Thomas / oldman): 0, 1, 2
+  #   npc 2 (Ranch Stato):             0, 1
+  #   npc 3 (April / npc_pig):         0, 1
+  #   npc 4 (Juna):                    0, 1, 2
+  #   npc 5 (christmas tree):          not in NpcList, the client ignores it
+  npcDress:
+    - key: 1
+      entries:
+        - { npcId: 1, dress: 1 }  # Thomas -> santa outfit
+        - { npcId: 2, dress: 1 }  # Stato -> santa outfit
+    - key: 2
+      entries:
+        - { npcId: 4, dress: 1 }  # Juna -> santa outfit
+    - key: 3
+      entries:
+        - { npcId: 1, dress: 1 }
+        - { npcId: 2, dress: 1 }
+        - { npcId: 3, dress: 1 }
+        - { npcId: 4, dress: 1 }
+    - key: 4
+      entries:
+        - { npcId: 1, dress: 0 }  # everyone back to their base shape
+        - { npcId: 2, dress: 0 }
+        - { npcId: 3, dress: 0 }
+        - { npcId: 4, dress: 0 }
+    - key: 5
+      entries:
+        - { npcId: 5, dress: 3 }
+    - key: 6
+      entries:
+        - { npcId: 1, dress: 1 }  # quest 14029
+    - key: 7
+      entries:
+        - { npcId: 3, dress: 1 }  # quest 14031
+    - key: 8
+      entries:
+        - { npcId: 2, dress: 1 }  # quest 14032
+    - key: 9
+      entries:
+        - { npcId: 5, dress: 1 }
+    - key: 10
+      entries:
+        - { npcId: 5, dress: 2 }
+    - key: 11
+      entries:
+        - { npcId: 5, dress: 3 }

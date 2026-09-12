@@ -99,6 +99,12 @@ void ReadQuestRewardPoint(QuestRewardPoint& entry, const YAML::Node& yaml)
   }
 }
 
+void ReadNpcDress(NpcDress& entry, const YAML::Node& yaml)
+{
+  entry.npcId = yaml["npcId"].as<decltype(NpcDress::npcId)>(0);
+  entry.dress = yaml["dress"].as<decltype(NpcDress::dress)>(0);
+}
+
 } // anonymous namespace
 
 void QuestRegistry::Clear()
@@ -106,6 +112,7 @@ void QuestRegistry::Clear()
   _quests.clear();
   _rewards.clear();
   _rewardPoints.clear();
+  _npcDress.clear();
 }
 
 void QuestRegistry::ReadConfig(const std::filesystem::path& configPath)
@@ -150,11 +157,34 @@ void QuestRegistry::ReadConfig(const std::filesystem::path& configPath)
     }
   }
 
+  if (const auto npcDressSection = questsSection["npcDress"])
+  {
+    for (const auto& keyNode : npcDressSection)
+    {
+      const auto key = keyNode["key"].as<uint32_t>(0);
+      if (key == 0)
+        continue;
+
+      auto& entries = _npcDress[key];
+      if (const auto entriesNode = keyNode["entries"])
+      {
+        for (const auto& entryNode : entriesNode)
+        {
+          NpcDress entry{};
+          ReadNpcDress(entry, entryNode);
+          entries.push_back(entry);
+        }
+      }
+    }
+  }
+
   spdlog::info(
-    "Quest registry loaded {} quests, {} rewards and {} reward point entries",
+    "Quest registry loaded {} quests, {} rewards, {} reward point entries"
+    " and {} NPC dress keys",
     _quests.size(),
     _rewards.size(),
-    _rewardPoints.size());
+    _rewardPoints.size(),
+    _npcDress.size());
 }
 
 std::optional<Quest> QuestRegistry::GetQuest(uint32_t tid) const
@@ -188,6 +218,14 @@ std::optional<QuestRewardPoint> QuestRegistry::GetQuestRewardPoint(uint32_t poin
   const auto iter = _rewardPoints.find(point);
   if (iter == _rewardPoints.cend())
     return std::nullopt;
+  return iter->second;
+}
+
+std::vector<NpcDress> QuestRegistry::GetNpcDress(uint32_t key) const
+{
+  const auto iter = _npcDress.find(key);
+  if (iter == _npcDress.cend())
+    return {};
   return iter->second;
 }
 
