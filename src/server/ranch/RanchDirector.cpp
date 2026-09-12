@@ -7458,7 +7458,7 @@ void RanchDirector::HandleRequestQuestReward(
         if (reward.carrots > 0)
         {
           character.carrots() += reward.carrots;
-          response.carrotsRewarded += reward.carrots;
+          response.carrotsRewarded += character.carrots();
         }
 
         // Award items from the reward

@@ -283,6 +283,17 @@ void RaceInstance::Stop()
         .gameMode = gameModeFlag,
         .value = _parameters.mapBlockId});
 
+      if (_parameters.missionId != 0)
+      {
+        gameEventBus.Fire({
+          .userAchvEvent = registry::UserAchvEvent::RaceCompleted,
+          .function = registry::Function::ClearMission,
+          .origin = GameEvent::Origin::Race,
+          .characterUid = characterUid,
+          .gameMode = gameModeFlag,
+          .value = _parameters.missionId});
+      }
+
       // Top 3 finishers, by placement order already established by the sort above.
       if (index < 3)
       {
