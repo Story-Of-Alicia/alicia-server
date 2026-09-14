@@ -2221,7 +2221,8 @@ bool RanchDirector::HandleTryBreeding(
     return false;
   }
 
-  // Read the stallion grade and breeding count needed for the success roll.
+  // Read the stallion grade and breeding count, and the player's own mare's charm,
+  // needed for the success roll.
   uint32_t stallionGrade = 0;
   uint32_t stallionBreedingCount = 0;
   stallionRecord->Immutable([&stallionGrade, &stallionBreedingCount](const data::Horse& stallion)
@@ -2230,9 +2231,15 @@ bool RanchDirector::HandleTryBreeding(
     stallionBreedingCount = stallion.breedingCount();
   });
 
+  uint32_t mareCharm = 0;
+  mareRecord->Immutable([&mareCharm](const data::Horse& mare)
+  {
+    mareCharm = mare.mountCondition.charm();
+  });
+
   const protocol::BreedingBonus bonus = RollBreedingBonus(stallionGrade);
   const uint32_t successRate = CalculateBreedingSuccessRate(
-    stallionGrade, stallionBreedingCount, bonus);
+    stallionGrade, stallionBreedingCount, command.mareUid, mareCharm, bonus);
 
   std::uniform_int_distribution<uint32_t> successRoll(1, 100);
   const bool success = successRoll(server::util::GetRandomEngine()) <= successRate;
@@ -2363,6 +2370,8 @@ protocol::BreedingBonus RanchDirector::RollBreedingBonus(const uint32_t stallion
 uint32_t RanchDirector::CalculateBreedingSuccessRate(
   const uint32_t stallionGrade,
   const uint32_t stallionBreedingCount,
+  const data::Uid mareUid,
+  const uint32_t mareCharm,
   const protocol::BreedingBonus& bonus)
 {
   const auto& horseRegistry = GetServerInstance().GetHorseRegistry();
@@ -2380,6 +2389,14 @@ uint32_t RanchDirector::CalculateBreedingSuccessRate(
   // A type-0 bonus increases the pregnancy success rate.
   if (bonus.type == 0)
     rate += static_cast<int32_t>(bonus.value);
+
+  // The player's own mare's charm milestones each add to the success rate.
+  if (mareCharm >= HorseSystem::CalculateFriendlinessCharmThreshold(
+    mareUid, HorseSystem::CareAmendsCategory::CharmPoint, 1))
+    rate += 5;
+  if (mareCharm >= HorseSystem::CalculateFriendlinessCharmThreshold(
+    mareUid, HorseSystem::CareAmendsCategory::CharmPoint, 2))
+    rate += 10;
 
   return static_cast<uint32_t>(std::clamp(rate, 0, 100));
 }

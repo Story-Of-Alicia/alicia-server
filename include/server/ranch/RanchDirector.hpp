@@ -278,11 +278,15 @@ private:
   //! Calculates the breeding success rate (0-100).
   //! @param stallionGrade Grade of the stallion.
   //! @param stallionBreedingCount Lifetime breeding count of the stallion.
+  //! @param mareUid UID of the character's own mare.
+  //! @param mareCharm Current charm points of the mare.
   //! @param bonus Rolled breeding bonus.
   //! @returns Success rate as a percentage capped at 100.
   [[nodiscard]] uint32_t CalculateBreedingSuccessRate(
     uint32_t stallionGrade,
     uint32_t stallionBreedingCount,
+    data::Uid mareUid,
+    uint32_t mareCharm,
     const protocol::BreedingBonus& bonus);
 
   //! Creates a foal from a successful breeding, spawns it on the ranch and fills

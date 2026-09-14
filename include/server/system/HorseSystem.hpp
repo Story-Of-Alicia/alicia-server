@@ -55,6 +55,23 @@ public:
     uint16_t plenitude,
     uint32_t preferenceType);
 
+  enum class CareAmendsCategory : uint32_t
+  {
+    CharmPoint = 1,
+    FriendlyPoint = 2,
+  };
+  static constexpr uint32_t CharmPointMilestoneCount = 2;
+  static constexpr uint32_t FriendlyPointMilestoneCount = 5;
+
+  //! @param horseUid UID of the horse.
+  //! @param category CareAmendsList category
+  //! @param priority 1-based milestone rank within the category
+  //! @returns The 1-based point threshold for the milestone.
+  static uint32_t CalculateFriendlinessCharmThreshold(
+    data::Uid horseUid,
+    CareAmendsCategory category,
+    uint32_t priority);
+
   //! Applies post-race condition debuffs to the specified horse.
   //! Deducts charm, friendliness, and plenitude, accumulates dirtiness,
   //! and resets polish.

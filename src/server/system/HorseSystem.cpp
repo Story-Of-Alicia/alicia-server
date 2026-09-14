@@ -161,6 +161,24 @@ uint16_t HorseSystem::CanHorseEat(
   const uint16_t mask = static_cast<uint16_t>(1 << bitIndex);
   return (mask & preferenceType) != 0;
 }
+// found in FUN_00766ac0 in the tag10 binary
+uint32_t HorseSystem::CalculateFriendlinessCharmThreshold(
+  const data::Uid horseUid,
+  const CareAmendsCategory category,
+  const uint32_t priority)
+{
+  const uint32_t rowCount = category == CareAmendsCategory::CharmPoint
+    ? CharmPointMilestoneCount
+    : FriendlyPointMilestoneCount;
+
+  uint32_t seed = horseUid + static_cast<uint32_t>(category) + priority;
+  seed = seed * 214013 + 2531011;
+  seed = seed * 214013 + 2531011;
+  const uint32_t bucket = (seed >> 16) & 0x7FFF;
+
+  const uint32_t segmentSize = 1000 / rowCount;
+  return 1 + (bucket % segmentSize) + (priority - 1) * segmentSize;
+}
 
 void HorseSystem::ApplyPostRaceHorseConditionDebuffs(
   data::Horse& horse,
