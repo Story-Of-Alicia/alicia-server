@@ -1286,6 +1286,7 @@ bool RanchDirector::HandleEnterRanch(
   {
     RefreshMaturingFoals(command.characterUid, clientContext);
     GetServerInstance().GetHorseSystem().RepairLineages(command.characterUid);
+    GetServerInstance().GetHorseSystem().ApplyDailyCareTick(command.characterUid);
   }
 
   protocol::AcCmdCREnterRanchOK response{
@@ -4533,7 +4534,10 @@ bool RanchDirector::HandleUsePlayItem(
       newFriendlinessValue,
       HorseSystem::MaxFriendliness);
 
-    // TODO: implement boredom mechanism
+    if (horse.mountCondition.boredom() >= HorseSystem::PlayBoredomDeduction)
+      horse.mountCondition.boredom() -= HorseSystem::PlayBoredomDeduction;
+    else
+      horse.mountCondition.boredom() = 0;
   });
 
   // TODO: determine values
@@ -6646,9 +6650,13 @@ void RanchDirector::HandleBuyOwnItem(
           horseRecord.Mutable(
             [&horseUid, tid = itemRegistryRecord.value().tid, &partSetInfo, mountAbility](data::Horse& horse)
             {
+              const auto now = data::Clock::now();
+
               horse.tid() = tid;
-              horse.dateOfBirth() = data::Clock::now();
+              horse.dateOfBirth() = now;
               horse.mountCondition.stamina = 4000;
+              horse.mountCondition.boredom = HorseSystem::MaxBoredom;
+              horse.mountCondition.lastDailyCareTick = now;
               horse.growthPoints() = 0;
               horse.clazz = 1;
               horse.tendency() = 1;

@@ -197,13 +197,17 @@ void Genetics::CreateFoal(
   const ParentInfo stallion = readParent(stallionUid);
 
   // Newborn administrative defaults.
+  const auto now = data::Clock::now();
+
   foal.name() = std::string{}; // Empty until the player names it.
   foal.type() = data::Horse::Type::Foal;
-  foal.dateOfBirth() = data::Clock::now();
+  foal.dateOfBirth() = now;
   foal.clazz() = 1;
   foal.clazzProgress() = 0;
   foal.growthPoints() = 0;
   foal.mountCondition.stamina() = 4000;
+  foal.mountCondition.boredom() = HorseSystem::MaxBoredom;
+  foal.mountCondition.lastDailyCareTick() = now;
 
   foal.tid() = mare.tid; // Foal uses the mare's breed/TID.
   foal.tendency() = RollTendency();

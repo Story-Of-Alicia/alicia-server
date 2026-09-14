@@ -491,6 +491,7 @@ struct Horse
     dao::Field<uint32_t> tailPolish{};
     dao::Field<uint32_t> attachment{};
     dao::Field<uint32_t> boredom{};
+    dao::Field<Clock::time_point> lastDailyCareTick{};
     dao::Field<uint32_t> stopAmendsPoint{};
   } mountCondition{};
 

@@ -132,6 +132,65 @@ uint32_t HorseSystem::RepairLineages(const data::Uid characterUid)
   return repairedCount;
 }
 
+namespace
+{
+int64_t CareDayIndex(const data::Clock::time_point time)
+{
+  using namespace std::chrono;
+  return floor<days>(time - hours(6)).time_since_epoch().count();
+}
+
+} // namespace
+
+void HorseSystem::ApplyDailyCareTick(const data::Uid characterUid)
+{
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+  if (not characterRecord)
+    return;
+
+  std::vector<data::Uid> horseUids;
+  characterRecord.Immutable([&horseUids](const data::Character& character)
+  {
+    horseUids = character.horses();
+    horseUids.emplace_back(character.mountUid());
+  });
+
+  const auto now = data::Clock::now();
+  const auto currentDay = CareDayIndex(now);
+
+  for (const auto& horseUid : horseUids)
+  {
+    const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
+    if (not horseRecord)
+      continue;
+
+    horseRecord.Mutable([currentDay, now](data::Horse& horse)
+    {
+      const auto daysPassed = currentDay - CareDayIndex(horse.mountCondition.lastDailyCareTick());
+      if (daysPassed <= 0)
+        return;
+
+      const auto ticks = static_cast<uint32_t>(daysPassed);
+
+      horse.mountCondition.boredom() = std::min<uint32_t>(
+        MaxBoredom,
+        horse.mountCondition.boredom() + ticks * DailyBoredomRegenAmount);
+
+      horse.mountCondition.bodyDirtiness() = std::min<uint32_t>(
+        MaxDirtiness,
+        horse.mountCondition.bodyDirtiness() + ticks * DailyDirtinessIncrease);
+      horse.mountCondition.maneDirtiness() = std::min<uint32_t>(
+        MaxDirtiness,
+        horse.mountCondition.maneDirtiness() + ticks * DailyDirtinessIncrease);
+      horse.mountCondition.tailDirtiness() = std::min<uint32_t>(
+        MaxDirtiness,
+        horse.mountCondition.tailDirtiness() + ticks * DailyDirtinessIncrease);
+
+      horse.mountCondition.lastDailyCareTick() = now;
+    });
+  }
+}
+
 uint16_t HorseSystem::CanHorseEat(
   data::Uid horseUid,
   uint16_t plenitude,

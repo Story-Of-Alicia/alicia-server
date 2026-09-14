@@ -48,6 +48,13 @@ public:
   //! @returns The number of horses whose lineage was raised.
   uint32_t RepairLineages(data::Uid characterUid);
 
+  //! Applies the 6am server-time daily care tick to each of the character's
+  //! horses (including the current mount): regenerates boredom and
+  //! accumulates dirtiness, once per tick passed since it was last applied.
+  //! Called on ranch entry, mirroring PromoteMaturedFoals's lazy catch-up.
+  //! @param characterUid UID of the owning character.
+  void ApplyDailyCareTick(data::Uid characterUid);
+
   //! Computes and checks if the horse can eat based on
   //! dynamic food preference as used by the game client.
   static uint16_t CanHorseEat(
@@ -87,7 +94,7 @@ public:
   static constexpr uint16_t MaxFriendliness = 1'000;
   static constexpr uint16_t MaxCharm = 1'000;
   static constexpr uint16_t MaxAttachment = 1'000;
-  static constexpr uint16_t MaxBoredom = 21;
+  static constexpr uint16_t MaxBoredom = 25;
   static constexpr uint16_t MaxStamina = 4'000;
   //! Maximum fatigue limit before horse experience gain is suppressed
   //! See libconfig: FatigueParam->FatigueLimit
@@ -103,9 +110,17 @@ public:
   //! This is hardcoded in the client.
   static constexpr uint32_t PostRacePlenitudeDeduction = 50;
 
+  //! Boredom deducted per play-item use.
+  static constexpr uint32_t PlayBoredomDeduction = 5;
+  //! Boredom regenerated per 6am server-time tick passed, see ApplyDailyCareTick.
+  static constexpr uint32_t DailyBoredomRegenAmount = 5;
+
   //! Post-race dirtiness increase per body part
   //! See libconfig: MountGradeInfo->CleanPointSub
   static constexpr uint32_t PostRaceDirtinessIncrease = 5;
+  //! Dirtiness accumulated per body part per 6am server-time tick passed,
+  //! see ApplyDailyCareTick.
+  static constexpr uint32_t DailyDirtinessIncrease = 50;
   //! Default post-race fatigue penalty
   //! See libconfig: FatigueParam->FatigueDefaultIncrease
   static constexpr uint32_t PostRaceFatigueDeductionDefault = 30;
