@@ -48,6 +48,89 @@ public:
   //! @returns The number of horses whose lineage was raised.
   uint32_t RepairLineages(data::Uid characterUid);
 
+  //! Applies the 6am server-time daily care tick to each of the character's
+  //! horses (including the current mount): regenerates boredom and
+  //! accumulates dirtiness, once per tick passed since it was last applied.
+  //! Called on ranch entry, mirroring PromoteMaturedFoals's lazy catch-up.
+  //! @param characterUid UID of the owning character.
+  void ApplyDailyCareTick(data::Uid characterUid);
+
+  //! Computes and checks if the horse can eat based on
+  //! dynamic food preference as used by the game client.
+  static uint16_t CanHorseEat(
+    data::Uid horseUid,
+    uint16_t plenitude,
+    uint32_t preferenceType);
+
+  enum class CareAmendsCategory : uint32_t
+  {
+    CharmPoint = 1,
+    FriendlyPoint = 2,
+  };
+  static constexpr uint32_t CharmPointMilestoneCount = 2;
+  static constexpr uint32_t FriendlyPointMilestoneCount = 5;
+
+  //! @param horseUid UID of the horse.
+  //! @param category CareAmendsList category
+  //! @param priority 1-based milestone rank within the category
+  //! @returns The 1-based point threshold for the milestone.
+  static uint32_t CalculateFriendlinessCharmThreshold(
+    data::Uid horseUid,
+    CareAmendsCategory category,
+    uint32_t priority);
+
+  //! Applies post-race condition debuffs to the specified horse.
+  //! Deducts charm, friendliness, and plenitude, accumulates dirtiness,
+  //! and resets polish.
+  //! @param horse Horse record to modify.
+  //! @param characterLevel Level of the character that raced the horse.
+  void ApplyPostRaceHorseConditionDebuffs(
+    data::Horse& horse,
+    uint32_t characterLevel);
+
+  static constexpr uint16_t MaxPlenitude = 1'000;
+  static constexpr uint16_t MaxDirtiness = 1'000;
+  static constexpr uint16_t MaxPolish = 1'000;
+  static constexpr uint16_t MaxFriendliness = 1'000;
+  static constexpr uint16_t MaxCharm = 1'000;
+  static constexpr uint16_t MaxAttachment = 1'000;
+  static constexpr uint16_t MaxBoredom = 25;
+  static constexpr uint16_t MaxStamina = 4'000;
+  //! Maximum fatigue limit before horse experience gain is suppressed
+  //! See libconfig: FatigueParam->FatigueLimit
+  static constexpr uint32_t MaxFatigue = 1'500;
+
+  //! Post-race charm point deduction.
+  //! This is hardcoded in the client.
+  static constexpr uint32_t PostRaceCharmDeduction = 10;
+  //! Post-race friendliness/intimacy deduction.
+  //! This is hardcoded in the client.
+  static constexpr uint32_t PostRaceFriendlinessDeduction = 20;
+  //! Post-race plenitude deduction.
+  //! This is hardcoded in the client.
+  static constexpr uint32_t PostRacePlenitudeDeduction = 50;
+
+  //! Boredom deducted per play-item use.
+  static constexpr uint32_t PlayBoredomDeduction = 5;
+  //! Boredom regenerated per 6am server-time tick passed, see ApplyDailyCareTick.
+  static constexpr uint32_t DailyBoredomRegenAmount = 5;
+
+  //! Post-race dirtiness increase per body part
+  //! See libconfig: MountGradeInfo->CleanPointSub
+  static constexpr uint32_t PostRaceDirtinessIncrease = 5;
+  //! Dirtiness accumulated per body part per 6am server-time tick passed,
+  //! see ApplyDailyCareTick.
+  static constexpr uint32_t DailyDirtinessIncrease = 50;
+  //! Default post-race fatigue penalty
+  //! See libconfig: FatigueParam->FatigueDefaultIncrease
+  static constexpr uint32_t PostRaceFatigueDeductionDefault = 30;
+  //! Low-level post-race fatigue penalty
+  //! See libconfig: FatigueParam->FatigueLowLevelIncrease
+  static constexpr uint32_t PostRaceFatigueDeductionLowLevel = 10;
+  //! Character level threshold for beginner fatigue protection
+  //! See libconfig: FatigueParam->FatigueLowLevelLimit
+  static constexpr uint32_t LowLevelThreshold = 15;
+
 private:
   ServerInstance& _serverInstance;
 };

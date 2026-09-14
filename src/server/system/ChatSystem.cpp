@@ -812,9 +812,13 @@ void ChatSystem::RegisterUserCommands()
           [this, &horseUid](data::Horse& horse)
           {
             // Prepare new horse with initial values
+            const auto now = data::Clock::now();
+
             horse.tid() = 20002;
-            horse.dateOfBirth() = data::Clock::now();
+            horse.dateOfBirth() = now;
             horse.mountCondition.stamina = 3500;
+            horse.mountCondition.boredom = HorseSystem::MaxBoredom;
+            horse.mountCondition.lastDailyCareTick = now;
             horse.growthPoints() = 150;
             horse.clazz = 1;
             horse.tendency() = 1;

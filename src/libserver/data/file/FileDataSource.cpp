@@ -649,6 +649,8 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     .tailPolish = mountCondition.value("tailPolish", uint32_t{}),
     .attachment = mountCondition.value("attachment", uint32_t{}),
     .boredom = mountCondition.value("boredom", uint32_t{}),
+    .lastDailyCareTick = data::Clock::time_point(std::chrono::seconds(
+      mountCondition.value("lastDailyCareTick", uint64_t{}))),
     .stopAmendsPoint = mountCondition.value("stopAmendsPoint", uint32_t{})};
 
   horse.rating = json.value("rating", uint32_t{});
@@ -752,6 +754,8 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   mountCondition["tailPolish"] = horse.mountCondition.tailPolish();
   mountCondition["attachment"] = horse.mountCondition.attachment();
   mountCondition["boredom"] = horse.mountCondition.boredom();
+  mountCondition["lastDailyCareTick"] = std::chrono::ceil<std::chrono::seconds>(
+    horse.mountCondition.lastDailyCareTick().time_since_epoch()).count();
   mountCondition["stopAmendsPoint"] = horse.mountCondition.stopAmendsPoint();
   json["mountCondition"] = mountCondition;
 
