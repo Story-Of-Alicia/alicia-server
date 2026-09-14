@@ -28,6 +28,7 @@
 #include <zlib.h>
 
 #include <algorithm>
+#include <chrono>
 #include <random>
 
 namespace server
@@ -38,6 +39,7 @@ namespace
 
 //! A random device for random number generation.
 std::random_device rd;
+constexpr auto RanchLeaveSettleDelay = std::chrono::milliseconds(150);
 
 } // anon namespace
 
@@ -1167,6 +1169,22 @@ void LobbyNetworkHandler::HandleHeartbeat(
   clientContext.lastHeartbeat = std::chrono::steady_clock::now();
 }
 
+void LobbyNetworkHandler::SendRoomEntryResponse(
+  bool leftRanch,
+  Scheduler::Task sendResponse)
+{
+  if (leftRanch)
+  {
+    _serverInstance.GetLobbyDirector().GetScheduler().Queue(
+      sendResponse,
+      Scheduler::Clock::now() + RanchLeaveSettleDelay);
+  }
+  else
+  {
+    sendResponse();
+  }
+}
+
 void LobbyNetworkHandler::HandleMakeRoom(
   ClientId clientId,
   const protocol::AcCmdCLMakeRoom& command)
@@ -1275,6 +1293,9 @@ void LobbyNetworkHandler::HandleMakeRoom(
   const auto roomOtp = _serverInstance.GetOtpSystem().GrantCode(
     identityHash);
 
+  const bool leftRanch = _serverInstance.GetRanchDirector().LeaveRanch(
+    clientContext.characterUid);
+
   const auto lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
   protocol::AcCmdCLMakeRoomOK response{
     .roomUid = createdRoomUid,
@@ -1283,11 +1304,16 @@ void LobbyNetworkHandler::HandleMakeRoom(
     .raceServerPort = lobbyConfig.advertisement.race.port,
     .unk2 = command.unk4};
 
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
+  SendRoomEntryResponse(
+    leftRanch,
+    [this, clientId, response]()
     {
-      return response;
+      _commandServer.QueueCommand<decltype(response)>(
+        clientId,
+        [response]()
+        {
+          return response;
+        });
     });
 
   _serverInstance.GetLobbyDirector().GetScheduler().Queue(
@@ -1402,6 +1428,9 @@ void LobbyNetworkHandler::HandleEnterRoom(
   const auto roomOtp = _serverInstance.GetOtpSystem().GrantCode(
     identityHash);
 
+  const bool leftRanch = _serverInstance.GetRanchDirector().LeaveRanch(
+    clientContext.characterUid);
+
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
 
   protocol::AcCmdCLEnterRoomOK response{
@@ -1411,11 +1440,16 @@ void LobbyNetworkHandler::HandleEnterRoom(
     .raceServerPort = lobbyConfig.advertisement.race.port,
     .member6 = 1};
 
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
+  SendRoomEntryResponse(
+    leftRanch,
+    [this, clientId, response]()
     {
-      return response;
+      _commandServer.QueueCommand<decltype(response)>(
+        clientId,
+        [response]()
+        {
+          return response;
+        });
     });
 
   _serverInstance.GetLobbyDirector().GetScheduler().Queue(

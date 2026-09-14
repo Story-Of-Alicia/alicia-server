@@ -31,6 +31,7 @@
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 #include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 
+#include <optional>
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
@@ -60,6 +61,8 @@ public:
 
   //!
   void Disconnect(data::Uid characterUid);
+
+  [[nodiscard]] bool LeaveRanch(data::Uid characterUid);
 
   //!
   void BroadcastSetIntroductionNotify(
@@ -190,6 +193,10 @@ private:
 
   void HandleRanchLeave(
     ClientId clientId);
+
+  void RemoveClientFromRanch(
+    ClientId clientId,
+    ClientContext& clientContext);
 
   //! Rebuilds the client's set of maturing foals, promoting any that already
   //! reached the grow-up duration to adults in the data store. Called on ranch

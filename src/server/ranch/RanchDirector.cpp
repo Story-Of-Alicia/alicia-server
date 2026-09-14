@@ -896,6 +896,36 @@ void RanchDirector::Disconnect(data::Uid characterUid)
   }
 }
 
+bool RanchDirector::LeaveRanch(data::Uid characterUid)
+{
+  std::optional<ClientId> ranchClientId;
+
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (clientContext.characterUid == characterUid
+      && clientContext.isAuthenticated
+      && clientContext.visitingRancherUid != data::InvalidUid)
+    {
+      ranchClientId = clientId;
+      break;
+    }
+  }
+
+  if (not ranchClientId)
+    return false;
+
+  RemoveClientFromRanch(*ranchClientId, _clients.at(*ranchClientId));
+
+  const protocol::AcCmdCRLeaveRanchOK response{};
+  _commandServer.QueueCommand<protocol::AcCmdCRLeaveRanchOK>(
+    *ranchClientId,
+    [response]()
+    {
+      return response;
+    });
+  return true;
+}
+
 void RanchDirector::BroadcastSetIntroductionNotify(
   uint32_t characterUid,
   const std::string& introduction)
@@ -1618,8 +1648,23 @@ bool RanchDirector::HandleEnterRanch(
 
 void RanchDirector::HandleRanchLeave(ClientId clientId)
 {
-  const auto& clientContext = GetClientContext(clientId);
+  auto& clientContext = GetClientContext(clientId);
 
+  RemoveClientFromRanch(clientId, clientContext);
+
+  protocol::AcCmdCRLeaveRanchOK response{};
+  _commandServer.QueueCommand<decltype(response)>(
+    clientId,
+    [response]()
+    {
+      return response;
+    });
+}
+
+void RanchDirector::RemoveClientFromRanch(
+  ClientId clientId,
+  ClientContext& clientContext)
+{
   const auto ranchIter = _ranches.find(clientContext.visitingRancherUid);
   if (ranchIter == _ranches.cend())
   {
@@ -1634,14 +1679,6 @@ void RanchDirector::HandleRanchLeave(ClientId clientId)
 
   ranchInstance.tracker.RemoveCharacter(clientContext.characterUid);
   ranchInstance.clients.erase(clientId);
-
-  protocol::AcCmdCRLeaveRanchOK response{};
-  _commandServer.QueueCommand<decltype(response)>(
-    clientId,
-    [response]()
-    {
-      return response;
-    });
 
   protocol::AcCmdCRLeaveRanchNotify notify{
     .characterId = clientContext.characterUid};
@@ -1658,6 +1695,8 @@ void RanchDirector::HandleRanchLeave(ClientId clientId)
         return notify;
       });
   }
+
+  clientContext.visitingRancherUid = data::InvalidUid;
 }
 
 void RanchDirector::HandleChat(
