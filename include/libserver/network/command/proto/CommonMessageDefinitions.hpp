@@ -303,7 +303,7 @@ struct AcCmdRCUpdateMountInfoNotify
     // Just takes luck.
     SomethingWithHorseLuck = 10,
     UpdateInjuryState = 11,
-    SomethingWithInjuryAndLuck = 12
+    NaturalHealingInjury = 12
   };
 
   uint32_t characterUid{};

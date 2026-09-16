@@ -43,11 +43,6 @@ constexpr size_t MaxRanchHorseCount = 10;
 constexpr size_t MaxRanchCharacterCount = 20;
 constexpr size_t MaxRanchHousingCount = 13;
 
-constexpr uint16_t MaxCharm = 1000;
-constexpr uint16_t MaxFriendliness = 1000;
-constexpr uint16_t MaxAttachment = 1000;
-constexpr uint16_t MaxPlenitude = 1200;
-
 //! The item template ID of the instant grow-up item,
 //! which matures a foal into an adult horse.
 constexpr data::Tid InstantGrowUpItemTid = 43001;
@@ -1321,6 +1316,7 @@ bool RanchDirector::HandleEnterRanch(
   {
     RefreshMaturingFoals(command.characterUid, clientContext);
     GetServerInstance().GetHorseSystem().RepairLineages(command.characterUid);
+    GetServerInstance().GetHorseSystem().ApplyDailyCareTick(command.characterUid);
   }
 
   protocol::AcCmdCREnterRanchOK response{
@@ -2265,7 +2261,8 @@ bool RanchDirector::HandleTryBreeding(
     return false;
   }
 
-  // Read the stallion grade and breeding count needed for the success roll.
+  // Read the stallion grade and breeding count, and the player's own mare's charm,
+  // needed for the success roll.
   uint32_t stallionGrade = 0;
   uint32_t stallionBreedingCount = 0;
   stallionRecord->Immutable([&stallionGrade, &stallionBreedingCount](const data::Horse& stallion)
@@ -2274,9 +2271,15 @@ bool RanchDirector::HandleTryBreeding(
     stallionBreedingCount = stallion.breedingCount();
   });
 
+  uint32_t mareCharm = 0;
+  mareRecord->Immutable([&mareCharm](const data::Horse& mare)
+  {
+    mareCharm = mare.mountCondition.charm();
+  });
+
   const protocol::BreedingBonus bonus = RollBreedingBonus(stallionGrade);
   const uint32_t successRate = CalculateBreedingSuccessRate(
-    stallionGrade, stallionBreedingCount, bonus);
+    stallionGrade, stallionBreedingCount, command.mareUid, mareCharm, bonus);
 
   std::uniform_int_distribution<uint32_t> successRoll(1, 100);
   const bool success = successRoll(server::util::GetRandomEngine()) <= successRate;
@@ -2407,6 +2410,8 @@ protocol::BreedingBonus RanchDirector::RollBreedingBonus(const uint32_t stallion
 uint32_t RanchDirector::CalculateBreedingSuccessRate(
   const uint32_t stallionGrade,
   const uint32_t stallionBreedingCount,
+  const data::Uid mareUid,
+  const uint32_t mareCharm,
   const protocol::BreedingBonus& bonus)
 {
   const auto& horseRegistry = GetServerInstance().GetHorseRegistry();
@@ -2424,6 +2429,14 @@ uint32_t RanchDirector::CalculateBreedingSuccessRate(
   // A type-0 bonus increases the pregnancy success rate.
   if (bonus.type == 0)
     rate += static_cast<int32_t>(bonus.value);
+
+  // The player's own mare's charm milestones each add to the success rate.
+  if (mareCharm >= HorseSystem::CalculateFriendlinessCharmThreshold(
+    mareUid, HorseSystem::CareAmendsCategory::CharmPoint, 1))
+    rate += 5;
+  if (mareCharm >= HorseSystem::CalculateFriendlinessCharmThreshold(
+    mareUid, HorseSystem::CareAmendsCategory::CharmPoint, 2))
+    rate += 10;
 
   return static_cast<uint32_t>(std::clamp(rate, 0, 100));
 }
@@ -4368,22 +4381,39 @@ bool RanchDirector::HandleUseFoodItem(
     usedItemTid);
   assert(itemTemplate && itemTemplate->foodParameters);
 
-  // Update plenitude and friendliness points according to the item used.
-  mountRecord.Mutable([&itemTemplate](data::Horse& horse)
-  {
-    // TODO: there's a ranch skill which gives bonus to these points
+  bool canEat{false};
 
+  // Update plenitude and friendliness points according to the item used and preference.
+  mountRecord.Mutable([&itemTemplate, &canEat](data::Horse& horse)
+  {
+    // The horse refuses food it is plenitude is full
+    // The horse can still eat even if friendliness (intimacy) is maxed out
+    if (horse.mountCondition.plenitude() >= HorseSystem::MaxPlenitude)
+      return;
+
+    canEat = HorseSystem::CanHorseEat(
+      horse.uid(),
+      static_cast<uint16_t>(horse.mountCondition.plenitude()),
+      itemTemplate->foodParameters->preferenceType);
+
+    // If the horse dislikes the food, it refuses to eat and
+    // drops/ignores it, so we are done here
+    if (not canEat)
+      return;
+
+    // Update horse plenitude
     horse.mountCondition.plenitude() = std::min(
       static_cast<uint16_t>(
-        horse.mountCondition.plenitude() + itemTemplate->foodParameters->plenitudePoints),
-      MaxPlenitude
-    );
-    
+        horse.mountCondition.plenitude() +
+        itemTemplate->foodParameters->plenitudePoints),
+      HorseSystem::MaxPlenitude);
+
+    // Update horse friendliness
     horse.mountCondition.friendliness() = std::min(
       static_cast<uint16_t>(
-        horse.mountCondition.friendliness() + itemTemplate->foodParameters->friendlinessPoints),
-      MaxFriendliness
-    );
+        horse.mountCondition.friendliness() +
+        itemTemplate->foodParameters->friendlinessPoints),
+      HorseSystem::MaxFriendliness);
 
     // TODO: confirm this behaviour
     // Rationale: friendliness/charm max = 1000, play activities unlock after ~111 and ~501
@@ -4391,16 +4421,17 @@ bool RanchDirector::HandleUseFoodItem(
     horse.mountCondition.attachment() = std::min(
       static_cast<uint16_t>(
         horse.mountCondition.attachment() + itemTemplate->foodParameters->friendlinessPoints),
-      MaxAttachment
-    );
+      HorseSystem::MaxAttachment);
   });
 
-  // TODO: determine values
-  response.experiencePoints = 1;
-  response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Bad;
+  // `Bad` == 0 (false), indicates feed accept
+  // `Good` == 1 (true), indicates feed reject
+  response.playSuccessLevel =
+    static_cast<protocol::AcCmdCRUseItemOK::PlaySuccessLevel>(canEat ? false : true);
 
   // todo: award experiences gained
-  // todo: client-side update of plenitude and friendliness stats
+  static constexpr uint8_t ExperiencePoints = 1;
+  response.experiencePoints = canEat ? ExperiencePoints : 0;
 
   return true;
 }
@@ -4424,23 +4455,42 @@ bool RanchDirector::HandleUseCleanItem(
   // Update clean and polish points according to the item used.
   mountRecord.Mutable([&itemTemplate](data::Horse& horse)
   {
-    // todo: there's a ranch skill which gives bonus to these points
+    // NOTE: Base wash items have `polishPoints == 0`
+    // In original gameplay, care skill 4 (Stylist, Lv 13+/Lv 24+) seems to control
+    // the horse's shine and sparkle when repeatedly washed
+    // Special wash items provide 1000 `polishPoints` directly
+    // TODO: Add ranch skill bonus calculation for Stylist (SkillId = 4).
 
     switch (itemTemplate->careParameters->parts)
     {
       case registry::Item::CareParameters::Part::Body:
       {
         horse.mountCondition.bodyDirtiness() = 0;
+        horse.mountCondition.bodyPolish() = std::min(
+          static_cast<uint16_t>(
+            horse.mountCondition.bodyPolish() +
+            itemTemplate->careParameters->polishPoints),
+          HorseSystem::MaxPolish);
         break;
       }
       case registry::Item::CareParameters::Part::Mane:
       {
         horse.mountCondition.maneDirtiness() = 0;
+        horse.mountCondition.manePolish() = std::min(
+          static_cast<uint16_t>(
+            horse.mountCondition.manePolish() +
+            itemTemplate->careParameters->polishPoints),
+          HorseSystem::MaxPolish);
         break;
       }
       case registry::Item::CareParameters::Part::Tail:
       {
         horse.mountCondition.tailDirtiness() = 0;
+        horse.mountCondition.tailPolish() = std::min(
+          static_cast<uint16_t>(
+            horse.mountCondition.tailPolish() +
+            itemTemplate->careParameters->polishPoints),
+          HorseSystem::MaxPolish);
         break;
       }
     }
@@ -4449,7 +4499,7 @@ bool RanchDirector::HandleUseCleanItem(
     horse.mountCondition.charm() = std::min(
       static_cast<uint16_t>(
         horse.mountCondition.charm() + itemTemplate->careParameters->cleanPoints),
-      MaxCharm
+      HorseSystem::MaxCharm
     );
 
     // TODO: confirm this behaviour
@@ -4459,7 +4509,7 @@ bool RanchDirector::HandleUseCleanItem(
     horse.mountCondition.attachment() = std::min(
       static_cast<uint16_t>(
         horse.mountCondition.attachment() + itemTemplate->careParameters->cleanPoints),
-      MaxAttachment
+      HorseSystem::MaxAttachment
     );
   });
 
@@ -4521,9 +4571,12 @@ bool RanchDirector::HandleUsePlayItem(
     // Set friendliness (intimacy) to incremented value or max
     horse.mountCondition.friendliness() = std::min(
       newFriendlinessValue,
-      MaxFriendliness);
+      HorseSystem::MaxFriendliness);
 
-    // TODO: implement boredom mechanism
+    if (horse.mountCondition.boredom() >= HorseSystem::PlayBoredomDeduction)
+      horse.mountCondition.boredom() -= HorseSystem::PlayBoredomDeduction;
+    else
+      horse.mountCondition.boredom() = 0;
   });
 
   // TODO: determine values
@@ -5270,13 +5323,11 @@ void RanchDirector::HandleRecoverMount(
     horseValid = true;
     horseRecord.Mutable([&character, &response](data::Horse& horse)
     {
-      // Seems to always be 4000.
-      constexpr uint16_t MaxHorseStamina = 4'000;
       // Each stamina point costs one carrot.
       constexpr double StaminaPointPrice = 1.0;
       
       // The stamina points the horse needs to recover to reach maximum stamina.
-      const int32_t recoverableStamina = MaxHorseStamina - horse.mountCondition.stamina();
+      const int32_t recoverableStamina = HorseSystem::MaxStamina - horse.mountCondition.stamina();
       
       // Recover as much required stamina as the user can afford with
       // the threshold being the max recoverable stamina.
@@ -6638,9 +6689,13 @@ void RanchDirector::HandleBuyOwnItem(
           horseRecord.Mutable(
             [&horseUid, tid = itemRegistryRecord.value().tid, &partSetInfo, mountAbility](data::Horse& horse)
             {
+              const auto now = data::Clock::now();
+
               horse.tid() = tid;
-              horse.dateOfBirth() = data::Clock::now();
+              horse.dateOfBirth() = now;
               horse.mountCondition.stamina = 4000;
+              horse.mountCondition.boredom = HorseSystem::MaxBoredom;
+              horse.mountCondition.lastDailyCareTick = now;
               horse.growthPoints() = 0;
               horse.clazz = 1;
               horse.tendency() = 1;
