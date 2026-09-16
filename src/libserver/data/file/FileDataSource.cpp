@@ -625,6 +625,12 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     .glidingDistance = mastery.value("glidingDistance", uint32_t{})};
 
   const auto& mountCondition = json.value("mountCondition", nlohmann::json::object());
+
+  const uint64_t lastDailyCareTickSeconds = mountCondition.contains("lastDailyCareTick")
+    ? mountCondition.value("lastDailyCareTick", uint64_t{})
+    : std::chrono::duration_cast<std::chrono::seconds>(
+        data::Clock::now().time_since_epoch()).count();
+
   horse.mountCondition = data::Horse::MountCondition{
     .stamina = mountCondition.value("stamina", uint32_t{}),
     .charm = mountCondition.value("charm", uint32_t{}),
@@ -640,7 +646,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     .attachment = mountCondition.value("attachment", uint32_t{}),
     .boredom = mountCondition.value("boredom", uint32_t{}),
     .lastDailyCareTick = data::Clock::time_point(std::chrono::seconds(
-      mountCondition.value("lastDailyCareTick", uint64_t{}))),
+      lastDailyCareTickSeconds)),
     .stopAmendsPoint = mountCondition.value("stopAmendsPoint", uint32_t{})};
 
   horse.rating = json.value("rating", uint32_t{});
