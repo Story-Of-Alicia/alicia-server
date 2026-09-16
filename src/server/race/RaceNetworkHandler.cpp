@@ -1789,7 +1789,8 @@ void RaceNetworkHandler::HandleRaceResult(
           response.horseFatigue = static_cast<uint16_t>(
             horse.fatigue());
 
-          GetServerInstance().GetHorseRegistry().ApplyClassProgress(
+          if (horse.fatigue() < 1500)
+            GetServerInstance().GetHorseRegistry().ApplyClassProgress(
             horse, gainedClassProgress);
 
           potentialProgressed =

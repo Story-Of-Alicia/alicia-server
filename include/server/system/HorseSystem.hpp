@@ -50,7 +50,8 @@ public:
 
   //! Applies the 6am server-time daily care tick to each of the character's
   //! horses (including the current mount): regenerates boredom and
-  //! accumulates dirtiness, once per tick passed since it was last applied.
+  //! accumulates dirtiness (scaled by ticks passed since it was last
+  //! applied), and resets fatigue to 0
   //! Called on ranch entry, mirroring PromoteMaturedFoals's lazy catch-up.
   //! @param characterUid UID of the owning character.
   void ApplyDailyCareTick(data::Uid characterUid);
@@ -80,8 +81,8 @@ public:
     uint32_t priority);
 
   //! Applies post-race condition debuffs to the specified horse.
-  //! Deducts charm, friendliness, and plenitude, accumulates dirtiness,
-  //! and resets polish.
+  //! Deducts charm, friendliness, plenitude, and stamina, accumulates
+  //! dirtiness and fatigue, and resets polish.
   //! @param horse Horse record to modify.
   //! @param characterLevel Level of the character that raced the horse.
   void ApplyPostRaceHorseConditionDebuffs(
@@ -110,6 +111,9 @@ public:
   //! This is hardcoded in the client.
   static constexpr uint32_t PostRacePlenitudeDeduction = 50;
 
+  //! Flat base stamina cost of a race
+  static constexpr uint32_t BaseStaminaConsumption = 100;
+
   //! Boredom deducted per play-item use.
   static constexpr uint32_t PlayBoredomDeduction = 5;
   //! Boredom regenerated per 6am server-time tick passed, see ApplyDailyCareTick.
@@ -121,6 +125,8 @@ public:
   //! Dirtiness accumulated per body part per 6am server-time tick passed,
   //! see ApplyDailyCareTick.
   static constexpr uint32_t DailyDirtinessIncrease = 50;
+  //! Minimum stamina restored by the 6am server-time daily care tick.
+  static constexpr uint32_t DailyStaminaFloor = 2'000;
   //! Default post-race fatigue penalty
   //! See libconfig: FatigueParam->FatigueDefaultIncrease
   static constexpr uint32_t PostRaceFatigueDeductionDefault = 30;

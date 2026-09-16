@@ -186,6 +186,11 @@ void HorseSystem::ApplyDailyCareTick(const data::Uid characterUid)
         MaxDirtiness,
         horse.mountCondition.tailDirtiness() + ticks * DailyDirtinessIncrease);
 
+      // Daily fatigue reset and stamina floor (not scaled by ticks passed).
+      horse.fatigue() = 0;
+      horse.mountCondition.stamina() = std::max<uint32_t>(
+        horse.mountCondition.stamina(), DailyStaminaFloor);
+
       horse.mountCondition.lastDailyCareTick() = now;
     });
   }
@@ -280,22 +285,24 @@ void HorseSystem::ApplyPostRaceHorseConditionDebuffs(
   horse.mountCondition.manePolish() = 0;
   horse.mountCondition.tailPolish() = 0;
 
-  // TODO: Implement post-race stamina and fatigue updates:
-  // - Deduct stamina and accumulate horse fatigue based on characterLevel
-  //   (< LowLevelThreshold ? PostRaceFatigueDeductionLowLevel : PostRaceFatigueDeductionDefault)
-  // - Clamp horse.fatigue() to MaxFatigue
-  // - Handle daily fatigue reset (ResetFatiguePoint) and EXP gain suppression when at max fatigue
+  // Uncomment once we figured out how to send the status to the client.
+  /*const uint32_t totalStats =
+    horse.stats.agility() + horse.stats.courage() + horse.stats.rush() +
+    horse.stats.endurance() + horse.stats.ambition();
+  const uint32_t consumedStamina = BaseStaminaConsumption + totalStats;
 
-  spdlog::debug(
-    "Applied post-race condition debuffs to horse {}: "
-      "Charm={}, Friendly={}, Plenitude={}, Dirtiness=({},{},{})",
-    horse.uid(),
-    horse.mountCondition.charm(),
-    horse.mountCondition.friendliness(),
-    horse.mountCondition.plenitude(),
-    horse.mountCondition.bodyDirtiness(),
-    horse.mountCondition.maneDirtiness(),
-    horse.mountCondition.tailDirtiness());
+  horse.mountCondition.stamina() = consumedStamina > horse.mountCondition.stamina()
+    ? 0
+    : horse.mountCondition.stamina() - consumedStamina;*/ 
+
+  // Fatigue accumulation
+  const uint32_t fatigueIncrease = characterLevel < LowLevelThreshold
+    ? PostRaceFatigueDeductionLowLevel
+    : PostRaceFatigueDeductionDefault;
+
+  horse.fatigue() = std::min<uint32_t>(
+    MaxFatigue,
+    horse.fatigue() + fatigueIncrease);
 }
 
 } // namespace server
