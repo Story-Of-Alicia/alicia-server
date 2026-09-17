@@ -1297,10 +1297,15 @@ struct AcCmdCRBreedingAbandonCancel
 
 struct AcCmdCRAchievementUpdateProperty
 {
-  //! 75 - level up
-  //! Table `Achievements`
+  //! Selects the tracked property, matching `UserAchvEvent` of the tables
+  //! `Achievements` and `AchvEventPropertyLink`, which names it. 26 is the
+  //! sliding count, 38 the top speed and 75 the NPC dialog level.
   uint16_t achievementEvent{};
-  uint16_t member2{};
+  //! The value the client reports for that property, carried as decimal text
+  //! rather than as a number: the client formats it with "%d" into a buffer of
+  //! 17 bytes, so at most 16 digits plus the terminator.
+  //! Whether this is the new absolute value or an increment is not established.
+  std::string propertyValue{};
 
   static Command GetCommand()
   {
@@ -5702,6 +5707,235 @@ struct AcCmdCRBreedingWishlistDelOK
   //! @param stream Source stream.
   static void Read(
     AcCmdCRBreedingWishlistDelOK& command,
+    SourceStream& stream);
+};
+
+//! Serverbound achievement detail request.
+//! Requests detailed per-tier progress for a specific achievement.
+struct AcCmdCRAchievementDetail
+{
+  //! The character UID whose achievement detail is requested.
+  uint32_t characterUid{};
+
+  //! The achievement TID to query.
+  //! References libconfig `Achievements` table.
+  uint16_t achievementTid{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAchievementDetail;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRAchievementDetail& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRAchievementDetail& command,
+    SourceStream& stream);
+};
+
+//! Clientbound achievement detail response.
+//! Contains per-tier progress data for a specific achievement.
+struct AcCmdCRAchievementDetailOK
+{
+  //! The character UID (echoed from request).
+  uint32_t characterUid{};
+
+  //! The achievement TID.
+  uint16_t achievementTid{};
+
+  //! The date each tier was earned on, [0] Bronze to [3] Platinum.
+  //! Packed as `year | (month << 12) | (day << 16)`.
+  //! A year of zero marks the tier as not earned, the client then shows a
+  //! placeholder instead of a date.
+  std::array<uint32_t, 4> tierEarnedDates{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAchievementDetailOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRAchievementDetailOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRAchievementDetailOK& command,
+    SourceStream& stream);
+};
+
+//! Clientbound achievement detail cancel.
+struct AcCmdCRAchievementDetailCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAchievementDetailCancel;
+  }
+
+  static void Write(
+    const AcCmdCRAchievementDetailCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    AcCmdCRAchievementDetailCancel& command,
+    SourceStream& stream);
+};
+
+//! Serverbound achievement book reward claim.
+//! Sent when the player confirms the gift dialog of a book.
+struct AcCmdCRAchievementBookReward
+{
+  //! Book type the reward is claimed for, in an interval <0, 8>.
+  int8_t bookType{};
+  //! Grade the reward is claimed for, in an interval <0, 3>.
+  int8_t grade{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAchievementBookReward;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRAchievementBookReward& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRAchievementBookReward& command,
+    SourceStream& stream);
+};
+
+//! Clientbound achievement book reward claim acknowledgement.
+//! The client creates the item from this command and marks the grade as
+//! claimed on its own, it does not request the list again.
+struct AcCmdCRAchievementBookRewardOK
+{
+  //! Book type the reward was claimed for.
+  int8_t bookType{};
+  //! Grade the reward was claimed for.
+  int8_t grade{};
+  //! The granted item. A uid of zero means no item was created. Which of the
+  //! trailing fields matters depends on the item: the expiry applies to
+  //! equipment, the count to everything else. The client reads the count as 16
+  //! bits, so an amount above 65535 would arrive truncated.
+  Item item{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAchievementBookRewardOK;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRAchievementBookRewardOK& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRAchievementBookRewardOK& command,
+    SourceStream& stream);
+};
+
+//! Clientbound achievement book reward claim rejection. Carries no fields.
+struct AcCmdCRAchievementBookRewardCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAchievementBookRewardCancel;
+  }
+
+  static void Write(
+    const AcCmdCRAchievementBookRewardCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    AcCmdCRAchievementBookRewardCancel& command,
+    SourceStream& stream);
+};
+
+//! Serverbound set key achievements.
+//! Sets the 3 achievement slots shown on the challenge page and the profile.
+//! Sent in full whenever a slot is added, removed or moved.
+struct AcCmdCRSetKeyAchievement
+{
+  //! The 3 achievement TIDs, 0 for an empty slot. The client accepts any
+  //! achievement that exists, whether it has been earned or not, and it allows
+  //! the same one in several slots.
+  std::array<uint16_t, 3> keyAchievements{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSetKeyAchievement;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRSetKeyAchievement& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRSetKeyAchievement& command,
+    SourceStream& stream);
+};
+
+//! Clientbound set key achievement response (empty - acknowledgment only).
+struct AcCmdCRSetKeyAchievementOK
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSetKeyAchievementOK;
+  }
+
+  static void Write(
+    const AcCmdCRSetKeyAchievementOK& command,
+    SinkStream& stream);
+
+  static void Read(
+    AcCmdCRSetKeyAchievementOK& command,
+    SourceStream& stream);
+};
+
+//! Clientbound set key achievement cancel.
+struct AcCmdCRSetKeyAchievementCancel
+{
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRSetKeyAchievementCancel;
+  }
+
+  static void Write(
+    const AcCmdCRSetKeyAchievementCancel& command,
+    SinkStream& stream);
+
+  static void Read(
+    AcCmdCRSetKeyAchievementCancel& command,
     SourceStream& stream);
 };
 

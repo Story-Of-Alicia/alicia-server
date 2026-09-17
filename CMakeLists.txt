@@ -68,6 +68,7 @@ add_library(alicia-libserver STATIC
         src/libserver/network/command/proto/RaceMessageDefinitions.cpp
         src/libserver/network/command/proto/RanchMessageDefinitions.cpp
         src/libserver/network/http/WebSocket.cpp
+        src/libserver/registry/AchievementRegistry.cpp
         src/libserver/registry/CharacterRegistry.cpp
         src/libserver/registry/CourseRegistry.cpp
         src/libserver/registry/BreedingRegistry.cpp
@@ -118,6 +119,7 @@ add_executable(alicia-server
         src/server/ranch/Genetics.cpp
         src/server/ranch/RanchDirector.cpp
         src/server/room/Room.cpp
+        src/server/system/AchievementSystem.cpp
         src/server/system/ChatSystem.cpp
         src/server/system/HorseSystem.cpp
         src/server/system/InfractionSystem.cpp

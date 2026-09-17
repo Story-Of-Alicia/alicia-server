@@ -18,6 +18,17 @@ namespace server
 namespace protocol
 {
 
+//! Packs a moment into the date format the achievement page expects, which is
+//! `year | (month << 12) | (day << 16)`. A year of zero is how the client marks
+//! a date as absent, so an unset moment packs to zero.
+//! The client builds this format from its own local time, so the conversion has
+//! to leave UTC here rather than in storage. It uses the time zone of the
+//! server, which is the closest the server gets without knowing the one of the
+//! player.
+//! @param timePoint The moment to pack.
+//! @returns The packed date, or zero when the moment is unset.
+uint32_t BuildProtocolAchievementDate(data::Clock::time_point timePoint);
+
 void BuildProtocolCharacter(
   Character& protocolCharacter,
   const data::Character& character);
