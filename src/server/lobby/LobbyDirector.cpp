@@ -465,28 +465,35 @@ void LobbyDirector::ProcesLoginResponse()
     return;
   }
 
-  const bool requiresCharacterCreator = _charactersForcedIntoCreator.erase(characterUid) > 0
-    || characterUid == data::InvalidUid;
-
-  _networkHandler->AcceptLogin(clientId, requiresCharacterCreator);
-
-  auto& userInstance = iter->second;
-  userInstance.userName = loginContext.userName;
-  userInstance.characterUid = characterUid;
-  spdlog::info(
-    "User '{}' (client {}) logged in from {}",
-    loginContext.userName,
-    clientId,
-    _networkHandler->GetCommandServer().GetClientAddress(clientId).to_string());
-
-  userRecord.Mutable([](data::User& user)
+  try 
   {
-    // Set the last seen online time to 1 to indicate that the user is currently online.
-    // NOTE: delete this once we have a proper api
-    user.lastSeenOnline() = data::Clock::time_point(std::chrono::seconds(1));
-  });
+    const bool requiresCharacterCreator = _charactersForcedIntoCreator.erase(characterUid) > 0
+      || characterUid == data::InvalidUid;
 
-  _clientLogins.erase(clientId);
+    _networkHandler->AcceptLogin(clientId, requiresCharacterCreator);
+
+    auto& userInstance = iter->second;
+    userInstance.userName = loginContext.userName;
+    userInstance.characterUid = characterUid;
+    spdlog::info(
+      "User '{}' (client {}) logged in from {}",
+      loginContext.userName,
+      clientId,
+      _networkHandler->GetCommandServer().GetClientAddress(clientId).to_string());
+
+    userRecord.Mutable([](data::User& user)
+    {
+      // Set the last seen online time to 1 to indicate that the user is currently online.
+      // NOTE: delete this once we have a proper api
+      user.lastSeenOnline() = data::Clock::time_point(std::chrono::seconds(1));
+    });
+
+    _clientLogins.erase(clientId);
+  } catch (...) 
+  {
+      _userInstances.erase(iter);
+      throw;
+  }
 }
 
 } // namespace server
