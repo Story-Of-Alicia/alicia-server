@@ -56,9 +56,14 @@ public:
   //! @param characterUid UID of the owning character.
   void ApplyDailyCareTick(data::Uid characterUid);
 
-  //! Computes and checks if the horse can eat based on
-  //! dynamic food preference as used by the game client.
-  static uint16_t CanHorseEat(
+  //! Checks whether the food matches the horse's dynamic food preference.
+  [[nodiscard]] static bool IsHorseFavoredFood(
+    data::Uid horseUid,
+    uint16_t plenitude,
+    uint32_t preferenceType);
+
+  //! Checks if the horse can eat the food based on fullness and preference.
+  [[nodiscard]] static bool CanHorseEat(
     data::Uid horseUid,
     uint16_t plenitude,
     uint32_t preferenceType);
@@ -81,13 +86,20 @@ public:
     uint32_t priority);
 
   //! Applies post-race condition debuffs to the specified horse.
-  //! Deducts charm, friendliness, plenitude, and stamina, accumulates
+  //! Deducts charm, friendliness, and plenitude, accumulates
   //! dirtiness and fatigue, and resets polish.
   //! @param horse Horse record to modify.
   //! @param characterLevel Level of the character that raced the horse.
+  //! @param staminaDecRatio Percentage reduction ratio for stamina consumption (default 100).
   void ApplyPostRaceHorseConditionDebuffs(
     data::Horse& horse,
-    uint32_t characterLevel);
+    uint32_t characterLevel,
+    uint32_t staminaDecRatio = 100);
+
+  //! Checks whether the character has an equipped mount capable of racing (stamina > 0).
+  //! @param characterUid UID of the character.
+  //! @return True if the character has an equipped mount with stamina > 0.
+  bool CanCharacterRace(data::Uid characterUid);
 
   static constexpr uint16_t MaxPlenitude = 1'000;
   static constexpr uint16_t MaxDirtiness = 1'000;
@@ -113,6 +125,8 @@ public:
 
   //! Flat base stamina cost of a race
   static constexpr uint32_t BaseStaminaConsumption = 100;
+  //! Additional stamina consumed if the horse has a heavy injury
+  static constexpr uint32_t PostRaceHeavyInjuryStaminaPenalty = 200;
 
   //! Boredom deducted per play-item use.
   static constexpr uint32_t PlayBoredomDeduction = 5;

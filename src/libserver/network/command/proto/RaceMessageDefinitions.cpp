@@ -791,7 +791,7 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.raceRecord)
       .Write(score.trainingCarrotReward)
       .Write(score.member25)
-      .Write(score.member26)
+      .Write(score.staminaDecRatio)
       .Write(score.member27);
   }
 

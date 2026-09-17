@@ -134,6 +134,8 @@ uint32_t HorseSystem::RepairLineages(const data::Uid characterUid)
 
 namespace
 {
+constexpr uint32_t MinSlightlyFullPlenitude = 710;
+
 int64_t CareDayIndex(const data::Clock::time_point time)
 {
   using namespace std::chrono;
@@ -196,18 +198,17 @@ void HorseSystem::ApplyDailyCareTick(const data::Uid characterUid)
   }
 }
 
-uint16_t HorseSystem::CanHorseEat(
+bool HorseSystem::IsHorseFavoredFood(
   data::Uid horseUid,
   uint16_t plenitude,
   uint32_t preferenceType)
 {
   // Hungry (< 710)
   // Slightly full (710..999)
-  static constexpr uint32_t MinSlightlyFullPlenitude = 710;
 
   // If horse is full (>= 1000), it has no food preference (cannot eat)
   if (plenitude >= MaxPlenitude)
-    return 0;
+    return false;
 
   // Hungry:        mode = 15 (0x0F)
   // Slightly full: mode = 16 (0x10)
@@ -225,6 +226,24 @@ uint16_t HorseSystem::CanHorseEat(
   const uint16_t mask = static_cast<uint16_t>(1 << bitIndex);
   return (mask & preferenceType) != 0;
 }
+
+bool HorseSystem::CanHorseEat(
+  data::Uid horseUid,
+  uint16_t plenitude,
+  uint32_t preferenceType)
+{
+  if (plenitude >= MaxPlenitude)
+    return false;
+
+  if (plenitude < MinSlightlyFullPlenitude)
+    return true;
+
+  return IsHorseFavoredFood(
+    horseUid,
+    plenitude,
+    preferenceType);
+}
+
 // found in FUN_00766ac0 in the tag10 binary
 uint32_t HorseSystem::CalculateFriendlinessCharmThreshold(
   const data::Uid horseUid,
@@ -246,7 +265,8 @@ uint32_t HorseSystem::CalculateFriendlinessCharmThreshold(
 
 void HorseSystem::ApplyPostRaceHorseConditionDebuffs(
   data::Horse& horse,
-  [[maybe_unused]] const uint32_t characterLevel)
+  const uint32_t characterLevel,
+  const uint32_t staminaDecRatio)
 {
   // Charm point reduction
   if (horse.mountCondition.charm() >= PostRaceCharmDeduction)
@@ -285,15 +305,26 @@ void HorseSystem::ApplyPostRaceHorseConditionDebuffs(
   horse.mountCondition.manePolish() = 0;
   horse.mountCondition.tailPolish() = 0;
 
-  // Uncomment once we figured out how to send the status to the client.
-  /*const uint32_t totalStats =
+  // Stamina consumption matching client's Lua formula Mount.GetConsumedStamina:
+  // totalConsumed = (100 + statusPoint + totalStats + (isHeavyInjury ? 200 : 0)) * (staminaDecRatio / 100)
+  const uint32_t totalStats =
     horse.stats.agility() + horse.stats.courage() + horse.stats.rush() +
     horse.stats.endurance() + horse.stats.ambition();
-  const uint32_t consumedStamina = BaseStaminaConsumption + totalStats;
 
-  horse.mountCondition.stamina() = consumedStamina > horse.mountCondition.stamina()
-    ? 0
-    : horse.mountCondition.stamina() - consumedStamina;*/ 
+  // Severe injuries (SevereMuscleStrain=18, SevereWounds=34, SevereFracture=66) have bit 1 set (injury & 2 != 0)
+  const bool isHeavyInjury = (horse.mountCondition.injury() & 0x02) != 0;
+  const uint32_t injuryConsumed = isHeavyInjury ? PostRaceHeavyInjuryStaminaPenalty : 0;
+
+  uint32_t consumedStamina = BaseStaminaConsumption + horse.growthPoints() + totalStats + injuryConsumed;
+  if (staminaDecRatio != 100)
+  {
+    consumedStamina = consumedStamina * staminaDecRatio / 100;
+  }
+
+  if (consumedStamina >= horse.mountCondition.stamina())
+    horse.mountCondition.stamina() = 0;
+  else
+    horse.mountCondition.stamina() -= consumedStamina; 
 
   // Fatigue accumulation
   const uint32_t fatigueIncrease = characterLevel < LowLevelThreshold
@@ -303,6 +334,34 @@ void HorseSystem::ApplyPostRaceHorseConditionDebuffs(
   horse.fatigue() = std::min<uint32_t>(
     MaxFatigue,
     horse.fatigue() + fatigueIncrease);
+}
+
+bool HorseSystem::CanCharacterRace(const data::Uid characterUid)
+{
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+  if (not characterRecord)
+    return false;
+
+  data::Uid mountUid = data::InvalidUid;
+  characterRecord.Immutable([&mountUid](const data::Character& character)
+  {
+    mountUid = character.mountUid();
+  });
+
+  if (mountUid == data::InvalidUid)
+    return false;
+
+  const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(mountUid);
+  if (not horseRecord)
+    return false;
+
+  bool canRace = false;
+  horseRecord.Immutable([&canRace](const data::Horse& horse)
+  {
+    canRace = horse.mountCondition.stamina() != 0;
+  });
+
+  return canRace;
 }
 
 } // namespace server
