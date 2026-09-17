@@ -217,6 +217,9 @@ void RaceInstance::Stop()
           score.horseClass = static_cast<uint8_t>(horse.clazz());
           score.horseClassProgress = horse.clazzProgress();
           score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
+          // TODO: Implement PC Bang status check for racers
+          constexpr bool isPcBang = false;
+          score.staminaDecRatio = isPcBang ? 50 : 100;
 
           if (racer.state == State::Disconnected)
             return;
@@ -224,7 +227,8 @@ void RaceInstance::Stop()
           // Racer is not disconnected, apply race condition reductions
           _raceNetworkHandler.GetServerInstance().GetHorseSystem().ApplyPostRaceHorseConditionDebuffs(
             horse,
-            characterLevel);
+            characterLevel,
+            score.staminaDecRatio);
         });
     });
   }

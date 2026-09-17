@@ -1053,7 +1053,8 @@ struct AcCmdRCRaceResultNotify
     //! Relates to `AcCmdCRStartRaceNotify::Struct1::clearedDifficulty`
     uint32_t trainingCarrotReward{};
     uint8_t member25{};
-    uint32_t member26{};
+    //! Stamina reduction ratio percentage. Default is 100 (100% consumption).
+    uint32_t staminaDecRatio{100};
     uint32_t member27{};
   };
 

@@ -602,9 +602,12 @@ void RaceNetworkHandler::HandleEnterRoom(
   const bool doesRoomExist = _serverInstance.GetRoomSystem().RoomExists(
     command.roomUid);
 
+  const bool canRace = _serverInstance.GetHorseSystem().CanCharacterRace(
+    command.characterUid);
+
   // Determine the racer count and whether the room is full.
   bool isOvercrowded = false;
-  if (clientContext.isAuthenticated)
+  if (clientContext.isAuthenticated && canRace)
   {
     _serverInstance.GetRoomSystem().GetRoom(
       command.roomUid,
@@ -616,11 +619,20 @@ void RaceNetworkHandler::HandleEnterRoom(
   }
 
   // Cancel the enter room if the client is not authenticated,
-  // the room does not exist or the room is full.
+  // the room does not exist, the horse is exhausted or unmounted, or the room is full.
   if (not clientContext.isAuthenticated
     || not doesRoomExist
+    || not canRace
     || isOvercrowded)
   {
+    if (clientContext.isAuthenticated && not canRace)
+    {
+      spdlog::warn(
+        "Character '{}' attempted to enter room '{}' with an exhausted or invalid mount; denying entry and returning to ranch",
+        command.characterUid,
+        command.roomUid);
+    }
+
     const protocol::AcCmdCREnterRoomCancel response{};
     _commandServer.QueueCommand<decltype(response)>(
       clientId,

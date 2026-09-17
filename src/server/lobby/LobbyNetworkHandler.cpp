@@ -1192,6 +1192,22 @@ void LobbyNetworkHandler::HandleMakeRoom(
   const auto& clientContext = GetClientContext(clientId);
   uint32_t createdRoomUid{0};
 
+  if (not _serverInstance.GetHorseSystem().CanCharacterRace(clientContext.characterUid))
+  {
+    spdlog::warn(
+      "Character '{}' attempted to create a room with an exhausted or invalid mount",
+      clientContext.characterUid);
+
+    protocol::AcCmdCLMakeRoomCancel response{};
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
+  }
+
   const auto moderationVerdict = _serverInstance.GetModerationSystem().Moderate(
     command.name);
   if (moderationVerdict.isPrevented)
@@ -1328,6 +1344,25 @@ void LobbyNetworkHandler::HandleEnterRoom(
   const protocol::AcCmdCLEnterRoom& command)
 {
   const auto& clientContext = GetClientContext(clientId);
+
+  if (not _serverInstance.GetHorseSystem().CanCharacterRace(clientContext.characterUid))
+  {
+    spdlog::warn(
+      "Character '{}' attempted to enter room '{}' with an exhausted or invalid mount",
+      clientContext.characterUid,
+      command.roomUid);
+
+    protocol::AcCmdCLEnterRoomCancel response{
+      .status = protocol::AcCmdCLEnterRoomCancel::Status::CR_INVALID_ROOM};
+
+    _commandServer.QueueCommand<decltype(response)>(
+      clientId,
+      [response]()
+      {
+        return response;
+      });
+    return;
+  }
 
   // Whether the room is valid.
   bool isRoomValid = true;
@@ -1937,6 +1972,17 @@ void LobbyNetworkHandler::HandleEnterRoomQuick(
   const protocol::AcCmdCLEnterRoomQuick& command)
 {
   const auto& clientContext = GetClientContext(clientId);
+
+  if (not _serverInstance.GetHorseSystem().CanCharacterRace(clientContext.characterUid))
+  {
+    spdlog::warn(
+      "Character '{}' attempted quick match with an exhausted or invalid mount",
+      clientContext.characterUid);
+
+    const protocol::AcCmdCLEnterRoomQuickCancel cancel{};
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
 
   const bool hasQueued = _serverInstance.GetMatchmakingSystem().Queue(
     clientContext.characterUid,
