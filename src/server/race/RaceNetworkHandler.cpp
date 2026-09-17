@@ -1586,6 +1586,10 @@ void RaceNetworkHandler::HandleLoadingComplete(
   auto& racer = raceInstance.GetTracker().GetRacer(
     clientContext.characterUid);
 
+  // Guard against duplicate loading completes
+  if (racer.state != tracker::RaceTracker::Racer::State::Loading)
+    return;
+
   // Switch the racer to the racing state.
   racer.state = tracker::RaceTracker::Racer::State::Racing;
 
