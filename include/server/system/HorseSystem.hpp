@@ -56,9 +56,14 @@ public:
   //! @param characterUid UID of the owning character.
   void ApplyDailyCareTick(data::Uid characterUid);
 
-  //! Computes and checks if the horse can eat based on
-  //! dynamic food preference as used by the game client.
-  static uint16_t CanHorseEat(
+  //! Checks whether the food matches the horse's dynamic food preference.
+  [[nodiscard]] static bool IsHorseFavoredFood(
+    data::Uid horseUid,
+    uint16_t plenitude,
+    uint32_t preferenceType);
+
+  //! Checks if the horse can eat the food based on fullness and preference.
+  [[nodiscard]] static bool CanHorseEat(
     data::Uid horseUid,
     uint16_t plenitude,
     uint32_t preferenceType);
@@ -81,7 +86,7 @@ public:
     uint32_t priority);
 
   //! Applies post-race condition debuffs to the specified horse.
-  //! Deducts charm, friendliness, plenitude, and stamina, accumulates
+  //! Deducts charm, friendliness, and plenitude, accumulates
   //! dirtiness and fatigue, and resets polish.
   //! @param horse Horse record to modify.
   //! @param characterLevel Level of the character that raced the horse.

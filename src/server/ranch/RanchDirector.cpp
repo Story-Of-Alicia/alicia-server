@@ -4382,14 +4382,20 @@ bool RanchDirector::HandleUseFoodItem(
   assert(itemTemplate && itemTemplate->foodParameters);
 
   bool canEat{false};
+  bool isFavoredFood{false};
 
   // Update plenitude and friendliness points according to the item used and preference.
-  mountRecord.Mutable([&itemTemplate, &canEat](data::Horse& horse)
+  mountRecord.Mutable([&itemTemplate, &canEat, &isFavoredFood](data::Horse& horse)
   {
     // The horse refuses food it is plenitude is full
     // The horse can still eat even if friendliness (intimacy) is maxed out
     if (horse.mountCondition.plenitude() >= HorseSystem::MaxPlenitude)
       return;
+
+    isFavoredFood = HorseSystem::IsHorseFavoredFood(
+      horse.uid(),
+      static_cast<uint16_t>(horse.mountCondition.plenitude()),
+      itemTemplate->foodParameters->preferenceType);
 
     canEat = HorseSystem::CanHorseEat(
       horse.uid(),
@@ -4408,20 +4414,26 @@ bool RanchDirector::HandleUseFoodItem(
         itemTemplate->foodParameters->plenitudePoints),
       HorseSystem::MaxPlenitude);
 
+    const uint32_t friendlinessPoints = isFavoredFood
+      ? itemTemplate->foodParameters->friendlinessPoints
+        + itemTemplate->foodParameters->friendlinessPoints / 2
+      : itemTemplate->foodParameters->friendlinessPoints;
+
     // Update horse friendliness
-    horse.mountCondition.friendliness() = std::min(
-      static_cast<uint16_t>(
-        horse.mountCondition.friendliness() +
-        itemTemplate->foodParameters->friendlinessPoints),
-      HorseSystem::MaxFriendliness);
+    horse.mountCondition.friendliness() = std::min<uint32_t>(
+      HorseSystem::MaxFriendliness,
+      horse.mountCondition.friendliness() + friendlinessPoints);
 
     // TODO: confirm this behaviour
     // Rationale: friendliness/charm max = 1000, play activities unlock after ~111 and ~501
     // which roughly corresponds to attachment values
-    horse.mountCondition.attachment() = std::min(
-      static_cast<uint16_t>(
-        horse.mountCondition.attachment() + itemTemplate->foodParameters->friendlinessPoints),
-      HorseSystem::MaxAttachment);
+    horse.mountCondition.attachment() = std::min<uint32_t>(
+      HorseSystem::MaxAttachment,
+      horse.mountCondition.attachment() + friendlinessPoints);
+
+    horse.mountCondition.boredom() = std::min<uint32_t>(
+      HorseSystem::MaxBoredom,
+      horse.mountCondition.boredom() + 1);
   });
 
   // `Bad` == 0 (false), indicates feed accept

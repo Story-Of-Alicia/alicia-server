@@ -134,6 +134,8 @@ uint32_t HorseSystem::RepairLineages(const data::Uid characterUid)
 
 namespace
 {
+constexpr uint32_t MinSlightlyFullPlenitude = 710;
+
 int64_t CareDayIndex(const data::Clock::time_point time)
 {
   using namespace std::chrono;
@@ -196,18 +198,17 @@ void HorseSystem::ApplyDailyCareTick(const data::Uid characterUid)
   }
 }
 
-uint16_t HorseSystem::CanHorseEat(
+bool HorseSystem::IsHorseFavoredFood(
   data::Uid horseUid,
   uint16_t plenitude,
   uint32_t preferenceType)
 {
   // Hungry (< 710)
   // Slightly full (710..999)
-  static constexpr uint32_t MinSlightlyFullPlenitude = 710;
 
   // If horse is full (>= 1000), it has no food preference (cannot eat)
   if (plenitude >= MaxPlenitude)
-    return 0;
+    return false;
 
   // Hungry:        mode = 15 (0x0F)
   // Slightly full: mode = 16 (0x10)
@@ -225,6 +226,24 @@ uint16_t HorseSystem::CanHorseEat(
   const uint16_t mask = static_cast<uint16_t>(1 << bitIndex);
   return (mask & preferenceType) != 0;
 }
+
+bool HorseSystem::CanHorseEat(
+  data::Uid horseUid,
+  uint16_t plenitude,
+  uint32_t preferenceType)
+{
+  if (plenitude >= MaxPlenitude)
+    return false;
+
+  if (plenitude < MinSlightlyFullPlenitude)
+    return true;
+
+  return IsHorseFavoredFood(
+    horseUid,
+    plenitude,
+    preferenceType);
+}
+
 // found in FUN_00766ac0 in the tag10 binary
 uint32_t HorseSystem::CalculateFriendlinessCharmThreshold(
   const data::Uid horseUid,
