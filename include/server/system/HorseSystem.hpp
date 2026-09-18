@@ -135,7 +135,7 @@ public:
 
   //! Post-race dirtiness increase per body part
   //! See libconfig: MountGradeInfo->CleanPointSub
-  static constexpr uint32_t PostRaceDirtinessIncrease = 5;
+  static constexpr uint32_t PostRaceDirtinessIncrease = 30;
   //! Dirtiness accumulated per body part per 6am server-time tick passed,
   //! see ApplyDailyCareTick.
   static constexpr uint32_t DailyDirtinessIncrease = 50;
