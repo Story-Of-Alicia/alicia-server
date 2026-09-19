@@ -745,6 +745,16 @@ void LobbyNetworkHandler::HandleLogin(
     });
 }
 
+namespace
+{
+
+//! Mission id of the prologue, as defined in the client's `Mission` table.
+constexpr uint16_t PrologueMissionId = 24;
+//! The progress id the client reads as "mission cleared".
+constexpr uint32_t MissionClearedProgressId = 2;
+
+} // anonymous namespace
+
 void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
 {
   auto& clientContext = GetClientContext(clientId);
@@ -835,9 +845,11 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
       response.ranchBonusRaceCount = character.ranchManagement.totalRaces();
       response.role = std::bit_cast<protocol::LobbyCommandLoginOK::Role>(
         character.role());
-      response.bitfield = character.isIntroCompleted() ?
-        protocol::LobbyCommandLoginOK::AvatarBitset::IntroCompleted :
-        protocol::LobbyCommandLoginOK::AvatarBitset::NewPlayer;
+      // The client replays the intro only while it believes the character has not
+      // played before. THis makes "//create" not crash the client.
+      response.bitfield = character.isIntroCompleted() && not justCreatedCharacter
+        ? protocol::LobbyCommandLoginOK::AvatarBitset::IntroCompleted
+        : protocol::LobbyCommandLoginOK::AvatarBitset::NewPlayer;
 
       const auto equipmentItems = _serverInstance.GetDataDirector().GetItemCache().Get(
         character.characterEquipment());
@@ -861,6 +873,21 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
       protocol::BuildProtocolMissions(
         response.missions,
         character.missions());
+
+      if (justCreatedCharacter)
+      {
+        const auto prologueMission = std::ranges::find(
+          response.missions, PrologueMissionId, &protocol::Mission::id);
+        if (prologueMission != response.missions.end())
+        {
+          std::erase_if(
+            prologueMission->progress,
+            [](const protocol::Mission::Progress& progress)
+            {
+              return progress.id == MissionClearedProgressId;
+            });
+        }
+      }
 
       if (character.guildUid() != data::InvalidUid)
       {
@@ -1625,10 +1652,10 @@ void LobbyNetworkHandler::HandleCreateNickname(
           character.name = command.nickname;
 
         // todo: default level configured
-        character.level = 1;
-        character.experience() = 0;
+        character.level = 40;
+        character.experience() = 557300;
         // todo: default carrots configured
-        character.carrots = 5'000;
+        character.carrots = 200'000;
 
         character.mountUid() = mountUid;
 
