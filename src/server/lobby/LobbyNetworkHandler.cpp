@@ -743,10 +743,9 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
 
   clientContext.characterUid = userCharacterUid;
 
-  // Promote any foals that matured while the player was offline before their
-  // horses are sent, so the client shows them as adults from the start rather
-  // than caching a foal it won't re-render on a later type change.
+  // Apply the things that should happen to the character while they were offline.
   _serverInstance.GetHorseSystem().PromoteMaturedFoals(userCharacterUid);
+  _serverInstance.GetHorseSystem().ApplyDailyCareTick(userCharacterUid);
 
   // Collection of items expired while the character aws offline.
   std::vector<data::Item> expiredItems;
