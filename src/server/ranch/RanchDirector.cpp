@@ -4593,8 +4593,6 @@ bool RanchDirector::HandleUsePlayItem(
 
   // TODO: determine values
   response.experiencePoints = 1;
-  // TODO: is this needed? confirm
-  response.playSuccessLevel = protocol::AcCmdCRUseItemOK::PlaySuccessLevel::Perfect;
 
   return true;
 }
