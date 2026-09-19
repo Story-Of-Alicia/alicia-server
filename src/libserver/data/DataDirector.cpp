@@ -19,6 +19,7 @@
 
 #include "libserver/data/DataDirector.hpp"
 
+#include "libserver/data/DataRepair.hpp"
 #include "libserver/data/file/FileDataSource.hpp"
 #include "libserver/util/Deferred.hpp"
 
@@ -863,6 +864,71 @@ void DataDirector::RequestLoadCharacterData(
   ScheduleCharacterLoad(userDataContext, characterUid);
 }
 
+void DataDirector::ExpireCharacterData(
+  const std::string& userName)
+{
+  const auto userRecord = GetUser(userName);
+  if (not userRecord)
+    return;
+
+  data::Uid characterUid = data::InvalidUid;
+  userRecord.Immutable([&characterUid](const data::User& user)
+  {
+    characterUid = user.characterUid();
+  });
+
+  if (characterUid == data::InvalidUid)
+    return;
+
+  // Individually evict every cached sub-record from the character record
+  if (const auto characterRecord = _characterStorage.Get(characterUid, false))
+  {
+    characterRecord->Immutable([this](const data::Character& character)
+    {
+      if (character.settingsUid() != data::InvalidUid)
+        _settingsStorage.Evict(character.settingsUid());
+
+      if (character.dailyQuestGroupUid() != data::InvalidUid)
+        _dailyQuestGroupStorage.Evict(character.dailyQuestGroupUid());
+
+      _horseStorage.Evict(character.horses());
+      if (character.mountUid() != data::InvalidUid)
+        _horseStorage.Evict(character.mountUid());
+      for (const auto horseUid : character.breedingWishlist())
+        _horseStorage.Evict(horseUid);
+
+      _itemStorage.Evict(character.inventory());
+      _itemStorage.Evict(character.characterEquipment());
+
+      _storageItemStorage.Evict(character.gifts());
+      _storageItemStorage.Evict(character.purchases());
+
+      _eggStorage.Evict(character.eggs());
+      _petStorage.Evict(character.pets());
+      if (character.petUid() != data::InvalidUid)
+        _petStorage.Evict(character.petUid());
+
+      _housingStorage.Evict(character.housing());
+
+      _mailStorage.Evict(character.mailbox.inbox());
+      _mailStorage.Evict(character.mailbox.sent());
+
+      _questStorage.Evict(character.quests());
+    });
+  }
+
+  // Evict the character itself
+  _characterStorage.Evict(characterUid);
+
+  // Reset loaded status for the user context and trigger a fresh load
+  auto& userDataContext = _userDataContext[userName];
+  userDataContext.isCharacterDataLoaded.store(false, std::memory_order::relaxed);
+  userDataContext.isBeingLoaded.store(false, std::memory_order::relaxed);
+
+  // Immediately request a load of the character data
+  RequestLoadCharacterData(userName, characterUid);
+}
+
 bool DataDirector::AreDataBeingLoaded(const std::string& userName)
 {
   const auto& userDataContext = _userDataContext[userName];
@@ -1396,6 +1462,10 @@ void DataDirector::ScheduleUserLoad(
     });
 
 
+    // Drop the references to infractions which are missing or damaged in the data source,
+    // they would otherwise keep the user from ever loading again.
+    repair::CleanseUserReferences(*this, userName);
+
     std::vector<data::Uid> infractions;
     userRecord.Immutable([&infractions](const data::User& user)
     {
@@ -1474,6 +1544,11 @@ void DataDirector::ScheduleCharacterLoad(
       return;
     }
 
+    // Data which are missing or damaged in the data source never become available,
+    // which would keep the character from ever loading again.
+    // Drop the references to them so that the load can complete.
+    repair::CleanseCharacterReferences(*this, characterUid);
+
     auto guildUid = data::InvalidUid;
     auto petUid = data::InvalidUid;
     auto settingsUid = data::InvalidUid;
@@ -1512,7 +1587,6 @@ void DataDirector::ScheduleCharacterLoad(
 
         std::ranges::copy(character.inventory(), std::back_inserter(items));
         std::ranges::copy(character.characterEquipment(), std::back_inserter(items));
-        std::ranges::copy(character.expiredEquipment(), std::back_inserter(items));
 
         horses = character.horses();
 
@@ -1525,6 +1599,9 @@ void DataDirector::ScheduleCharacterLoad(
         // Add the mount to the horses list,
         // so that it is loaded with all the horses.
         horses.emplace_back(character.mountUid());
+
+        // Add breeding wishlist horses so that they are preloaded with character horses.
+        std::ranges::copy(character.breedingWishlist(), std::back_inserter(horses));
 
         // Mailbox
         std::ranges::copy(character.mailbox.inbox(), std::back_inserter(mailbox));

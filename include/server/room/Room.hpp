@@ -86,6 +86,18 @@ public:
     data::Uid masterUid{data::InvalidUid};
   };
 
+  struct WinStreak
+  {
+    //! The character on an FFA/Single win streak, or `data::InvalidUid`.
+    data::Uid characterUid{data::InvalidUid};
+    //! Consecutive FFA/Single wins scored by `characterUid`.
+    uint16_t characterWins{};
+    //! The team on a team-mode win streak.
+    Player::Team team{Player::Team::Solo};
+    //! Consecutive team-mode wins scored by `team`.
+    uint16_t teamWins{};
+  };
+
   struct Snapshot
   {
     uint32_t uid;
@@ -121,6 +133,7 @@ public:
   [[nodiscard]] Details& GetRoomDetails();
   [[nodiscard]] Snapshot GetRoomSnapshot() const;
   [[nodiscard]] const std::unordered_map<data::Uid, Player>& GetPlayers() const;
+  [[nodiscard]] WinStreak& GetWinStreak();
 
 private:
   Details _details;
@@ -128,6 +141,7 @@ private:
   std::unordered_set<data::Uid> _queuedPlayers;
   std::unordered_map<data::Uid, Player> _players;
   bool _roomIsPlaying{};
+  WinStreak _winStreak;
 };
 
 } // namespace server

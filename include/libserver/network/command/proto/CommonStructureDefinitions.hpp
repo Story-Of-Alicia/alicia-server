@@ -296,11 +296,11 @@ struct Horse
     uint16_t friendlyPoint{};
     uint16_t injuryPoint{};
 
-    //! A plenitude value in a range of <0, 1200>.
-    //! 910 is a little full, 1200 is full
+    //! A plenitude value in a range of <0, 1000>.
+    //! <710 is hungry, 710-999 is slightly full, 1000 is full
     uint16_t plenitude{};
-    //! A dirty value in a range of <0, 1200>. for all body parts.
-    //! 1200 is fully dirty, 0 is clean.
+    //! A dirty value in a range of <0, 1000> for all body parts.
+    //! <600 is clean, 600-999 is slightly dirty, >=1000 is fully dirty
     uint16_t bodyDirtiness{};
     //! Referred to as `ManeTwisted` by the client.
     uint16_t maneDirtiness{};
@@ -311,12 +311,12 @@ struct Horse
     //! >111 - Fish on a rod play activity unlocked
     //! >501 - Bow play activity unlocked
     uint16_t attachment{};  
-    //! A boredom value in a range of <0, 21>.
+    //! A boredom value in a range of <0, 25>.
     //! 0 is bored
     //! 1 is a little bored
     //! 11 wants to play a little
-    //! 21 wants to play.
-    uint16_t boredom{21};
+    //! 21+ wants to play.
+    uint16_t boredom{25};
 
     uint16_t bodyPolish{};
     uint16_t manePolish{};
@@ -503,6 +503,26 @@ struct PetBirthInfo
 };
 
 //!
+struct League
+{
+  enum class Type : uint8_t
+  {
+    None = 0,
+    Bronze = 1,
+    Silver = 2,
+    Gold = 3,
+    Platinum = 4
+  };
+
+  Type type{};
+  //! League rank percentile expressed as a whole number in an interval <0, 100>.
+  uint8_t rankingPercentile{};
+
+  static void Write(const League& value, SinkStream& stream);
+  static void Read(League& value, SourceStream& stream);
+};
+
+//!
 struct RanchHorse
 {
   uint16_t horseOid{};
@@ -539,14 +559,13 @@ struct RanchCharacter
 
   //! Unique ranch object identifier.
   uint16_t oid{};
-  uint8_t isBusy{0};
+  uint8_t busyState{0};
   uint8_t unk3{0};
 
   Rent rent{};
   Pet pet{};
 
-  uint8_t unk4{0};
-  uint8_t unk5{0};
+  League league{};
 
   static void Write(const RanchCharacter& ranchCharacter, SinkStream& stream);
   static void Read(RanchCharacter& value, SourceStream& stream);
@@ -581,26 +600,6 @@ struct Housing
   static void Read(Housing& value, SourceStream& stream);
 };
 
-//!
-struct League
-{
-  enum class Type : uint8_t
-  {
-    None = 0,
-    Bronze = 1,
-    Silver = 2,
-    Gold = 3,
-    Platinum = 4
-  };
-
-  Type type{};
-  //! League rank percentile expressed as a whole number in an interval <0, 100>.
-  uint8_t rankingPercentile{};
-
-  static void Write(const League& value, SinkStream& stream);
-  static void Read(League& value, SourceStream& stream);
-};
-
 enum class TeamMode : uint8_t
 {
   FFA = 1,
@@ -614,6 +613,14 @@ enum class GameMode : uint8_t
   Magic = 2,
   Unk4 = 4,
   Mission = 6,
+};
+
+enum class BonusCourseType : uint16_t
+{
+  None = 0,
+  Carrots = 1,
+  Experience = 2,
+  CarrotsAndExperience = 3
 };
 
 struct SkillSet

@@ -23,6 +23,7 @@
 #include <boost/asio.hpp>
 
 #include <chrono>
+#include <random>
 #include <span>
 
 namespace server::util
@@ -100,6 +101,13 @@ asio::ip::address_v4 ResolveHostName(const std::string& host);
 std::string GenerateByteDump(std::span<const std::byte> data);
 
 std::vector<std::string> TokenizeString(const std::string& value, char delimiter);
+
+/// @brief Returns a thread-local std::mt19937 random engine properly seeded via std::random_device.
+inline std::mt19937& GetRandomEngine()
+{
+  thread_local std::mt19937 engine{std::random_device{}()};
+  return engine;
+}
 
 } // namespace server::util
 

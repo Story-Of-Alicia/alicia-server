@@ -303,7 +303,7 @@ struct AcCmdRCUpdateMountInfoNotify
     // Just takes luck.
     SomethingWithHorseLuck = 10,
     UpdateInjuryState = 11,
-    SomethingWithInjuryAndLuck = 12
+    NaturalHealingInjury = 12
   };
 
   uint32_t characterUid{};
@@ -438,6 +438,32 @@ struct AcCmdRCMissionEvent
   //! @param stream Source stream.
   static void Read(
     AcCmdRCMissionEvent& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRUpdateRanchLevelNotify
+{
+  uint32_t unk0{};
+  uint32_t ranchProgress{};
+  uint32_t carrotsGained{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRUpdateRanchLevelNotify;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRUpdateRanchLevelNotify& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRUpdateRanchLevelNotify& command,
     SourceStream& stream);
 };
 

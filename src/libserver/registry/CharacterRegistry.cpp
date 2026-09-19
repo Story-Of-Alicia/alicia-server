@@ -28,6 +28,11 @@
 namespace server::registry
 {
 
+void CharacterRegistry::Clear()
+{
+  _levelInfo.clear();
+}
+
 void CharacterRegistry::ReadConfig(const std::filesystem::path& configPath)
 {
   const auto root = YAML::LoadFile(configPath.string());
@@ -44,7 +49,7 @@ void CharacterRegistry::ReadConfig(const std::filesystem::path& configPath)
   if (not collectionSection)
     throw std::runtime_error("Missing collection section");
 
-  _levelInfo.clear();
+  Clear();
 
   for (const auto& entry : collectionSection)
   {

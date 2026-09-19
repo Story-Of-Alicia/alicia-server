@@ -103,7 +103,7 @@ public:
   //! Ends the command server.
   void EndHost();
 
-  asio::ip::address_v4 GetClientAddress(ClientId);
+  asio::ip::address GetClientAddress(ClientId);
   void DisconnectClient(ClientId clientId);
 
   void SetCode(ClientId client, protocol::XorCode code);

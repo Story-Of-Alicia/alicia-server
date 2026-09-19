@@ -108,13 +108,18 @@ struct AcCmdCREnterRanchOK
 
   uint64_t member6{0};
   uint32_t scramblingConstant{0};
-  uint32_t ranchProgress{614090};
+  //! Total ranch experience of the ranch being entered, which the client turns
+  //! into the ranch level via the RanchLevelInfo table.
+  uint32_t ranchProgress{};
 
   // List size as a byte. Max length 13
   std::vector<Housing> housing{};
 
   uint8_t horseSlots{};
-  uint32_t member11{};
+  //! Timepoint of last growth/care spirit change.
+  //! Disables the button during cooldown.
+  //! Value is module 61.
+  uint32_t spiritCooldownExpiry{};
 
   enum class Bitset : uint32_t
   {
@@ -2762,8 +2767,7 @@ struct AcCmdCRIncubateEggOK
 {
   uint32_t incubatorSlot{};
   Egg egg{};
-  // optional
-  uint32_t member3{};
+  std::optional<uint32_t> remainingIncubatorUses{};
 
   static Command GetCommand()
   {

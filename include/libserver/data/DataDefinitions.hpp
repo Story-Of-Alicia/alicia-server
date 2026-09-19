@@ -163,7 +163,8 @@ struct Item
   //! An amount of an item.
   dao::Field<uint32_t> count{};
   //! A duration of an item.
-  dao::Field<std::chrono::seconds> duration{};
+  dao::Field<std::chrono::seconds> duration{
+    std::chrono::seconds::zero()};
   //! A time point of when the item was created.
   dao::Field<Clock::time_point> createdAt{};
 };
@@ -325,7 +326,6 @@ struct Character
   
   dao::Field<std::vector<Uid>> inventory{};
   dao::Field<std::vector<Uid>> characterEquipment{};
-  dao::Field<std::vector<Uid>> expiredEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
   dao::Field<uint8_t> horseSlotCount{0u};
@@ -339,6 +339,16 @@ struct Character
   dao::Field<std::vector<Uid>> eggs{};
 
   dao::Field<std::vector<Uid>> housing{};
+
+  //! Progress of the ranch the character manages.
+  struct RanchManagement
+  {
+    //! Ranch experience earned so far, which the ranch level is derived from.
+    dao::Field<uint32_t> ranchExperience{0u};
+    //! Lifetime count of races finished. It only ever counts up; the recurring
+    //! ranch bonus pays out on every twentieth race.
+    dao::Field<uint32_t> totalRaces{0u};
+  } ranchManagement{};
 
   dao::Field<bool> isRanchLocked{};
   dao::Field<bool> isIntroCompleted{false};
@@ -445,7 +455,9 @@ struct Horse
   } mastery{};
 
   dao::Field<uint32_t> rating{0u};
+  //! A class.
   dao::Field<uint32_t> clazz{0u};
+  //! A class progress experience points.
   dao::Field<uint32_t> clazzProgress{0u};
   dao::Field<uint32_t> grade{0u};
   dao::Field<uint32_t> growthPoints{0u};
@@ -463,8 +475,13 @@ struct Horse
 
   struct Potential
   {
+    //! A type of potential.
     dao::Field<uint32_t> type{0u};
+    //! A potential level represents the growth progress
+    //! of the potential's value.
     dao::Field<uint32_t> level{0u};
+    //! A potential value represents the intensity of the
+    //! potential.
     dao::Field<uint32_t> value{0u};
   } potential{};
 
@@ -487,6 +504,7 @@ struct Horse
     dao::Field<uint32_t> tailPolish{};
     dao::Field<uint32_t> attachment{};
     dao::Field<uint32_t> boredom{};
+    dao::Field<Clock::time_point> lastDailyCareTick{};
     dao::Field<uint32_t> stopAmendsPoint{};
   } mountCondition{};
 

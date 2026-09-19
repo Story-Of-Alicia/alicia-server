@@ -21,6 +21,7 @@
 #define PETREGISTRY_HPP
 
 #include "libserver/data/DataDefinitions.hpp"
+#include "libserver/registry/Registry.hpp"
 #include "libserver/registry/RegistryDefinitions.hpp"
 
 #include <filesystem>
@@ -52,10 +53,11 @@ struct PetInfo
   uint32_t petId{};
 };
 
-class PetRegistry final
+class PetRegistry final : public Registry
 {
 public:
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
 
   EggInfo GetEggInfo(data::Tid eggItemTid);
   EggInfo GetEggInfoByDeckId(data::Tid deckItemId);

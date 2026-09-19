@@ -31,6 +31,7 @@
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 #include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 
+#include <optional>
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
@@ -60,6 +61,8 @@ public:
 
   //!
   void Disconnect(data::Uid characterUid);
+
+  [[nodiscard]] bool LeaveRanch(data::Uid characterUid);
 
   //!
   void BroadcastSetIntroductionNotify(
@@ -123,8 +126,6 @@ public:
   Config::Ranch& GetConfig();
 
 private:
-  std::random_device _randomDevice;
-
   struct ClientContext
   {
     //! User name.
@@ -136,7 +137,6 @@ private:
     //! Unique ID of the owner of the ranch the client is visiting.
     data::Uid visitingRancherUid{data::InvalidUid};
 
-    uint8_t busyState{0};
     //! Whether there's a pending breeding failure card waiting to be claimed
     bool hasPendingFailureCard{false};
     //! Current breeding failure card type.
@@ -153,6 +153,9 @@ private:
     //! Number of times a deferred ranch entry has been retried while waiting
     //! for horse records to load. Capped so the client isn't stuck forever.
     uint32_t enterRanchDeferAttempts{0};
+
+    //! Number of times a deferred breeding attempt has been retried 
+    uint32_t tryBreedingDeferAttempts{0};
   };
 
   struct RanchInstance
@@ -190,6 +193,10 @@ private:
 
   void HandleRanchLeave(
     ClientId clientId);
+
+  void RemoveClientFromRanch(
+    ClientId clientId,
+    ClientContext& clientContext);
 
   //! Rebuilds the client's set of maturing foals, promoting any that already
   //! reached the grow-up duration to adults in the data store. Called on ranch
@@ -262,7 +269,11 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRCheckStallionCharge& command);
 
-  void HandleTryBreeding(
+  //! Handles the breeding attempt command.
+  //! @param clientId ID of the client.
+  //! @param command Command.
+  //! @returns True if the command should be deferred and retried
+  bool HandleTryBreeding(
     ClientId clientId,
     const protocol::AcCmdCRTryBreeding& command);
 
@@ -274,11 +285,15 @@ private:
   //! Calculates the breeding success rate (0-100).
   //! @param stallionGrade Grade of the stallion.
   //! @param stallionBreedingCount Lifetime breeding count of the stallion.
+  //! @param mareUid UID of the character's own mare.
+  //! @param mareCharm Current charm points of the mare.
   //! @param bonus Rolled breeding bonus.
   //! @returns Success rate as a percentage capped at 100.
   [[nodiscard]] uint32_t CalculateBreedingSuccessRate(
     uint32_t stallionGrade,
     uint32_t stallionBreedingCount,
+    data::Uid mareUid,
+    uint32_t mareCharm,
     const protocol::BreedingBonus& bonus);
 
   //! Creates a foal from a successful breeding, spawns it on the ranch and fills
@@ -458,7 +473,15 @@ private:
   void HandleHousingRepair(
     ClientId clientId,
     const protocol::AcCmdCRHousingRepair& command);
-  
+
+  //! Spends one use of the character's incubator, deleting it once it is
+  //! exhausted.
+  //! @param character Character, already held mutable by the caller.
+  //! @returns The uses left afterwards, or nullopt when there is nothing to
+  //!          spend - no incubator built, or one that never runs out.
+  std::optional<uint32_t> ConsumeIncubatorUse(data::Character& character);
+
+
   void HandleOpCmd(ClientId clientId,
     const protocol::AcCmdCROpCmd& command);
 
@@ -611,6 +634,9 @@ private:
 
   //! A command deferrer for the `AcCmdCREnterRanch` command.
   CommandDeferrer<protocol::AcCmdCREnterRanch> _enterRanchDeferrer;
+
+  //! A command deferrer for the `AcCmdCRTryBreeding` command.
+  CommandDeferrer<protocol::AcCmdCRTryBreeding> _tryBreedingDeferrer;
 
   //! Drives periodic ranch chores, such as the foal maturity sweep.
   Scheduler _scheduler;

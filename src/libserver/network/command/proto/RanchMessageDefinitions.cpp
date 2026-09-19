@@ -199,7 +199,7 @@ void AcCmdCREnterRanchOK::Write(
   }
 
   stream.Write(command.horseSlots)
-    .Write(command.member11)
+    .Write(command.spiritCooldownExpiry)
     .Write(command.bitset)
     .Write(command.incubatorSlots)
     .Write(command.incubatorUseCount);
@@ -955,7 +955,7 @@ void RanchCommandEnterBreedingMarketOK::Write(
 {
   const uint8_t count = std::min(
     static_cast<uint8_t>(command.stallions.size()),
-    uint8_t{10});
+    uint8_t{20});
 
   stream.Write(count);
   for (uint8_t idx = 0; idx < count; ++idx)
@@ -1878,8 +1878,11 @@ void AcCmdCRIncubateEggOK::Write(
   SinkStream& stream)
 {
   stream.Write(command.incubatorSlot)
-    .Write(command.egg)
-    .Write(command.member3);
+    .Write(command.egg);
+
+  // Only a double incubator reports its remaining uses
+  if (command.remainingIncubatorUses.has_value())
+    stream.Write(command.remainingIncubatorUses.value());
 }
 
 void AcCmdCRIncubateEggOK::Read(

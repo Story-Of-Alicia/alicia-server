@@ -20,6 +20,8 @@
 #ifndef HORSEREGISTRY_HPP
 #define HORSEREGISTRY_HPP
 
+#include <libserver/registry/Registry.hpp>
+
 #include <array>
 #include <filesystem>
 #include <random>
@@ -50,14 +52,18 @@ struct PotentialGrowth
 
 struct PotentialLevel
 {
+  //! Level of the potential.
   uint32_t level{0};
-  int32_t exp{0};
+  //! Class progress (exp) required to reach this level.
+  uint32_t requiredClassProgression{0};
 };
 
 struct PotentialInfo
 {
   uint32_t type{0};
   std::string name;
+  uint32_t chanceBp{0};
+  uint32_t durationBonusMs{0};
 };
 
 struct MasteryParams
@@ -186,12 +192,13 @@ struct ShapeInheritance
 };
 
 
-class HorseRegistry
+class HorseRegistry : public Registry
 {
 public:
   HorseRegistry();
 
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
 
   static void BuildDefaultHorse(
     data::Horse& horse,
@@ -255,6 +262,10 @@ public:
 
   //! Returns every configured coat TID (for weighted random coat selection).
   const std::vector<data::Tid>& GetPossibleCoats() const;
+
+  //! @param coatTid Coat template ID.
+  //! @returns Face TID, or InvalidTid if the coat's face type has no faces configured.
+  data::Tid GetRandomFaceForCoat(data::Tid coatTid);
 
   //! Returns one entry per distinct mane shape, ordered by shape, with the
   //! shape's lowest minGrade and a representative inheritance rate.
@@ -333,9 +344,6 @@ public:
   std::vector<uint32_t> GetEmblemsByOdds(uint32_t odds) const;
 
 private:
-  std::random_device _randomDevice;
-  mutable std::mt19937 _randomEngine;
-
   std::vector<std::vector<Color>> _colorGroups;
 
   std::unordered_map<data::Tid, Coat> _coats;
@@ -346,10 +354,13 @@ private:
 
   std::vector<data::Tid> _possibleCoats;
   std::vector<data::Tid> _possibleFaces;
+  std::unordered_map<int32_t, std::vector<data::Tid>> _facesByType;
   std::vector<data::Tid> _possibleManes;
   std::vector<data::Tid> _possibleTails;
 
+  //! Collection of potential growth.
   std::unordered_map<uint32_t, PotentialGrowth> _potentialGrowth;
+  //! Collection of potential levels.
   std::vector<PotentialLevel> _potentialLevels;
   std::unordered_map<uint32_t, PotentialInfo> _potentials;
   std::vector<uint32_t> _potentialTypes;

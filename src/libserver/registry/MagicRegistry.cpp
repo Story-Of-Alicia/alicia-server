@@ -65,6 +65,7 @@ uint32_t ReadSlotInfo(const YAML::Node& section, Magic::SlotInfo& slot)
 
   slot.affectByCriticalAura = section["affectByCriticalAura"].as<uint32_t>();
   slot.criticalByDarkFire = section["criticalByDarkFire"].as<uint32_t>();
+  slot.givePositionalMagic = section["givePositionalMagic"].as<uint32_t>();
   slot.attackRank = section["attackRank"].as<uint32_t>(0);
 
   // Crit items do not need the positional weights defined, base items carry that info
@@ -76,6 +77,21 @@ uint32_t ReadSlotInfo(const YAML::Node& section, Magic::SlotInfo& slot)
 
 } // anonymous namespace
 
+void MagicRegistry::Clear()
+{
+  _slotInfo.clear();
+  _soloPool.clear();
+  _teamPool.clear();
+  _statScalings.clear();
+  for (auto& weights : _soloPositionWeights)
+    weights.clear();
+  for (auto& weights : _teamPositionWeights)
+    weights.clear();
+  _regenInfo = {};
+  _setBonusInfo = {};
+  _baseCritChanceBp = 500;
+}
+
 void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
 {
   const auto root = YAML::LoadFile(configPath.string());
@@ -84,22 +100,22 @@ void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
   if (not magicSection)
     throw std::runtime_error("Missing magic section");
 
+  const auto slotSection = magicSection["slotInfo"];
+  if (not slotSection)
+    throw std::runtime_error("Missing magic slotInfo section");
+
+  const auto collection = slotSection["collection"];
+  if (not collection)
+    throw std::runtime_error("Missing magic slotInfo collection");
+
+  Clear();
+
   // Slot info
+  for (const auto& entry : collection)
   {
-    const auto slotSection = magicSection["slotInfo"];
-    if (not slotSection)
-      throw std::runtime_error("Missing magic slotInfo section");
-
-    const auto collection = slotSection["collection"];
-    if (not collection)
-      throw std::runtime_error("Missing magic slotInfo collection");
-
-    for (const auto& entry : collection)
-    {
-      Magic::SlotInfo slot;
-      const auto type = ReadSlotInfo(entry, slot);
-      _slotInfo.emplace(type, std::move(slot));
-    }
+    Magic::SlotInfo slot;
+    const auto type = ReadSlotInfo(entry, slot);
+    _slotInfo.emplace(type, std::move(slot));
   }
 
   // Pre-build the pick pools and positional weights so RandomMagicItem never has to filter at runtime.

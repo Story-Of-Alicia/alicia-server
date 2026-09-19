@@ -193,8 +193,8 @@ struct LobbyCommandLoginOK
   // Something with rental horse
   Rent val17{};
 
-  //! Housing bonus progression counter
-  uint32_t val18{};
+  //! Running count of races that have gone towards the ranch bonus, sent as-is.
+  uint32_t ranchBonusRaceCount{};
   uint32_t val19{};
   uint32_t val20{};
 
@@ -1836,10 +1836,10 @@ struct AcCmdLCPersonalInfo
     struct Course
     {
       uint16_t courseId{};
-      //! Measured in milliseconds
-      uint32_t recordTime{};
       //! Unclear if times raced or times won, needs confirming/fact checking
       uint32_t timesRaced{};
+      //! Measured in milliseconds
+      uint32_t recordTime{};
       std::array<std::byte, 12> member4{};
     };
     // max 255

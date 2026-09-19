@@ -19,6 +19,7 @@
 
 #include "server/ServerInstance.hpp"
 
+#include "server/race/MagicSystem.hpp"
 #include "server/race/RaceInstance.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
 
@@ -26,6 +27,7 @@
 
 #include <tuple>
 #include <format>
+#include <limits>
 
 namespace server
 {
@@ -36,8 +38,6 @@ namespace
 constexpr registry::MapBlockId AllMapsCourseId = 10000;
 constexpr registry::MapBlockId NewMapsCourseId = 10001;
 constexpr registry::MapBlockId HotMapsCourseId = 10002;
-
-std::random_device _randomDevice;
 
 } // anon namespace
 
@@ -130,8 +130,11 @@ void RaceInstance::Stop()
       ? racer.courseTime
       : tracker::InvalidCourseTime;
 
-    score.experience = 420;
-    score.carrots = 2500;
+    static constexpr uint32_t BaseExpReward = 420;
+    static constexpr uint32_t BaseCarrotReward = 2500;
+
+    score.experience = BaseExpReward;
+    score.carrots = BaseCarrotReward;
 
     {
       // Multiplier as a percentage (example 100%)
@@ -141,18 +144,54 @@ void RaceInstance::Stop()
         .GetSystemContentRegistry()
         .GetValue(CarrotExpMultiplierKey);
 
-      const float multiplier = carrotExpMultiplierOpt.has_value() ?
+      const float systemMultiplier = carrotExpMultiplierOpt.has_value() ?
           carrotExpMultiplierOpt.value() / 100.0f :
           DefaultCarrotExpMultiplier;
-      score.carrots = static_cast<uint32_t>(
-        static_cast<float>(score.carrots) * multiplier);
+
+      using BonusCourseType = protocol::BonusCourseType;
+      using Bitset = protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset;
+
+      // Apply rewards only if player has finished the race
+      if (racer.courseTime != tracker::InvalidCourseTime)
+      {
+        // TODO: put these in the config
+        constexpr float EventCarrotMultiplier = 1.5f;
+        constexpr float EventExpMultiplier = 2.0f;
+
+        // Apply carrots
+        if (_bonusCourseType == BonusCourseType::Carrots || _bonusCourseType == BonusCourseType::CarrotsAndExperience)
+        {
+          score.carrots = static_cast<uint32_t>(
+            static_cast<float>(score.carrots) * systemMultiplier * EventCarrotMultiplier);
+          score.bitset = static_cast<Bitset>(
+            score.bitset | Bitset::EventBonusCarrots);
+        }
+        else
+        {
+          score.carrots = static_cast<uint32_t>(
+            static_cast<float>(score.carrots) * systemMultiplier);
+        }
+
+        // Apply experience/bonus experience
+        if (_bonusCourseType == BonusCourseType::Experience || _bonusCourseType == BonusCourseType::CarrotsAndExperience)
+        {
+          score.experience = static_cast<uint32_t>(
+            static_cast<float>(score.experience) * EventExpMultiplier);
+          score.bitset = static_cast<Bitset>(
+            score.bitset | Bitset::EventBonusExperience);
+        }
+        else
+        {
+          // TODO: Apply bonus carrots only for now, do not touch exp
+        }
+      }
     }
 
     score.teamColor = racer.team;
     const auto characterRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
 
-    characterRecord.Mutable([this, &score](data::Character& character)
+    characterRecord.Mutable([this, &score, &racer](data::Character& character)
     {
       character.carrots() += score.carrots;
       character.experience() += score.experience;
@@ -171,13 +210,25 @@ void RaceInstance::Stop()
       score.level = character.level();
       score.levelProgress = character.experience();
 
-      _raceNetworkHandler.GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
-        [&score](const data::Horse& horse)
+      _raceNetworkHandler.GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Mutable(
+        [this, &score, &racer, characterLevel = character.level()](data::Horse& horse)
         {
           score.mountName = horse.name();
           score.horseClass = static_cast<uint8_t>(horse.clazz());
           score.horseClassProgress = horse.clazzProgress();
           score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
+          // TODO: Implement PC Bang status check for racers
+          constexpr bool isPcBang = false;
+          score.staminaDecRatio = isPcBang ? 50 : 100;
+
+          if (racer.state == State::Disconnected)
+            return;
+
+          // Racer is not disconnected, apply race condition reductions
+          _raceNetworkHandler.GetServerInstance().GetHorseSystem().ApplyPostRaceHorseConditionDebuffs(
+            horse,
+            characterLevel,
+            score.staminaDecRatio);
         });
     });
   }
@@ -209,11 +260,79 @@ void RaceInstance::Stop()
   // Broadcast the race result
   _raceNetworkHandler.Broadcast(*this, raceResult);
 
+  // The race counts towards every racer's ranch bonus, which pays out on each
+  // twentieth race. The client expects the update to follow the race result.
+  auto& ranchManagementSystem = _raceNetworkHandler.GetServerInstance()
+    .GetRanchManagementSystem();
+
+  for (const data::Uid characterUid : _tracker.GetRacers() | std::views::keys)
+  {
+    const auto payout = ranchManagementSystem.RecordRaceCompletion(characterUid);
+    if (not payout)
+      continue;
+
+    uint32_t ranchProgress = 0;
+    _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
+      characterUid).Immutable(
+        [&ranchProgress](const data::Character& character)
+        {
+          ranchProgress = character.ranchManagement.ranchExperience();
+        });
+
+    _raceNetworkHandler.SendRanchBonusNotify(
+      characterUid, ranchProgress, payout->carrots);
+  }
+
   // Assign room master to the first-place finisher.
   if (not raceResult.scores.empty())
   {
     data::Uid newMasterUid = raceResult.scores[0].uid;
     std::string newMasterName = raceResult.scores[0].name;
+
+    const data::Uid winnerUid = raceResult.scores[0].uid;
+    const bool isTeamRace = _parameters.teamMode == protocol::TeamMode::Team;
+    const Room::Player::Team winnerTeam =
+      winningTeam == Team::Red ? Room::Player::Team::Red
+      : winningTeam == Team::Blue ? Room::Player::Team::Blue
+      : Room::Player::Team::Solo;
+    const bool raceHadWinner =
+      raceResult.scores[0].courseTime != tracker::InvalidCourseTime
+      && (not isTeamRace || winnerTeam != Room::Player::Team::Solo);
+
+    if (raceHadWinner)
+    {
+      this->GetRoom(
+        [winnerUid, winnerTeam, isTeamRace](Room& room)
+        {
+          // Winning a race you were alone in does not build a streak.
+          if (room.GetPlayerCount() < 2)
+            return;
+
+          const auto extend = [](const uint16_t count)
+          {
+            return count < std::numeric_limits<uint16_t>::max()
+              ? static_cast<uint16_t>(count + 1)
+              : count;
+          };
+
+          auto& winStreak = room.GetWinStreak();
+          if (isTeamRace)
+          {
+            winStreak.teamWins = winStreak.team == winnerTeam
+              ? extend(winStreak.teamWins)
+              : 1;
+            winStreak.team = winnerTeam;
+          }
+          else
+          {
+            winStreak.characterWins = winStreak.characterUid == winnerUid
+              ? extend(winStreak.characterWins)
+              : 1;
+            winStreak.characterUid = winnerUid;
+          }
+        });
+    }
+
     this->GetRoom(
       [&newMasterUid, &newMasterName, scores = raceResult.scores](Room& room)
       {
@@ -402,6 +521,16 @@ tracker::RaceTracker& RaceInstance::GetTracker()
 const tracker::RaceTracker& RaceInstance::GetTracker() const
 {
   return _tracker;
+}
+
+protocol::BonusCourseType RaceInstance::GetBonusCourseType() const noexcept
+{
+  return _bonusCourseType;
+}
+
+void RaceInstance::SetBonusCourseType(const protocol::BonusCourseType type) noexcept
+{
+  _bonusCourseType = type;
 }
 
 void RaceInstance::TickLoading()
@@ -604,7 +733,12 @@ void RaceInstance::TickItemSpawners()
       auto& racer = this->GetTracker().GetRacer(characterUid);
       for (const auto& item : this->GetTracker().GetItemDecks() | std::views::values)
       {
-        if (std::chrono::steady_clock::now() < item.respawnTimePoint)
+        const auto now = std::chrono::steady_clock::now();
+
+        // Spawner availability is per-racer,
+        // skip spawn if this racer is currently on pickup cooldown
+        const auto cooldownIter = racer.deckCooldown.find(item.oid);
+        if (cooldownIter != racer.deckCooldown.end() && now < cooldownIter->second)
           continue;
 
         processItemSpawn(
@@ -681,7 +815,7 @@ void RaceInstance::TickMagicGauge()
             gainedPerTick = gainedPerTick * (10000u + setBonusInfo.passiveGaugeScaleBp) / 10000u;
 
           // BufGauge buff doubles regen while active.
-          if (racer.effects[20] or racer.effects[21])
+          if (racer.effects[race::SkillEffect::BufGauge] or racer.effects[race::SkillEffect::BufGaugeCritical])
             gainedPerTick *= 2;
 
           // Set bonus (effect 3): while holding a spell, the gauge fills at a reduced rate.
@@ -782,7 +916,7 @@ void RaceInstance::PickRandomMapFromCourse()
     0,
     static_cast<int>(filtered.size() - 1));
 
-  _mapBlockId = filtered[distribution(_randomDevice)];
+  _mapBlockId = filtered[distribution(server::util::GetRandomEngine())];
 }
 
 void RaceInstance::PrepareMap()
@@ -834,7 +968,7 @@ void RaceInstance::PickRandomItemFromDeck(tracker::RaceTracker::ItemDeck& deck)
     return;
 
   std::uniform_int_distribution<size_t> distribution(0, deck.items.size() - 1);
-  deck.currentItem = deck.items[distribution(_randomDevice)];
+  deck.currentItem = deck.items[distribution(server::util::GetRandomEngine())];
 }
 
 void RaceInstance::PrepareItemDecks()
@@ -857,6 +991,32 @@ void RaceInstance::PrepareItemDecks()
       deck.items = deckInfo.items;
       deck.respawnTime = deckInfo.respawnTime;
 
+      // 50% chance for this item spawner to only spawn positional magic item 412
+      if (_parameters.gameMode == protocol::GameMode::Magic)
+      {
+        std::bernoulli_distribution positionalSpawnerChance(0.5);
+        if (positionalSpawnerChance(server::util::GetRandomEngine()))
+        {
+          static constexpr uint32_t positionalMagicItemDeckId = 412;
+          deck.items = {positionalMagicItemDeckId};
+        }
+        else if (_parameters.teamMode != protocol::TeamMode::Team)
+        {
+          // Filter out team-only magic items
+          const auto& courseRegistry = _raceNetworkHandler.GetServerInstance().GetCourseRegistry();
+          const auto& magicRegistry = _raceNetworkHandler.GetServerInstance().GetMagicRegistry();
+
+          std::erase_if(
+            deck.items,
+            [&](uint32_t deckItemId)
+            {
+              const auto magicSlot = courseRegistry.GetDeckItemInfo(deckItemId).magicSlot;
+              const auto& slotInfo = magicRegistry.GetSlotInfo(magicSlot);
+              return slotInfo.teamMode != 0;
+            });
+        }
+      }
+      
       deck.position = deckInstance.position + offset;
 
       PickRandomItemFromDeck(deck);

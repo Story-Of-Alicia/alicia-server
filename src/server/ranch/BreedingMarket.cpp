@@ -21,6 +21,8 @@
 
 #include "server/ServerInstance.hpp"
 
+#include <spdlog/spdlog.h>
+
 namespace server
 {
 
@@ -64,11 +66,23 @@ void BreedingMarket::Initialize()
     }
 
     auto horseUid = data::InvalidUid;
-
-    stallionRecord->Immutable([&horseUid](const data::Stallion& stallion)
+    auto ownerUid = data::InvalidUid;
+    stallionRecord->Immutable([&horseUid, &ownerUid](const data::Stallion& stallion)
     {
       horseUid = stallion.horseUid();
+      ownerUid = stallion.ownerUid();
     });
+
+    // Preload horse and character records
+    const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(
+      horseUid);
+    const auto characterRecord = _serverInstance.GetDataDirector().GetCharacterCache().Get(
+      ownerUid);
+    if (not horseRecord || not characterRecord)
+    {
+      ++iterator;
+      continue;
+    }
 
     iterator = stallionUids.erase(iterator);
 
@@ -93,8 +107,17 @@ bool BreedingMarket::CanRegisterStallion(data::Uid characterUid) const
 {
   // Enforce stallions per character limitation
   // First get a list of all of the character's horses
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+  if (not characterRecord)
+  {
+    spdlog::warn(
+      "Character '{}' can not register a stallion, their character record is not available",
+      characterUid);
+    return false;
+  }
+
   std::vector<data::Uid> horseUids{};
-  _serverInstance.GetDataDirector().GetCharacter(characterUid).Immutable(
+  characterRecord.Immutable(
     [&horseUids](const data::Character& character)
     {
       horseUids = character.horses();
@@ -391,7 +414,7 @@ BreedingMarket::Snapshot BreedingMarket::CollectMarketSnapshot(
       if (filter.firstPreferredStat != SnapshotFilter::Stat::None
         || filter.secondPreferred != SnapshotFilter::Stat::None)
       {
-        constexpr uint32_t RequiredSharePercentPerStat = 38u;
+        constexpr uint32_t RequiredSharePercentPerStat = 34u;
 
         const uint32_t totalStats = horse.stats.agility()
           + horse.stats.courage()
@@ -617,7 +640,14 @@ void BreedingMarket::UnregisterStallion(
     horseUid);
 
   if (not stallionRecord || not horseRecord)
+  {
+    spdlog::warn(
+      "Not unregistering stallion '{}' (horse '{}'), "
+      "the stallion record or the horse record is not available",
+      stallionUid,
+      horseUid);
     return;
+  }
 
   // Populate the earnings.
   Earnings earnings{
@@ -637,27 +667,37 @@ void BreedingMarket::UnregisterStallion(
   earnings.earnings = earnings.revenue - static_cast<uint32_t>(
     static_cast<float>(earnings.revenue) * earnings.taxRate);
 
-  // Register payout in the RewardSystem
-  if (earnings.timesMated > 0)
+  try
   {
-    earnings.claimUid = _serverInstance.GetRewardSystem().CreateReward(
+    // Register payout in the RewardSystem
+    if (earnings.timesMated > 0)
+    {
+      earnings.claimUid = _serverInstance.GetRewardSystem().CreateReward(
+        ownerUid,
+        data::Reward::Type::Breeding,
+        earnings.earnings);
+    }
+
+    // Send mail with payout information
+    _serverInstance.GetMessengerDirector().SendStallionReward(
       ownerUid,
-      data::Reward::Type::Breeding,
-      earnings.earnings);
+      horseUid,
+      earnings);
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error(
+      "Exception while paying out the breeding earnings of stallion '{}' (horse '{}') "
+      "to character '{}': {}",
+      stallionUid,
+      horseUid,
+      ownerUid,
+      x.what());
   }
 
-  // Send mail with payout information
-  _serverInstance.GetMessengerDirector().SendStallionReward(
-    ownerUid,
-    horseUid,
-    earnings);
-
-  // Update the horse status and statistics.
-  horseRecord->Mutable([timesMated = earnings.timesMated](
-    data::Horse& horse)
+  horseRecord->Mutable([](data::Horse& horse)
     {
       horse.type() = data::Horse::Type::Adult;
-      horse.breedingCount() += timesMated;
     });
 
   // Delete the stallion record.

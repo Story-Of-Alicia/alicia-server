@@ -20,6 +20,8 @@
 #ifndef CHARACTERREGISTRY_HPP
 #define CHARACTERREGISTRY_HPP
 
+#include <libserver/registry/Registry.hpp>
+
 #include <cstdint>
 #include <filesystem>
 #include <optional>
@@ -36,10 +38,11 @@ struct CharacterLevelInfo
   uint32_t expRequired{};
 };
 
-class CharacterRegistry
+class CharacterRegistry : public Registry
 {
 public:
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
 
   //! Returns the level info for a given level, or nullopt if not found.
   [[nodiscard]] std::optional<CharacterLevelInfo> GetLevelInfo(uint32_t level) const;

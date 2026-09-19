@@ -132,21 +132,22 @@ void AcCmdCREnterRoomOK::Write(
 
   WriteRoomDescription(stream, command.roomDescription);
 
-  stream.Write(command.unk2)
-    .Write(command.unk3)
-    .Write(command.unk4)
+  stream.Write(command.ffaWinStreak.characterUid)
+    .Write(command.ffaWinStreak.winStreakCount);
+
+  stream.Write(command.unk4)
     .Write(command.unk5)
     .Write(command.elapsedTime);
 
-  stream.Write(command.unk7)
-    .Write(command.unk8);
-
-  stream.Write(command.unk9.unk0)
-    .Write(command.unk9.unk1)
-    .Write(static_cast<uint8_t>(command.unk9.unk2.size()));
-  for (const auto& unk2Element : command.unk9.unk2)
+  if (command.roomDescription.teamMode == protocol::TeamMode::Team)
   {
-    stream.Write(unk2Element);
+    stream.Write(command.teamWinStreak.teamColor)
+      .Write(command.teamWinStreak.winStreakCount)
+      .Write(static_cast<uint8_t>(command.teamWinStreak.characterUids.size()));
+    for (const data::Uid characterUid : command.teamWinStreak.characterUids)
+    {
+      stream.Write(characterUid);
+    }
   }
 
   stream.Write(command.unk10)
@@ -790,7 +791,7 @@ void AcCmdRCRaceResultNotify::Write(
       .Write(score.raceRecord)
       .Write(score.trainingCarrotReward)
       .Write(score.member25)
-      .Write(score.member26)
+      .Write(score.staminaDecRatio)
       .Write(score.member27);
   }
 
@@ -1610,8 +1611,8 @@ void AcCmdCRUseItemSlotNotify::Write(
   SinkStream& stream)
 {
   stream.Write(command.magicItemId)
-    .Write(command.characterOid)
-    .Write(command.unk);
+    .Write(command.unk1)
+    .Write(command.characterOid);
 }
 
 void AcCmdGameRaceItemSpawn::Write(

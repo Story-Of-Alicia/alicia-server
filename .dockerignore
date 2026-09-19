@@ -1,5 +1,18 @@
+# Git
+.gitignore
+
+# Build output directories
 build/
 out/
 cmake-build-*/
 dist/
+
+# IDE configurations and caches
+.vs/
 .vscode/
+.idea/
+.cache/
+
+# Misc
+*.user
+*.suo

@@ -111,6 +111,13 @@ void ReadQuestRewardPoint(QuestRewardPoint& entry, const YAML::Node& yaml)
 
 } // anonymous namespace
 
+void QuestRegistry::Clear()
+{
+  _quests.clear();
+  _rewards.clear();
+  _rewardPoints.clear();
+}
+
 void QuestRegistry::ReadConfig(const std::filesystem::path& configPath)
 {
   const auto root = YAML::LoadFile(configPath.string());
@@ -127,9 +134,7 @@ void QuestRegistry::ReadConfig(const std::filesystem::path& configPath)
   if (not collectionSection)
     throw std::runtime_error("Missing quests.collection section");
 
-  _rewards.clear();
-  _quests.clear();
-  _rewardPoints.clear();
+  Clear();
 
   for (const auto& rewardNode : rewardsSection)
   {

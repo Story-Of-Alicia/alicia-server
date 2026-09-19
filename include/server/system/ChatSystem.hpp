@@ -80,7 +80,7 @@ public:
   //! @param message Message that was sent.
   [[nodiscard]] ChatVerdict ProcessChatMessage(
     data::Uid characterUid,
-    const std::string& message) noexcept;
+    const std::string& message);
 
   [[nodiscard]] CommandVerdict ProcessCommandMessage(
     data::Uid characterUid,

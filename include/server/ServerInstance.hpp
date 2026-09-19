@@ -38,6 +38,7 @@
 #include "server/system/ModerationSystem.hpp"
 #include "server/system/OtpSystem.hpp"
 #include "server/system/QuestSystem.hpp"
+#include "server/system/RanchManagementSystem.hpp"
 #include "server/system/RewardSystem.hpp"
 #include "server/system/RoomSystem.hpp"
 #include "server/telemetry/Telemetry.hpp"
@@ -47,11 +48,13 @@
 #include <libserver/registry/CharacterRegistry.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
 #include <libserver/registry/HorseRegistry.hpp>
+#include <libserver/registry/HousingRegistry.hpp>
 #include <libserver/registry/ItemRegistry.hpp>
 #include <libserver/registry/MagicRegistry.hpp>
 #include <libserver/registry/MissionRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
 #include <libserver/registry/QuestRegistry.hpp>
+#include <libserver/registry/SpeedRegistry.hpp>
 #include <libserver/registry/SystemContentRegistry.hpp>
 
 #include <spdlog/spdlog.h>
@@ -71,6 +74,9 @@ public:
   void Initialize();
   //! Terminates the server instance.
   void Terminate();
+
+  //! Loads configurations.
+  void LoadConfigurations();
 
   //! Returns reference to the authentication service.
   //! @returns Reference to the authentication service.
@@ -116,6 +122,10 @@ public:
   //! @returns Reference to the Horse registry.
   registry::HorseRegistry& GetHorseRegistry();
 
+  //! Returns reference to the Housing registry.
+  //! @returns Reference to the Housing registry.
+  registry::HousingRegistry& GetHousingRegistry();
+
   //! Returns reference to the Item registry.
   //! @returns Reference to the Item registry.
   registry::ItemRegistry& GetItemRegistry();
@@ -143,6 +153,10 @@ public:
   //! Returns reference to the breeding registry.
   //! @returns Reference to the breeding registry.
   registry::BreedingRegistry& GetBreedingRegistry();
+
+  //! Returns reference to the speed registry.
+  //! @returns Reference to the speed registry.
+  registry::SpeedRegistry& GetSpeedRegistry();
 
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
@@ -175,6 +189,9 @@ public:
   //! Returns reference to the quest system.
   //! @returns Reference to the quest system.
   QuestSystem& GetQuestSystem();
+
+  //! Returns reference to the ranch management system.
+  RanchManagementSystem& GetRanchManagementSystem();
 
   //! Returns reference to the matchmaking system.
   //! @returns Reference to the matchmaking system.
@@ -293,6 +310,8 @@ private:
   registry::CourseRegistry _courseRegistry;
   //! A registry of horses.
   registry::HorseRegistry _horseRegistry;
+  //! A registry of housing.
+  registry::HousingRegistry _housingRegistry;
   //! A registry of items.
   registry::ItemRegistry _itemRegistry;
   //! A registry of magic slots.
@@ -307,6 +326,8 @@ private:
   registry::SystemContentRegistry _systemContentRegistry;
   //! A registry of breeding config data.
   registry::BreedingRegistry _breedingRegistry;
+  //! A registry of speed config data.
+  registry::SpeedRegistry _speedRegistry;
 
   //! A chat system.
   ChatSystem _chatSystem;
@@ -322,6 +343,8 @@ private:
   ModerationSystem _moderationSystem;
   //! A quest system.
   QuestSystem _questSystem;
+  //! A ranch management system.
+  RanchManagementSystem _ranchManagementSystem;
   //! A room system.
   RoomSystem _roomSystem;
   //! A matchmaking system.

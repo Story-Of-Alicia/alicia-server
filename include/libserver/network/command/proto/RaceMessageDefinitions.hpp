@@ -142,25 +142,33 @@ struct AcCmdCREnterRoomOK
   uint32_t uid{};
   RoomDescription roomDescription{};
 
-  uint32_t unk2{};
-  uint16_t unk3{};
+  //! The racer that is on a win streak.
+  struct FfaWinStreakInfo
+  {
+    //! The UID of the character on a win streak.
+    //! Only applicable for FFA/Solo races.
+    data::Uid characterUid{};
+    //! The amount consecutive wins of the character on a win streak.
+    uint16_t winStreakCount{};
+  } ffaWinStreak{};
+
   uint32_t unk4{};
   uint32_t unk5{};
   //! The elapsed time of the race, in seconds.
   //! This is visually presented in minutes.
   uint32_t elapsedTime{};
 
-  uint32_t unk7{};
-  uint16_t unk8{};
-
-  // unk9: structure that depends on this+0x2980 == 2 (inside unk3?)
-  struct
+  //! Team that is on a win streak.
+  //! Only deserialised/applied when `protocol::TeamMode::Team`.
+  struct TeamWinStreakInfo
   {
-    uint32_t unk0{};
-    uint16_t unk1{};
-    // List size specified with a uint8_t
-    std::vector<uint32_t> unk2{};
-  } unk9{};
+    //! The team colour that is on a winning streak.
+    protocol::TeamColor teamColor{};
+    //! The win streak team's consecutive win counter.
+    uint16_t winStreakCount{};
+    //! The list of racers on the team with win streak.
+    std::vector<data::Uid> characterUids{};
+  } teamWinStreak{};
 
   uint32_t unk10{};
   float unk11{};
@@ -1045,7 +1053,8 @@ struct AcCmdRCRaceResultNotify
     //! Relates to `AcCmdCRStartRaceNotify::Struct1::clearedDifficulty`
     uint32_t trainingCarrotReward{};
     uint8_t member25{};
-    uint32_t member26{};
+    //! Stamina reduction ratio percentage. Default is 100 (100% consumption).
+    uint32_t staminaDecRatio{100};
     uint32_t member27{};
   };
 
@@ -1571,13 +1580,7 @@ struct AcCmdRCRoomCountdown
   //! In milliseconds.
   uint32_t countdown{};
   uint16_t mapBlockId{};
-
-  enum class BonusCourseType : uint16_t
-  {
-    None = 0,
-    Carrots = 1,
-    Experience = 2
-  } bonusCourseType{};
+  protocol::BonusCourseType bonusCourseType{};
 
   static Command GetCommand()
   {
@@ -2087,9 +2090,10 @@ struct AcCmdCRUseItemSlotOK
 
 struct AcCmdCRUseItemSlotNotify 
 {
-  uint32_t magicItemId;   
+  uint32_t magicItemId;
+  // Suspected effectInstanceId (pattern matches with other UseItem command)   
+  uint16_t unk1;
   uint16_t characterOid;
-  uint16_t unk;
 
   static Command GetCommand()
   {

@@ -72,14 +72,35 @@ data::Tid ReadPetInfo(
 
 } // anon namespace
 
+void PetRegistry::Clear()
+{
+  _eggs.clear();
+  _pets.clear();
+}
+
 void PetRegistry::ReadConfig(const std::filesystem::path& configPath)
 {
   const auto root = YAML::LoadFile(configPath.string());
 
   const auto petsSection = root["pets"];
-  const auto eggsSection = petsSection["eggs"];
+  if (not petsSection)
+    throw std::runtime_error("Missing pets section in pets.yaml");
 
-  for (const auto& eggSection : eggsSection["collection"])
+  const auto eggsSection = petsSection["eggs"];
+  if (not eggsSection)
+    throw std::runtime_error("Missing eggs section in pets.yaml");
+
+  const auto eggsCollection = eggsSection["collection"];
+  if (not eggsCollection)
+    throw std::runtime_error("Missing eggs collection in pets.yaml");
+
+  const auto petsCollection = petsSection["collection"];
+  if (not petsCollection)
+    throw std::runtime_error("Missing pets collection in pets.yaml");
+
+  Clear();
+
+  for (const auto& eggSection : eggsCollection)
   {
     EggInfo info;
     const auto eggItemTid = ReadEggInfo(eggSection, info);

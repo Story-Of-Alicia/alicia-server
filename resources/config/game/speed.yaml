@@ -1,0 +1,49 @@
+speed:
+  teamSpurGaugeInfo:
+    # 1v1
+    1:
+      teamSpurMax: 25.0
+      winTeamSpurConsumeRate: -2.5
+      loseTeamSpurConsumeRate: -10.0
+      points: [3.50, 3.75, 4.50, 5.00, 6.00, 7.00]
+      fillRates: [1.25, 2.50, 3.00, 3.75, 5.50, 6.50]
+      reduceWaitTime: 1500
+      reduceDelay: 12
+      reduceRate: 0.004
+      goodTiming: 500
+
+    # 2v2
+    2:
+      teamSpurMax: 40.0
+      winTeamSpurConsumeRate: -5.0
+      loseTeamSpurConsumeRate: -20.0
+      points: [7.00, 7.50, 9.00, 10.00, 12.00, 14.00]
+      fillRates: [2.50, 5.00, 6.00, 7.50, 11.00, 13.00]
+      reduceWaitTime: 1500
+      reduceDelay: 12
+      reduceRate: 0.004
+      goodTiming: 500
+
+    # 3v3
+    3:
+      teamSpurMax: 65.0
+      winTeamSpurConsumeRate: -7.5
+      loseTeamSpurConsumeRate: -30.0
+      points: [10.50, 11.25, 13.50, 15.00, 18.00, 21.00]
+      fillRates: [3.75, 7.50, 9.00, 11.25, 16.50, 19.50]
+      reduceWaitTime: 1500
+      reduceDelay: 12
+      reduceRate: 0.004
+      goodTiming: 500
+
+    # 4v4
+    4:
+      teamSpurMax: 100.0
+      winTeamSpurConsumeRate: -10.0
+      loseTeamSpurConsumeRate: -40.0
+      points: [14.00, 15.00, 18.00, 20.00, 24.00, 28.00]
+      fillRates: [5.00, 10.00, 12.00, 15.00, 22.00, 26.00]
+      reduceWaitTime: 1500
+      reduceDelay: 12
+      reduceRate: 0.004
+      goodTiming: 500

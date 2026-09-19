@@ -79,6 +79,7 @@ public:
     uint32_t jumpComboValue{};
     uint32_t courseTime{InvalidCourseTime};
     std::optional<uint32_t> magicItem{};
+    uint32_t magicItemGeneration{};
     //! The racer's progress on the race track.
     //! Normalised by the client to: 0.0f <= x <= 1.0f
     float raceProgress{};
@@ -96,6 +97,8 @@ public:
     std::array<bool, EffectCount> effects{};
     //! Per-effect generation counter, incremented on each apply, used to invalidate stale removal timers.
     std::array<uint32_t, EffectCount> effectGenerations{};
+    //! When each effect was last applied.
+    std::array<std::chrono::steady_clock::time_point, EffectCount> effectAppliedAt{};
 
     //! Rank of the currently active removeMagic attack (0 = none active).
     uint32_t attackRank{};
@@ -117,6 +120,14 @@ public:
       uint32_t courage{};
     };
     MountStatsSnapshot mountStats{};
+
+    struct PotentialSnapshot
+    {
+      uint32_t type{};
+      uint32_t value{};
+    };
+    PotentialSnapshot potential{};
+
     registry::SetEquipEffect activeSetEffect{registry::SetEquipEffect::None};
 
     struct MagicTargetInfo
@@ -153,9 +164,11 @@ public:
 
   struct TeamInfo
   {
-    uint32_t points{0};
+    float points{0.0f};
     uint32_t boostCount{0};
     bool gaugeLocked{false};
+    std::chrono::steady_clock::time_point lastBoostTimePoint{
+      std::chrono::steady_clock::time_point::min()};
   };
 
   TeamInfo blueTeam{};

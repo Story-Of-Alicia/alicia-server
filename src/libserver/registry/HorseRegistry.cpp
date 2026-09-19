@@ -22,6 +22,8 @@
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
+#include <libserver/util/Util.hpp>
+
 #include <filesystem>
 #include <map>
 #include <ranges>
@@ -63,8 +65,36 @@ Color ParseManeTailColorId(int id)
 } // anon namespace
 
 HorseRegistry::HorseRegistry()
-  : _randomEngine(_randomDevice())
 {
+}
+
+void HorseRegistry::Clear()
+{
+  _colorGroups.clear();
+  _coats.clear();
+  _faces.clear();
+  _manes.clear();
+  _tails.clear();
+  _possibleCoats.clear();
+  _possibleFaces.clear();
+  _facesByType.clear();
+  _possibleManes.clear();
+  _possibleTails.clear();
+  _potentialGrowth.clear();
+  _potentialLevels.clear();
+  _potentials.clear();
+  _potentialTypes.clear();
+  _masteryParams = {};
+  _masteryRewards.clear();
+  _tendencies.clear();
+  _groupForces.clear();
+  _levelUpPoints = {};
+  _grades.clear();
+  _emblems.clear();
+  _emblemRatios.clear();
+  maneTailColorGroups.clear();
+  _manesByColorAndShape.clear();
+  _tailsByColorAndShape.clear();
 }
 
 void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
@@ -80,7 +110,8 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
       root[entry.first.as<std::string>()] = entry.second;
   }
 
-  _colorGroups.clear();
+  Clear();
+
   for (const auto& node : root["colorGroups"])
   {
     std::vector<Color> colors;
@@ -93,8 +124,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     _colorGroups.push_back(std::move(colors));
   }
 
-  _coats.clear();
-  _possibleCoats.clear();
   for (const auto& node : root["coats"])
   {
     const auto tid = node["tid"].as<data::Tid>();
@@ -109,20 +138,18 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     _possibleCoats.emplace_back(tid);
   }
 
-  _faces.clear();
-  _possibleFaces.clear();
   for (const auto& node : root["faces"])
   {
     const auto tid = node["tid"].as<data::Tid>();
+    const auto type = node["type"].as<int32_t>();
     _faces[tid] = Face{
       .tid = tid,
-      .type = node["type"].as<int32_t>(),
+      .type = type,
     };
     _possibleFaces.emplace_back(tid);
+    _facesByType[type].emplace_back(tid);
   }
 
-  _manes.clear();
-  _possibleManes.clear();
   for (const auto& node : root["manes"])
   {
     const auto tid = node["tid"].as<data::Tid>();
@@ -137,8 +164,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     _possibleManes.emplace_back(tid);
   }
 
-  _tails.clear();
-  _possibleTails.clear();
   for (const auto& node : root["tails"])
   {
     const auto tid = node["tid"].as<data::Tid>();
@@ -153,34 +178,34 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     _possibleTails.emplace_back(tid);
   }
 
-  _potentialGrowth.clear();
   for (const auto& node : root["potentialGrowth"])
   {
     const auto type = node["type"].as<uint32_t>();
     PotentialGrowth pg{ .type = type };
+
     const auto weightsNode = node["weights"];
     for (size_t i = 0; i < pg.weights.size(); ++i)
       pg.weights[i] = weightsNode[i].as<float>();
+
     _potentialGrowth[type] = pg;
   }
 
-  _potentialLevels.clear();
   for (const auto& node : root["potentialLevels"])
   {
-    _potentialLevels.push_back(PotentialLevel{
+    _potentialLevels.emplace_back(PotentialLevel{
       .level = node["level"].as<uint32_t>(),
-      .exp = node["exp"].as<int32_t>(),
+      .requiredClassProgression = node["exp"].as<uint32_t>(),
     });
   }
 
-  _potentials.clear();
-  _potentialTypes.clear();
   for (const auto& node : root["potentials"])
   {
     const auto type = node["type"].as<uint32_t>();
     _potentials[type] = PotentialInfo{
       .type = type,
       .name = node["name"].as<std::string>(),
+      .chanceBp = node["chanceBp"].as<uint32_t>(0),
+      .durationBonusMs = node["durationBonusMs"].as<uint32_t>(0),
     };
     _potentialTypes.push_back(type);
   }
@@ -195,7 +220,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     };
   }
 
-  _masteryRewards.clear();
   for (const auto& node : root["mastery"]["rewards"])
   {
     _masteryRewards.push_back(MasteryReward{
@@ -205,7 +229,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     });
   }
 
-  _tendencies.clear();
   for (const auto& node : root["tendencies"])
   {
     const auto tendency = node["tendency"].as<uint32_t>();
@@ -216,7 +239,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     };
   }
 
-  _groupForces.clear();
   for (const auto& node : root["groupForces"])
   {
     const auto id = node["id"].as<uint32_t>();
@@ -247,7 +269,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     };
   }
 
-  _grades.clear();
   for (const auto& node : root["grades"])
   {
     const auto grade = node["grade"].as<uint32_t>();
@@ -258,7 +279,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     };
   }
 
-  _emblems.clear();
   for (const auto& node : root["emblems"])
   {
     const auto id = node["id"].as<uint32_t>();
@@ -268,7 +288,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
     };
   }
 
-  _emblemRatios.clear();
   for (const auto& node : root["emblemRatios"])
   {
     const auto odds = node["odds"].as<uint32_t>();
@@ -277,9 +296,6 @@ void HorseRegistry::ReadConfig(const std::filesystem::path& configPath)
       .ratio = node["ratio"].as<int32_t>(),
     };
   }
-
-  _manesByColorAndShape.clear();
-  _tailsByColorAndShape.clear();
 
   for (const auto& [tid, mane] : _manes)
   {
@@ -307,11 +323,16 @@ void HorseRegistry::BuildDefaultHorse(
   data::Tid horseTid)
 {
   constexpr uint32_t DefaultHorseStamina = 4000;
+  constexpr uint32_t DefaultHorseBoredom = 25;
   constexpr uint32_t DefaultHorseAppearanceValue = 5;
 
+  const auto now = data::Clock::now();
+
   horse.tid() = horseTid;
-  horse.dateOfBirth() = data::Clock::now();
+  horse.dateOfBirth() = now;
   horse.mountCondition.stamina = DefaultHorseStamina;
+  horse.mountCondition.boredom = DefaultHorseBoredom;
+  horse.mountCondition.lastDailyCareTick = now;
   horse.tendency() = 1;
   horse.clazz = 1;
   horse.grade = 1;
@@ -337,25 +358,19 @@ void HorseRegistry::BuildRandomHorse(
   std::uniform_int_distribution<size_t> coatRandomDist(
     0, _possibleCoats.size() - 1);
 
-  const Coat& coat = _coats[_possibleCoats[coatRandomDist(_randomDevice)]];
+  const Coat& coat = _coats[_possibleCoats[coatRandomDist(server::util::GetRandomEngine())]];
   parts.skinTid = coat.tid;
 
-  // If the coat has a face available, pick a random face.
-  if (coat.faceType != 0)
-  {
-    std::uniform_int_distribution<size_t> faceRandomDist(
-      0, _possibleFaces.size() - 1);
-
-    const Face& face = _faces[_possibleFaces[faceRandomDist(_randomDevice)]];
-    parts.faceTid = face.tid;
-  }
+  // Pick a random face the coat may wear.
+  if (const data::Tid faceTid = GetRandomFaceForCoat(coat.tid); faceTid != data::InvalidTid)
+    parts.faceTid = faceTid;
 
   {
     // Pick a random mane.
     std::uniform_int_distribution<size_t> maneRandomDist(
       0, _possibleManes.size() - 1);
 
-    const Mane& mane = _manes[_possibleManes[maneRandomDist(_randomDevice)]];
+    const Mane& mane = _manes[_possibleManes[maneRandomDist(server::util::GetRandomEngine())]];
     parts.maneTid = mane.tid;
   }
 
@@ -364,12 +379,12 @@ void HorseRegistry::BuildRandomHorse(
     std::uniform_int_distribution<size_t> tailRandomDist(
       0, _possibleFaces.size() - 1);
 
-    const Tail& tail = _tails[_possibleFaces[tailRandomDist(_randomDevice)]];
+    const Tail& tail = _tails[_possibleFaces[tailRandomDist(server::util::GetRandomEngine())]];
     parts.tailTid = tail.tid;
   }
 
   std::uniform_int_distribution figureScaleDist(FigureScaleMin, FigureScaleMax);
-  const uint32_t scale = figureScaleDist(_randomDevice);
+  const uint32_t scale = figureScaleDist(server::util::GetRandomEngine());
   appearance.scale =  scale;
   appearance.legLength = scale;
   appearance.legVolume = scale;
@@ -382,9 +397,9 @@ void HorseRegistry::GiveHorseRandomPotential(
 {
   std::uniform_int_distribution<size_t> typeDist(0, _potentialTypes.size() - 1);
   std::uniform_int_distribution<uint32_t> randomDist(0, 255);
-  potential.type = _potentialTypes[typeDist(_randomDevice)];
-  potential.level = randomDist(_randomDevice);
-  potential.value = randomDist(_randomDevice);
+  potential.type = _potentialTypes[typeDist(server::util::GetRandomEngine())];
+  potential.level = randomDist(server::util::GetRandomEngine());
+  potential.value = randomDist(server::util::GetRandomEngine());
 }
 
 const Coat& HorseRegistry::GetCoatInfo(data::Tid coatTid) const
@@ -416,7 +431,7 @@ data::Tid HorseRegistry::GetRandomManeFromColorAndShape(int32_t colorGroupId, in
 
   const auto& candidates = shapeIt->second;
   std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
-  return candidates[dist(_randomEngine)];
+  return candidates[dist(server::util::GetRandomEngine())];
 }
 
 data::Tid HorseRegistry::GetRandomTailByColorGroupAndShape(int32_t colorGroupId, int32_t shape)
@@ -435,7 +450,7 @@ data::Tid HorseRegistry::GetRandomTailByColorGroupAndShape(int32_t colorGroupId,
 
   const auto& candidates = shapeIt->second;
   std::uniform_int_distribution<size_t> dist(0, candidates.size() - 1);
-  return candidates[dist(_randomEngine)];
+  return candidates[dist(server::util::GetRandomEngine())];
 }
 
 int32_t HorseRegistry::GetManeColorGroupId(data::Tid maneTid) const
@@ -513,6 +528,24 @@ const Tail& HorseRegistry::GetTail(data::Tid tid) const
 const std::vector<data::Tid>& HorseRegistry::GetPossibleCoats() const
 {
   return _possibleCoats;
+}
+
+data::Tid HorseRegistry::GetRandomFaceForCoat(data::Tid coatTid)
+{
+  // The coat's faceType selects which faces it may wear; faceType 0 resolves to the
+  // blank face, so a coat that carries no marking still gets a valid face.
+  const int32_t faceType = GetCoatInfo(coatTid).faceType;
+
+  auto it = _facesByType.find(faceType);
+  if (it == _facesByType.end() || it->second.empty())
+  {
+    spdlog::warn("No faces configured for face type {} (coat {})", faceType, coatTid);
+    return data::InvalidTid;
+  }
+
+  const auto& faces = it->second;
+  std::uniform_int_distribution<size_t> faceRandomDist(0, faces.size() - 1);
+  return faces[faceRandomDist(server::util::GetRandomEngine())];
 }
 
 namespace
@@ -650,7 +683,7 @@ void HorseRegistry::ApplyClassProgress(data::Horse& horse, uint32_t gainedExp) c
     && horse.clazzProgress() >= GetCumulativeClassExp(level + 1))
   {
     level += 1;
-    horse.growthPoints() += 1;
+    horse.growthPoints() += level == MaxClass ? 2 : 1;
   }
 
   horse.clazz() = level;
@@ -668,41 +701,48 @@ uint32_t HorseRegistry::ApplyPotentialGrowth(data::Horse& horse) const
   uint32_t targetLevel = 1;
   for (const auto& potentialLevel : _potentialLevels)
   {
-    if (static_cast<int32_t>(horse.clazzProgress()) >= potentialLevel.exp)
+    if (horse.clazzProgress() >= potentialLevel.requiredClassProgression)
       targetLevel = std::max(targetLevel, potentialLevel.level);
   }
 
   uint32_t level = std::max<uint32_t>(horse.potential.level(), 1);
 
-  uint32_t gained = 0;
+  uint32_t gainedPoints = 0;
   while (level < targetLevel && level <= MaxTransitionLevel)
   {
     const size_t columnIndex = level - 1;
+
+    // We currently treat the growth type as the amount of points
+    // to add to the potential's value and weight is added based on the potential's level.
+    // This is not correct and needs to be revisited once we figure out what
+    // growth type actually is and how it affects the potential value on each potential level-up.
 
     std::vector<uint32_t> points;
     std::vector<float> weights;
     points.reserve(_potentialGrowth.size());
     weights.reserve(_potentialGrowth.size());
+
     for (const auto& [pointAmount, growth] : _potentialGrowth)
     {
       if (pointAmount > MaxPotentialPoints)
         continue;
+
       points.emplace_back(pointAmount);
       weights.emplace_back(growth.weights[columnIndex]);
     }
 
     std::discrete_distribution<size_t> raffle(weights.begin(), weights.end());
-    gained += points[raffle(_randomEngine)];
+    gainedPoints += points[raffle(server::util::GetRandomEngine())];
 
     level += 1;
   }
 
-  if (gained == 0)
+  if (gainedPoints == 0)
     return 0;
 
-  horse.potential.value() = std::min(horse.potential.value() + gained, MaxPotentialValue);
+  horse.potential.value() = std::min(horse.potential.value() + gainedPoints, MaxPotentialValue);
   horse.potential.level() = level;
-  return gained;
+  return gainedPoints;
 }
 
 const GradeInfo* HorseRegistry::GetGradeInfo(uint32_t grade) const

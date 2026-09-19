@@ -41,7 +41,7 @@ const std::string GetSystemNameFromType(data::Mail::MailType type)
     case data::Mail::MailType::CarnivalReward:
       return "Carnival System";
     case data::Mail::MailType::NoReply:
-      return "System";
+      return ""; // System mail
     default:
       throw std::runtime_error(
         std::format(
@@ -385,10 +385,11 @@ void MessengerDirector::HandleChatterLogin(
   size_t identityHash = std::hash<uint32_t>()(command.characterUid);
   boost::hash_combine(identityHash, MessengerOtpConstant);
 
-  // Authorise the code received in the command against the calculated identity hash
-  clientContext.isAuthenticated = _serverInstance.GetOtpSystem().AuthorizeCode(
+  // Authorise the ltk received in the command against the calculated identity hash
+  clientContext.isAuthenticated = _serverInstance.GetOtpSystem().AuthorizeLtk(
     identityHash,
-    command.code);
+    command.code,
+    _chatterServer.GetClientAddress(clientId).to_v4().to_uint());
 
   if (not clientContext.isAuthenticated)
   {
@@ -422,17 +423,34 @@ void MessengerDirector::HandleChatterLogin(
   };
 
   // Client request could be logging in as another character
+  std::vector<data::Uid> inbox{};
   _serverInstance.GetDataDirector().GetCharacter(command.characterUid).Mutable(
-    [&clientContext](data::Character& character)
+    [&clientContext, &inbox](data::Character& character)
     {
       clientContext.characterUid = character.uid();
-
-      // TODO: implement unread mail mechanics
-
+      inbox = character.mailbox.inbox();
       character.mailbox.hasNewMail() = false;
     });
 
-  response.member1 = clientContext.characterUid;
+  // Check if inbox contains any unread mails, count and populate response
+  for (const data::Uid mailUid : inbox)
+  {
+    const auto& mailRecord = _serverInstance.GetDataDirector().GetMail(mailUid);
+    if (not mailRecord)
+      continue;
+
+    mailRecord.Immutable([&response](const data::Mail& mail)
+    {
+      if (mail.isRead() or mail.isDeleted())
+        return;
+
+      // Increment unread mail counter
+      response.mailAlarm.unreadMailCount++;
+    });
+  }
+
+  if (response.mailAlarm.unreadMailCount != 0)
+    response.mailAlarm.hasMail = true;
 
   // Load friends from character's stored friends list
   std::set<data::Uid> pendingFriends{};
@@ -1117,84 +1135,112 @@ void MessengerDirector::HandleChatterLetterList(
     .mailboxFolder = command.mailboxFolder
   };
 
-  std::string characterName{};
-  bool hasMoreMail{false};
-  std::vector<data::Uid> mailbox{};
-
   std::optional<protocol::ChatterErrorCode> errorCode{};
-  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [&command, &mailbox, &hasMoreMail, &characterName, &errorCode](const data::Character& character)
-    {
-      characterName = character.name();
 
+  // Get corresponding mailbox
+  std::vector<data::Uid> mailbox{};
+  _serverInstance.GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
+    [&mailbox, &errorCode, folder = command.mailboxFolder](const data::Character& character)
+    {
       // Get the mailbox based on the command request
       std::vector<data::Uid> _mailbox{};
-      if (command.mailboxFolder == protocol::MailboxFolder::Inbox)
-        _mailbox = character.mailbox.inbox();
-      else if (command.mailboxFolder == protocol::MailboxFolder::Sent)
-        _mailbox = character.mailbox.sent();
+      if (folder == protocol::MailboxFolder::Inbox)
+        mailbox = character.mailbox.inbox();
+      else if (folder == protocol::MailboxFolder::Sent)
+        mailbox = character.mailbox.sent();
       else
-        throw std::runtime_error("Unrecognised mailbox folder.");
-
-      // Start from the beginning of the mailbox, or from specific mailUid as per request
-      auto startIter = _mailbox.begin();
-      if (command.request.lastMailUid != data::InvalidUid)
-      {
-        startIter = std::ranges::find(_mailbox, command.request.lastMailUid);
-
-        // Safety mechanism, just in case no mail by that UID was found
-        if (startIter == _mailbox.cend())
-        {
-          spdlog::warn("Character {} tried to request mail after mail {} but that mail does not exist.",
-            character.uid(),
-            command.request.lastMailUid);
-          hasMoreMail = false;
-          errorCode.emplace(protocol::ChatterErrorCode::MailListInvalidUid);
-          return;
-        }
-      }
-
-      // Get remaining items left in the array, from the mailUid (or beginning)
-      const auto& remaining = std::distance(
-        startIter,
-        _mailbox.end());
-
-      // Copy n amounts of mail as per request
-      const auto& res = std::ranges::copy_n(
-        startIter,
-        std::min<size_t>(
-          command.request.count,
-          remaining),
-        std::back_inserter(mailbox));
-
-      // Indicate that there are more mail after the current ending of response mail
-      hasMoreMail = res.in != _mailbox.cend();
+        errorCode.emplace(protocol::ChatterErrorCode::MailUnknownMailboxFolder);
     });
 
+  // If mailbox type is unrecognised, respond with cancel and return
   if (errorCode.has_value())
   {
     protocol::ChatCmdLetterListAckCancel cancel{
       .errorCode = errorCode.value()};
     _chatterServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
   }
 
-  // Track skipped mail to subtract for final response
-  uint32_t skippedMailCount{0}; 
+  // Validate whether the mail by lastMailUid exists
+  if (command.request.lastMailUid != data::InvalidUid)
+  {
+    // Last mail uid requested, find it
+    const auto iter = std::ranges::find(
+      mailbox.cbegin(),
+      mailbox.cend(),
+      command.request.lastMailUid);
+
+    // Safety mechanism, just in case no mail by that UID was found
+    if (iter == mailbox.cend())
+    {
+      spdlog::warn("Character {} tried to request mail after mail {} but that mail does not exist.",
+        clientContext.characterUid,
+        command.request.lastMailUid);
+      errorCode.emplace(protocol::ChatterErrorCode::MailListInvalidUid);
+      return;
+    }
+    // Mail found, move onto filtering
+  }
+
+  // Pre-process mailbox (filter out unavailable or soft deleted mails)
+  std::erase_if(
+    mailbox,
+    [this](const data::Uid mailUid)
+    {
+      // Filter unavailable records
+      const auto& mailRecord = _serverInstance.GetDataDirector().GetMail(mailUid);
+      if (not mailRecord)
+        return true;
+
+      // Filter soft deleted records
+      bool isDeleted = false;
+      mailRecord.Immutable([&isDeleted](const data::Mail& mail)
+      {
+        isDeleted = mail.isDeleted();
+      });
+      return isDeleted;
+    });
+
+  bool hasMoreMail = false;
+  std::vector<data::Uid> filteredMails{};
+
+  {
+    // Start from the beginning of the pre-processed emails
+    // or from the requested last mail
+    auto startIter = mailbox.cbegin();
+    if (command.request.lastMailUid != data::InvalidUid)
+    {
+      // Find the mail by uid
+      const auto iter = std::ranges::find(mailbox, command.request.lastMailUid);
+      // If mail found, move onto the next one
+      if (iter != mailbox.cend())
+        startIter = iter + 1;
+    }
+
+    // Get remaining items left in the array, from the last mail uid (or beginning)
+    const auto remaining = std::distance(
+      startIter,
+      mailbox.cend());
+
+    // Copy n amounts of mail as per request (max MaxMailsPerRequest)
+    constexpr size_t MaxMailsPerRequest = 10;
+    const auto& res = std::ranges::copy_n(
+      startIter,
+      std::min<size_t>(
+        std::min<size_t>(command.request.count, MaxMailsPerRequest),
+        remaining),
+      std::back_inserter(filteredMails));
+
+    // Indicate that there are more mail after the current ending of response mail
+    hasMoreMail = res.in != mailbox.cend();
+  }
 
   // Build response mailbox
-  for (const data::Uid& mailUid : mailbox)
+  for (const data::Uid& mailUid : filteredMails)
   {
     _serverInstance.GetDataDirector().GetMail(mailUid).Immutable(
-      [this, &response, &skippedMailCount, folder = command.mailboxFolder](const data::Mail& mail)
+      [this, &response, folder = command.mailboxFolder](const data::Mail& mail)
       {
-        // Skip soft deleted mails
-        if (mail.isDeleted())
-        {
-          // Increment counter and return
-          ++skippedMailCount;
-          return;
-        }
-
         // Get mail correspondent depending on the request
         // Mail recipient if sent mailbox or mail sender if inbox mailbox
         data::Uid correspondentUid{data::InvalidUid};
@@ -1204,7 +1250,7 @@ void MessengerDirector::HandleChatterLetterList(
           correspondentUid = mail.from();
 
         // Get correspondent's name to render mail response
-        std::string correspondentName{"System"};
+        std::string correspondentName{};
         
         if (correspondentUid == data::InvalidUid)
         {
@@ -1238,7 +1284,7 @@ void MessengerDirector::HandleChatterLetterList(
         else if (folder == protocol::MailboxFolder::Inbox)
         {
           // Compile sent mail and add to sent mail list
-          response.inboxMails.emplace_back(
+          auto& inboxMail = response.inboxMails.emplace_back(
             protocol::ChatCmdLetterListAckOk::InboxMail{
               .uid = mail.uid(),
               .type = mail.type(),
@@ -1249,6 +1295,9 @@ void MessengerDirector::HandleChatterLetterList(
                 .body = mail.body()
               }
             });
+
+          if (mail.isRead())
+            inboxMail.struct0.unk0 = "\x0F";
         }
       });
   }
@@ -1256,9 +1305,8 @@ void MessengerDirector::HandleChatterLetterList(
   // `mailbox` size here directly correlates with the loop that processes it 
   // The client is to not be made aware of any skipped mails, adjust mail count
   response.mailboxInfo = protocol::ChatCmdLetterListAckOk::MailboxInfo{
-    .mailCount = static_cast<uint32_t>(mailbox.size() - skippedMailCount),
-    .hasMoreMail = hasMoreMail
-  };
+    .mailCount = static_cast<uint32_t>(filteredMails.size()),
+    .hasMoreMail = hasMoreMail};
 
   _chatterServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
@@ -1857,7 +1905,9 @@ void MessengerDirector::HandleChatterChannelInfo(
   // Hash character uid with chat director's otp constant for a unique key
   size_t identityHash = std::hash<uint32_t>()(clientContext.characterUid);
   boost::hash_combine(identityHash, AllChatOtpConstant);
-  const uint32_t code = _serverInstance.GetOtpSystem().GrantCode(identityHash);
+  const uint32_t code = _serverInstance.GetOtpSystem().GrantLtk(
+    identityHash,
+    _chatterServer.GetClientAddress(clientId).to_v4().to_uint());
 
   // Send response for all chat
   protocol::ChatCmdChannelInfoAckOk response{

@@ -20,6 +20,8 @@
 #ifndef SYSTEMCONTENTREGISTRY_HPP
 #define SYSTEMCONTENTREGISTRY_HPP
 
+#include <libserver/registry/Registry.hpp>
+
 #include <filesystem>
 #include <mutex>
 #include <string>
@@ -29,7 +31,7 @@
 namespace server::registry
 {
 
-class SystemContentRegistry
+class SystemContentRegistry : public Registry
 {
 public:
   struct SystemEntry
@@ -40,11 +42,8 @@ public:
     std::string description{};
   };
 
-  /**
-   * Reads the system configuration from a YAML file.
-   * @param configPath Path to the system.yaml file.
-   */
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
 
   /**
    * Saves the current system configuration back to the YAML file.

@@ -123,16 +123,15 @@ struct ChatCmdLogin
 
 struct ChatCmdLoginAckOK
 {
-  uint32_t member1 = 0;
+  //! The UID of the most recent unread mail.
+  //! Directly related to `MailAlarm`
+  uint32_t latestUnreadMailUid{data::InvalidUid};
 
   struct MailAlarm
   {
-    enum class Status : uint32_t
-    {
-      NoNewMail = 0,
-      NewMail = 1
-    } status{Status::NoNewMail};
-    uint8_t hasMail{};
+    //! How many unread mails there are in the inbox.
+    uint32_t unreadMailCount{};
+    bool hasMail{};
   } mailAlarm;
 
   struct Group
@@ -645,15 +644,18 @@ struct ChatCmdLetterListAckOk
     data::Mail::MailType type{};
     data::Uid claimUid{};
 
-    //! Who sent the mail.
+    //! The name of the sender.
+    //! If empty, uses libconfig `MessengerStrings`/`DefaultSenderName`.
+    //! Must remain empty to indicate that this is a system mail.
     std::string sender{};
     //! Date of the mail when it was sent, as a string.
     std::string date{};
 
     struct Struct0
     {
-      //! Unknown, left for discovery later.
-      std::string unk0{"struct0.unk0"};
+      //! Exact usage unknown but critical for unread mail.
+      //! Must contain at least one byte to count as read.
+      std::string unk0{};
       //! Mail body.
       std::string body{};
     } struct0{};

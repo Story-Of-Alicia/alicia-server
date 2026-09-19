@@ -24,6 +24,11 @@
 namespace server
 {
 
+void ModerationSystem::Clear()
+{
+  _words.clear();
+}
+
 void ModerationSystem::ReadConfig(
   const std::filesystem::path& configPath)
 {
@@ -36,6 +41,8 @@ void ModerationSystem::ReadConfig(
   const auto wordsCollectionSection = wordsSection["collection"];
   if (not wordsCollectionSection)
     throw std::runtime_error("Missing words collection section");
+
+  Clear();
 
   for (const auto& wordSection : wordsCollectionSection)
   {

@@ -21,6 +21,8 @@
 
 #include "server/ServerInstance.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include <vector>
 
 namespace server
@@ -78,6 +80,288 @@ std::unordered_map<data::Uid, data::Clock::time_point> HorseSystem::PromoteMatur
   }
 
   return maturingFoals;
+}
+
+uint32_t HorseSystem::RepairLineages(const data::Uid characterUid)
+{
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+  if (not characterRecord)
+    return 0;
+
+  std::vector<data::Uid> horseUids;
+  characterRecord.Immutable([&horseUids](const data::Character& character)
+  {
+    horseUids = character.horses();
+    horseUids.emplace_back(character.mountUid());
+  });
+
+  auto& genetics = _serverInstance.GetGenetics();
+
+  uint32_t repairedCount = 0;
+  for (const auto& horseUid : horseUids)
+  {
+    const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
+    if (not horseRecord)
+      continue;
+
+    const uint32_t recalculated = genetics.RecalculateLineage(horseUid);
+
+    uint32_t storedLineage = 0;
+    horseRecord.Immutable([&storedLineage](const data::Horse& horse)
+    {
+      storedLineage = horse.lineage();
+    });
+
+    if (recalculated <= storedLineage)
+      continue;
+
+    horseRecord.Mutable([recalculated](data::Horse& horse)
+    {
+      horse.lineage() = recalculated;
+    });
+    ++repairedCount;
+
+    spdlog::info(
+      "Repaired the lineage of horse {} of character {}: {} -> {}",
+      horseUid,
+      characterUid,
+      storedLineage,
+      recalculated);
+  }
+
+  return repairedCount;
+}
+
+namespace
+{
+constexpr uint32_t MinSlightlyFullPlenitude = 710;
+
+int64_t CareDayIndex(const data::Clock::time_point time)
+{
+  using namespace std::chrono;
+  return floor<days>(time - hours(6)).time_since_epoch().count();
+}
+
+} // namespace
+
+void HorseSystem::ApplyDailyCareTick(const data::Uid characterUid)
+{
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+  if (not characterRecord)
+    return;
+
+  std::vector<data::Uid> horseUids;
+  characterRecord.Immutable([&horseUids](const data::Character& character)
+  {
+    horseUids = character.horses();
+    horseUids.emplace_back(character.mountUid());
+  });
+
+  const auto now = data::Clock::now();
+  const auto currentDay = CareDayIndex(now);
+
+  for (const auto& horseUid : horseUids)
+  {
+    const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
+    if (not horseRecord)
+      continue;
+
+    horseRecord.Mutable([currentDay, now](data::Horse& horse)
+    {
+      const auto daysPassed = currentDay - CareDayIndex(horse.mountCondition.lastDailyCareTick());
+      if (daysPassed <= 0)
+        return;
+
+      const auto ticks = static_cast<uint32_t>(daysPassed);
+
+      horse.mountCondition.boredom() = std::min<uint32_t>(
+        MaxBoredom,
+        horse.mountCondition.boredom() + ticks * DailyBoredomRegenAmount);
+
+      horse.mountCondition.bodyDirtiness() = std::min<uint32_t>(
+        MaxDirtiness,
+        horse.mountCondition.bodyDirtiness() + ticks * DailyDirtinessIncrease);
+      horse.mountCondition.maneDirtiness() = std::min<uint32_t>(
+        MaxDirtiness,
+        horse.mountCondition.maneDirtiness() + ticks * DailyDirtinessIncrease);
+      horse.mountCondition.tailDirtiness() = std::min<uint32_t>(
+        MaxDirtiness,
+        horse.mountCondition.tailDirtiness() + ticks * DailyDirtinessIncrease);
+
+      // Daily fatigue reset and stamina floor (not scaled by ticks passed).
+      horse.fatigue() = 0;
+      horse.mountCondition.stamina() = std::max<uint32_t>(
+        horse.mountCondition.stamina(), DailyStaminaFloor);
+
+      horse.mountCondition.lastDailyCareTick() = now;
+    });
+  }
+}
+
+bool HorseSystem::IsHorseFavoredFood(
+  data::Uid horseUid,
+  uint16_t plenitude,
+  uint32_t preferenceType)
+{
+  // Hungry (< 710)
+  // Slightly full (710..999)
+
+  // If horse is full (>= 1000), it has no food preference (cannot eat)
+  if (plenitude >= MaxPlenitude)
+    return false;
+
+  // Hungry:        mode = 15 (0x0F)
+  // Slightly full: mode = 16 (0x10)
+  const uint32_t mode = plenitude < MinSlightlyFullPlenitude
+    ? 0x0F
+    : 0x10;
+
+  // Cast horseUid to uint32_t for posterity
+  uint32_t seed = static_cast<uint32_t>(horseUid) + mode;
+  seed = (seed * 0x343FD) - 0x1613D;
+  seed = (seed * 0x343FD) - 0x1613D;
+  const uint32_t bitIndex = (seed >> 16) & 7;
+
+  // Calculate the horse's preference bitmask
+  const uint16_t mask = static_cast<uint16_t>(1 << bitIndex);
+  return (mask & preferenceType) != 0;
+}
+
+bool HorseSystem::CanHorseEat(
+  data::Uid horseUid,
+  uint16_t plenitude,
+  uint32_t preferenceType)
+{
+  if (plenitude >= MaxPlenitude)
+    return false;
+
+  if (plenitude < MinSlightlyFullPlenitude)
+    return true;
+
+  return IsHorseFavoredFood(
+    horseUid,
+    plenitude,
+    preferenceType);
+}
+
+// found in FUN_00766ac0 in the tag10 binary
+uint32_t HorseSystem::CalculateFriendlinessCharmThreshold(
+  const data::Uid horseUid,
+  const CareAmendsCategory category,
+  const uint32_t priority)
+{
+  const uint32_t rowCount = category == CareAmendsCategory::CharmPoint
+    ? CharmPointMilestoneCount
+    : FriendlyPointMilestoneCount;
+
+  uint32_t seed = horseUid + static_cast<uint32_t>(category) + priority;
+  seed = seed * 214013 + 2531011;
+  seed = seed * 214013 + 2531011;
+  const uint32_t bucket = (seed >> 16) & 0x7FFF;
+
+  const uint32_t segmentSize = 1000 / rowCount;
+  return 1 + (bucket % segmentSize) + (priority - 1) * segmentSize;
+}
+
+void HorseSystem::ApplyPostRaceHorseConditionDebuffs(
+  data::Horse& horse,
+  const uint32_t characterLevel,
+  const uint32_t staminaDecRatio)
+{
+  // Charm point reduction
+  if (horse.mountCondition.charm() >= PostRaceCharmDeduction)
+    horse.mountCondition.charm() -= PostRaceCharmDeduction;
+  else
+    horse.mountCondition.charm() = 0;
+
+  // Friendliness reduction
+  if (horse.mountCondition.friendliness() >= PostRaceFriendlinessDeduction)
+    horse.mountCondition.friendliness() -= PostRaceFriendlinessDeduction;
+  else
+    horse.mountCondition.friendliness() = 0;
+
+  // Plenitude reduction
+  if (horse.mountCondition.plenitude() >= PostRacePlenitudeDeduction)
+    horse.mountCondition.plenitude() -= PostRacePlenitudeDeduction;
+  else
+    horse.mountCondition.plenitude() = 0;
+
+  // Dirtiness accumulation
+  horse.mountCondition.bodyDirtiness() = std::min(
+    static_cast<uint32_t>(MaxDirtiness),
+    horse.mountCondition.bodyDirtiness() + PostRaceDirtinessIncrease);
+
+  horse.mountCondition.maneDirtiness() = std::min(
+    static_cast<uint32_t>(MaxDirtiness),
+    horse.mountCondition.maneDirtiness() + PostRaceDirtinessIncrease);
+
+  horse.mountCondition.tailDirtiness() = std::min(
+    static_cast<uint32_t>(MaxDirtiness),
+    horse.mountCondition.tailDirtiness() + PostRaceDirtinessIncrease);
+
+  // Polish suppression (reset to 0 when dirtiness is accumulated)
+  // TODO: is this behaviour correct? Do we immediately reset the polish after a race?
+  horse.mountCondition.bodyPolish() = 0;
+  horse.mountCondition.manePolish() = 0;
+  horse.mountCondition.tailPolish() = 0;
+
+  // Stamina consumption matching client's Lua formula Mount.GetConsumedStamina:
+  // totalConsumed = (100 + statusPoint + totalStats + (isHeavyInjury ? 200 : 0)) * (staminaDecRatio / 100)
+  const uint32_t totalStats =
+    horse.stats.agility() + horse.stats.courage() + horse.stats.rush() +
+    horse.stats.endurance() + horse.stats.ambition();
+
+  // Severe injuries (SevereMuscleStrain=18, SevereWounds=34, SevereFracture=66) have bit 1 set (injury & 2 != 0)
+  const bool isHeavyInjury = (horse.mountCondition.injury() & 0x02) != 0;
+  const uint32_t injuryConsumed = isHeavyInjury ? PostRaceHeavyInjuryStaminaPenalty : 0;
+
+  uint32_t consumedStamina = BaseStaminaConsumption + horse.growthPoints() + totalStats + injuryConsumed;
+  if (staminaDecRatio != 100)
+  {
+    consumedStamina = consumedStamina * staminaDecRatio / 100;
+  }
+
+  if (consumedStamina >= horse.mountCondition.stamina())
+    horse.mountCondition.stamina() = 0;
+  else
+    horse.mountCondition.stamina() -= consumedStamina; 
+
+  // Fatigue accumulation
+  const uint32_t fatigueIncrease = characterLevel < LowLevelThreshold
+    ? PostRaceFatigueDeductionLowLevel
+    : PostRaceFatigueDeductionDefault;
+
+  horse.fatigue() = std::min<uint32_t>(
+    MaxFatigue,
+    horse.fatigue() + fatigueIncrease);
+}
+
+bool HorseSystem::CanCharacterRace(const data::Uid characterUid)
+{
+  const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
+  if (not characterRecord)
+    return false;
+
+  data::Uid mountUid = data::InvalidUid;
+  characterRecord.Immutable([&mountUid](const data::Character& character)
+  {
+    mountUid = character.mountUid();
+  });
+
+  if (mountUid == data::InvalidUid)
+    return false;
+
+  const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(mountUid);
+  if (not horseRecord)
+    return false;
+
+  bool canRace = false;
+  horseRecord.Immutable([&canRace](const data::Horse& horse)
+  {
+    canRace = horse.mountCondition.stamina() != 0;
+  });
+
+  return canRace;
 }
 
 } // namespace server

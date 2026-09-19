@@ -20,6 +20,7 @@
 #include "server/ServerInstance.hpp"
 
 #include "server/system/QuestSystem.hpp"
+#include "server/system/RanchManagementSystem.hpp"
 
 #include <stacktrace>
 
@@ -55,6 +56,7 @@ ServerInstance::ServerInstance(
   , _horseSystem(*this)
   , _matchmakingSystem(*this)
   , _questSystem(*this)
+  , _ranchManagementSystem(*this)
   , _rewardSystem(*this)
   , _telemetry(*this)
   , _breedingMarket(*this)
@@ -88,23 +90,10 @@ void ServerInstance::Initialize()
 {
   _shouldRun.store(true, std::memory_order::release);
 
-  _config.LoadFromFile(_resourceDirectory / "config/server/config.yaml");
+  // Load configurations from file system.
+  LoadConfigurations();
+  // Load configurations from environment variables.
   _config.LoadFromEnvironment();
-
-  // Read configurations
-
-  _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
-  _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
-  _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
-  _horseRegistry.ReadConfig(_resourceDirectory / "config/game/horses");
-  _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items");
-  _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
-  _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
-  _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
-  _missionRegistry.ReadConfig(_resourceDirectory / "config/game/missions.yaml");
-
-  _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
-  _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.
@@ -294,6 +283,27 @@ void ServerInstance::Terminate()
   _breedingMarket.Terminate();
 }
 
+void ServerInstance::LoadConfigurations()
+{
+  // Read server configurations
+  _config.LoadFromFile(_resourceDirectory / "config/server/config.yaml");
+  _moderationSystem.ReadConfig(_resourceDirectory / "config/server/automod.yaml");
+  _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
+
+  // Read game configurations
+  _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
+  _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
+  _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
+  _horseRegistry.ReadConfig(_resourceDirectory / "config/game/horses");
+  _housingRegistry.ReadConfig(_resourceDirectory / "config/game/housing.yaml");
+  _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items");
+  _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
+  _missionRegistry.ReadConfig(_resourceDirectory / "config/game/missions.yaml");
+  _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
+  _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
+  _speedRegistry.ReadConfig(_resourceDirectory / "config/game/speed.yaml");
+}
+
 AuthenticationService& ServerInstance::GetAuthenticationService()
 {
   return _authenticationService;
@@ -349,6 +359,11 @@ registry::HorseRegistry& ServerInstance::GetHorseRegistry()
   return _horseRegistry;
 }
 
+registry::HousingRegistry& ServerInstance::GetHousingRegistry()
+{
+  return _housingRegistry;
+}
+
 registry::ItemRegistry& ServerInstance::GetItemRegistry()
 {
   return _itemRegistry;
@@ -382,6 +397,11 @@ registry::SystemContentRegistry& ServerInstance::GetSystemContentRegistry()
 registry::BreedingRegistry& ServerInstance::GetBreedingRegistry()
 {
   return _breedingRegistry;
+}
+
+registry::SpeedRegistry& ServerInstance::GetSpeedRegistry()
+{
+  return _speedRegistry;
 }
 
 ChatSystem& ServerInstance::GetChatSystem()
@@ -427,6 +447,11 @@ RewardSystem& ServerInstance::GetRewardSystem()
 QuestSystem& ServerInstance::GetQuestSystem()
 {
   return _questSystem;
+}
+
+RanchManagementSystem& ServerInstance::GetRanchManagementSystem()
+{
+  return _ranchManagementSystem;
 }
 
 Telemetry& ServerInstance::GetTelemetry()

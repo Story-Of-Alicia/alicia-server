@@ -20,6 +20,8 @@
 #ifndef MODERATIONSYSTEM_HPP
 #define MODERATIONSYSTEM_HPP
 
+#include <libserver/registry/Registry.hpp>
+
 #include <filesystem>
 #include <regex>
 #include <string>
@@ -28,7 +30,7 @@
 namespace server
 {
 
-class ModerationSystem
+class ModerationSystem : public registry::Registry
 {
 public:
   struct Verdict
@@ -37,7 +39,8 @@ public:
     bool isPrevented = false;
   };
 
-  void ReadConfig(const std::filesystem::path& configPath);
+  void ReadConfig(const std::filesystem::path& configPath) override;
+  void Clear() override;
 
   //! Moderates an input message and presents a verdict.
   //! @param input Message to validate.
