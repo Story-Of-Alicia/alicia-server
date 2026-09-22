@@ -612,6 +612,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRBreedingWishlistDel& command);
 
+  void HandleUpdateAchievementProperty(
+    ClientId clientId,
+    const protocol::AcCmdCRAchievementUpdateProperty& command);
+
   //!
   ServerInstance& _serverInstance;
   //!

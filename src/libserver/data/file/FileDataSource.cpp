@@ -328,12 +328,12 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
 
   if (character.role() == data::Character::Role::User)
   {
-    character.roleRank = data::Character::RoleRank::None;
+    character.staffRank = data::Character::StaffRank::None;
   }
   else
   {
-    character.roleRank = static_cast<data::Character::RoleRank>(
-      json.value("staffRank", static_cast<uint32_t>(data::Character::RoleRank::None)));
+    character.staffRank = static_cast<data::Character::StaffRank>(
+      json.value("staffRank", static_cast<uint32_t>(data::Character::StaffRank::None)));
   }
 
   const auto& parts = json.value("parts", nlohmann::json::object());
@@ -394,6 +394,7 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.housing = json.value("housing", std::vector<data::Uid>{});
 
   character.isRanchLocked = json.value("isRanchLocked", bool{});
+  character.isIntroCompleted = json.value("isIntroCompleted", false);
 
   character.settingsUid = json.value("settingsUid", data::Uid{});
 
@@ -420,6 +421,28 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.mailbox.inbox = mailbox.value("inbox", std::vector<data::Uid>{});
   character.mailbox.sent = mailbox.value("sent", std::vector<data::Uid>{});
 
+  std::map<uint32_t, data::Character::Mission> missions{};
+  if (json.contains("missions") && json["missions"].is_array())
+  {
+    for (const auto& missionJson : json["missions"])
+    {
+      data::Character::Mission mission;
+      mission.id = missionJson.value("id", uint32_t{});
+      if (missionJson.contains("progress") && missionJson["progress"].is_array())
+      {
+        for (const auto& progressJson : missionJson["progress"])
+        {
+          mission.progress.push_back({
+            .id = progressJson.value("id", uint32_t{}),
+            .value = progressJson.value("value", uint32_t{})
+          });
+        }
+      }
+      missions.try_emplace(mission.id, std::move(mission));
+    }
+  }
+  character.missions = std::move(missions);
+
   character.quests = json.value("quests", std::vector<data::Uid>{});
 }
 
@@ -440,7 +463,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["cash"] = character.cash();
 
   json["role"] = character.role();
-  json["staffRank"] = character.roleRank();
+  json["staffRank"] = character.staffRank();
 
   // Character parts
   nlohmann::json parts;
@@ -506,6 +529,7 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["housing"] = character.housing();
 
   json["isRanchLocked"] = character.isRanchLocked();
+  json["isIntroCompleted"] = character.isIntroCompleted();
 
   json["settingsUid"] = character.settingsUid();
 
@@ -538,6 +562,24 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   mailbox["inbox"] = character.mailbox.inbox();
   mailbox["sent"] = character.mailbox.sent();
   json["mailbox"] = mailbox;
+
+  nlohmann::json missions = nlohmann::json::array();
+  for (const auto& [_, mission] : character.missions())
+  {
+    nlohmann::json missionJson;
+    missionJson["id"] = mission.id;
+    nlohmann::json progressArray = nlohmann::json::array();
+    for (const auto& progress : mission.progress)
+    {
+      nlohmann::json progressJson;
+      progressJson["id"] = progress.id;
+      progressJson["value"] = progress.value;
+      progressArray.push_back(progressJson);
+    }
+    missionJson["progress"] = progressArray;
+    missions.push_back(missionJson);
+  }
+  json["missions"] = missions;
 
   json["quests"] = character.quests();
 

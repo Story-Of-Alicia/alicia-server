@@ -52,7 +52,7 @@ public:
 
   struct Parameters
   {
-    //! A game mode of the race.
+    //! High-level room category (Speed = 1, Magic = 2, Mission = 6).
     protocol::GameMode gameMode{};
     //! A team mode of the race.
     protocol::TeamMode teamMode{};
@@ -80,7 +80,9 @@ public:
   uint32_t GetRoomUid();
 
   const Parameters& GetParameters() const;
+  Parameters& GetParameters();
 
+  //! Gets the resolved underlying gameplay rule set (Speed = 1, Magic = 2) for items and track mechanics.
   [[nodiscard]] registry::GameModeId GetGameModeId() const;
   [[nodiscard]] registry::MapBlockId GetMapBlockId() const;
 

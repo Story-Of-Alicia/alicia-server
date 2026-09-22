@@ -385,9 +385,9 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     {
       protocol::AcCmdRCMissionEvent event
       {
-        .event = protocol::AcCmdRCMissionEvent::Event::EVENT_CALL_NPC_RESULT,
-        .callerOid = command.callerOid,
-        .calledOid = 0x40'00'00'00,
+        .event = protocol::AcCmdRCMissionEvent::MissionEvent::EVENT_CALL_NPC_RESULT,
+        .val1 = command.val1,
+        .val2 = 0x40'00'00'00,
       };
 
       _commandServer.QueueCommand<decltype(event)>(clientId, [event](){return event;});
@@ -617,6 +617,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& command)
     {
       HandleBreedingWishlistDelete(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRAchievementUpdateProperty>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleUpdateAchievementProperty(clientId, command);
     });
 }
 
@@ -7860,6 +7866,47 @@ void RanchDirector::HandleBreedingWishlistDelete(
     [response]()
     {
       return response;
+    });
+}
+
+void RanchDirector::HandleUpdateAchievementProperty(
+  ClientId clientId,
+  const protocol::AcCmdCRAchievementUpdateProperty& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  // TODO: support other fields
+  if (command.propertyKey != 45 or command.propertyValue != "nil")
+    return;
+
+  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  // IntroEnd achievement property received
+  // Verify prerequisite missions are in place
+  static const std::vector<uint16_t> prequisiteMissionIds{24, 31, 32, 33};
+  bool areMissionsCompleted = true;
+  characterRecord.Immutable(
+    [&areMissionsCompleted](const data::Character& character)
+    {
+      for (const uint16_t missionId : prequisiteMissionIds)
+      {
+        if (not character.missions().contains(missionId))
+        {
+          areMissionsCompleted = false;
+          break;
+        }
+      }
+    });
+
+  // If prerequisite missions are not completed then intro is not completed
+  if (not areMissionsCompleted)
+    return;
+
+  characterRecord.Mutable(
+    [](data::Character& character)
+    {
+      character.isIntroCompleted() = true;
     });
 }
 

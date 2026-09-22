@@ -269,6 +269,18 @@ RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
     {
       HandleGameCreateClientItem(clientId, message);
     });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdRCMissionEvent>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleMissionEvent(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRRestartRace>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleRestartRace(clientId, command);
+    });
 }
 
 void RaceNetworkHandler::Initialize()
@@ -978,8 +990,8 @@ void RaceNetworkHandler::HandleChangeRoomOptions(
           case protocol::GameMode::Magic:
             roomDetails.gameMode = Room::GameMode::Magic;
             break;
-          case protocol::GameMode::Tutorial:
-            roomDetails.gameMode = Room::GameMode::Tutorial;
+          case protocol::GameMode::Mission:
+            roomDetails.gameMode = Room::GameMode::Mission;
             break;
           default:
             spdlog::error("Unknown game mode '{}'", static_cast<uint32_t>(command.gameMode));
@@ -1323,52 +1335,58 @@ void RaceNetworkHandler::HandleStartRace(
     return;
   }
 
-  constexpr uint32_t GameCountdownKey = 17;
-  constexpr uint32_t DefaultCountdownMs = 5310;
-
-  const auto countdown = GetServerInstance()
-    .GetSystemContentRegistry()
-    .GetValue(GameCountdownKey);
-
-  protocol::AcCmdRCRoomCountdown roomCountdown{
-    .countdown = countdown.has_value()
-      ? countdown.value()
-      : DefaultCountdownMs,
-    .mapBlockId = static_cast<uint16_t>(raceInstance.GetMapBlockId())};
-
-  // Start with bonus course set to none by default
-  raceInstance.SetBonusCourseType(protocol::BonusCourseType::None);
-
-  // Randomly assign a bonus course if the room has 8 players
+  uint32_t raceCountdownMs{0};
+  if (parameters.gameMode != protocol::GameMode::Mission)
   {
-    constexpr size_t RequiredPlayerCount = 8;
-    bool hasRequiredPlayerCount = false;
-    _serverInstance.GetRoomSystem().GetRoom(
-      roomUid,
-      [&hasRequiredPlayerCount](const Room& room)
-      {
-        hasRequiredPlayerCount = room.GetPlayerCount() == RequiredPlayerCount;
-      });
+    constexpr uint32_t GameCountdownKey = 17;
+    constexpr uint32_t DefaultCountdownMs = 5310;
 
-    if (hasRequiredPlayerCount)
+    const auto& countdown = GetServerInstance()
+      .GetSystemContentRegistry()
+      .GetValue(GameCountdownKey);
+
+    protocol::AcCmdRCRoomCountdown roomCountdown{
+      .countdown = countdown.has_value()
+        ? countdown.value()
+        : DefaultCountdownMs,
+      .mapBlockId = static_cast<uint16_t>(raceInstance.GetMapBlockId())};
+
+    // Start with bonus course set to none by default
+    raceInstance.SetBonusCourseType(protocol::BonusCourseType::None);
+
+    // Randomly assign a bonus course if the room has 8 players
     {
-      auto& gen = server::util::GetRandomEngine();
-      std::uniform_int_distribution<uint32_t> chanceDist(1, 100);
+      constexpr size_t RequiredPlayerCount = 8;
+      bool hasRequiredPlayerCount = false;
+      _serverInstance.GetRoomSystem().GetRoom(
+        roomUid,
+        [&hasRequiredPlayerCount](const Room& room)
+        {
+          hasRequiredPlayerCount = room.GetPlayerCount() == RequiredPlayerCount;
+        });
 
-      constexpr uint32_t BonusCourseChance = 25;
-      const bool isBonusCourse = chanceDist(gen) <= BonusCourseChance;
-      if (isBonusCourse)
+      if (hasRequiredPlayerCount)
       {
-        std::uniform_int_distribution<uint32_t> typeDist(1, 3);
-        const auto selectedType = static_cast<protocol::BonusCourseType>(typeDist(gen));
-        roomCountdown.bonusCourseType = selectedType;
-        raceInstance.SetBonusCourseType(selectedType);
+        auto& gen = server::util::GetRandomEngine();
+        std::uniform_int_distribution<uint32_t> chanceDist(1, 100);
+
+        constexpr uint32_t BonusCourseChance = 25;
+        const bool isBonusCourse = chanceDist(gen) <= BonusCourseChance;
+        if (isBonusCourse)
+        {
+          std::uniform_int_distribution<uint32_t> typeDist(1, 3);
+          const auto selectedType = static_cast<protocol::BonusCourseType>(typeDist(gen));
+          roomCountdown.bonusCourseType = selectedType;
+          raceInstance.SetBonusCourseType(selectedType);
+        }
       }
     }
-  }
 
-  // Broadcast room countdown.
-  this->Broadcast(raceInstance, roomCountdown);
+    raceCountdownMs = roomCountdown.countdown;
+
+    // Broadcast room countdown.
+    this->Broadcast(raceInstance, roomCountdown);
+  }
 
   // Add the racers.
   _serverInstance.GetRoomSystem().GetRoom(
@@ -1541,7 +1559,7 @@ void RaceNetworkHandler::HandleStartRace(
           }
         });
     },
-    Scheduler::Clock::now() + std::chrono::milliseconds(roomCountdown.countdown));
+    Scheduler::Clock::now() + std::chrono::milliseconds(raceCountdownMs));
 }
 
 void RaceNetworkHandler::SendStartRaceCancel(
@@ -1945,7 +1963,6 @@ void RaceNetworkHandler::HandleStarPointGet(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  const auto& parameters = raceInstance.GetParameters();
 
   auto& racer = raceInstance.GetTracker().GetRacer(
     clientContext.characterUid);
@@ -1958,7 +1975,7 @@ void RaceNetworkHandler::HandleStarPointGet(
   }
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(parameters.gameMode));
+    static_cast<uint8_t>(raceInstance.GetGameModeId()));
 
   uint32_t gainedStarPoints = command.gainedStarPoints;
   if (racer.effects[race::SkillEffect::BufGauge] || racer.effects[race::SkillEffect::BufGaugeCritical]) {
@@ -1993,7 +2010,6 @@ void RaceNetworkHandler::HandleRequestSpur(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  const auto& parameters = raceInstance.GetParameters();
 
   auto& racer = raceInstance.GetTracker().GetRacer(
     clientContext.characterUid);
@@ -2006,7 +2022,7 @@ void RaceNetworkHandler::HandleRequestSpur(
   }
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(parameters.gameMode));
+    static_cast<uint8_t>(raceInstance.GetGameModeId()));
 
   if (racer.starPointValue < gameModeTemplate.spurConsumeStarPoints)
     throw std::runtime_error("Client is dead ass cheating (or is really desynced)");
@@ -2048,7 +2064,6 @@ void RaceNetworkHandler::HandleHurdleClearResult(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  const auto& parameters = raceInstance.GetParameters();
 
   auto& racer = raceInstance.GetTracker().GetRacer(
     clientContext.characterUid);
@@ -2074,8 +2089,9 @@ void RaceNetworkHandler::HandleHurdleClearResult(
     .giveMagicItem = false
   };
 
+  const registry::GameModeId effectiveGameMode = raceInstance.GetGameModeId();
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(parameters.gameMode));
+    static_cast<uint8_t>(effectiveGameMode));
 
   switch (command.hurdleClearType)
   {
@@ -2086,7 +2102,7 @@ void RaceNetworkHandler::HandleHurdleClearResult(
         static_cast<uint32_t>(99),
         racer.jumpComboValue + 1);
 
-      if (parameters.gameMode == protocol::GameMode::Speed)
+      if (effectiveGameMode == static_cast<registry::GameModeId>(protocol::GameMode::Speed))
       {
         // Only send jump combo if it is a speed race
         response.jumpCombo = racer.jumpComboValue;
@@ -2147,7 +2163,7 @@ void RaceNetworkHandler::HandleHurdleClearResult(
   // Needs to be assigned after hurdle clear result calculations
   // Triggers magic item request when set to true (if gamemode is magic and magic gauge is max)
   starPointResponse.giveMagicItem =
-    parameters.gameMode == protocol::GameMode::Magic &&
+    effectiveGameMode == static_cast<registry::GameModeId>(protocol::GameMode::Magic) &&
     racer.starPointValue >= gameModeTemplate.starPointsMax &&
     not racer.magicItem.has_value() &&
     command.hurdleClearType == protocol::AcCmdCRHurdleClearResult::HurdleClearType::Perfect;
@@ -2187,7 +2203,6 @@ void RaceNetworkHandler::HandleStartingRate(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  const auto& parameters = raceInstance.GetParameters();
 
   auto& racer = raceInstance.GetTracker().GetRacer(
     clientContext.characterUid);
@@ -2200,7 +2215,7 @@ void RaceNetworkHandler::HandleStartingRate(
   }
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
-    static_cast<uint8_t>(parameters.gameMode));
+    static_cast<uint8_t>(raceInstance.GetGameModeId()));
 
   // TODO: validate boost gained against a table and determine good/perfect start
   racer.starPointValue = std::min(
@@ -2545,6 +2560,11 @@ void RaceNetworkHandler::HandleRequestMagicItem(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
   const auto& parameters = raceInstance.GetParameters();
+  [[unlikely]] if (parameters.gameMode == protocol::GameMode::Mission)
+  {
+    return;
+  }
+
   auto& tracker = raceInstance.GetTracker();
   auto& racer = tracker.GetRacer(clientContext.characterUid);
 
@@ -2949,14 +2969,29 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
   racer.deckCooldown[command.itemDeckId] = now + deck.respawnTime;
 
   Room::GameMode gameMode;
-  registry::Course::GameModeInfo gameModeInfo;
-  _serverInstance.GetRoomSystem().GetRoom(clientContext.roomUid, [this, &gameMode, &gameModeInfo](const Room& room)
-  {
-    gameMode = room.GetRoomSnapshot().details.gameMode;
-    gameModeInfo = this->GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(static_cast<uint8_t>(gameMode));
-  });
+  uint16_t missionId{};
+  _serverInstance.GetRoomSystem().GetRoom(
+    clientContext.roomUid,
+    [&gameMode, &missionId](const Room& room)
+    {
+      gameMode = room.GetRoomSnapshot().details.gameMode;
+      missionId = room.GetRoomSnapshot().details.missionId;
+    });
 
-  switch(gameMode)
+  uint8_t effectiveGameMode = static_cast<uint8_t>(gameMode);
+  if (gameMode == Room::GameMode::Mission)
+  {
+    const auto missionOpt = _serverInstance.GetMissionRegistry().GetMission(missionId);
+    if (not missionOpt.has_value())
+    {
+      throw std::runtime_error(
+        std::format("Mission with id {} not found in MissionRegistry", missionId));
+    }
+    effectiveGameMode = missionOpt->gameMode;
+  }
+
+  const auto& gameModeInfo = _serverInstance.GetCourseRegistry().GetCourseGameModeInfo(effectiveGameMode);
+  switch (static_cast<Room::GameMode>(effectiveGameMode))
   {
     // TODO: Deduplicate from StarPointGet
     case Room::GameMode::Speed:
@@ -4208,6 +4243,113 @@ void RaceNetworkHandler::HandleGameCreateClientItem(
   auto& item = raceInstance.GetTracker().AddEventItem(clientContext.characterUid);
   item.position = command.position;
   item.itemType = selectedEgg.deckItemId;
+}
+
+void RaceNetworkHandler::HandleMissionEvent(
+  ClientId clientId,
+  const protocol::AcCmdRCMissionEvent& command)
+{
+  static const auto& saveMissionRecord = [this](data::Uid characterUid, uint16_t missionId)
+  {
+    const data::Character::Mission mission{
+      .id = missionId,
+      .progress = {
+        data::Character::Mission::Progress{
+          .id = 2,
+          .value = 1}}};
+
+    // Save to character record
+    GetServerInstance().GetDataDirector().GetCharacter(characterUid).Mutable(
+      [&mission](data::Character& character)
+      {
+        const auto& [missionIter, inserted] = character.missions().try_emplace(
+          mission.id,
+          mission);
+      });
+
+    // Notify character
+    protocol::Mission protocolMission{};
+    protocol::BuildProtocolMission(protocolMission, mission);
+    GetServerInstance().GetLobbyDirector().NotifyMissionRecordUpdate(
+      characterUid,
+      protocolMission);
+  };
+
+  const auto& clientContext = GetClientContext(clientId);
+  auto& raceInstance = GetRaceInstance(clientContext);
+  auto& parameters = raceInstance.GetParameters();
+
+  // TODO: create a mission manager/system (MissionRaceInstance?)
+
+  using MissionEvent = protocol::AcCmdRCMissionEvent::MissionEvent;
+  using MissionEventValue = protocol::AcCmdRCMissionEvent::MissionEventValue;
+  switch (command.event)
+  {
+    case MissionEvent::EVENT_RECORD:
+    {
+      // Check for expected mission record values
+      if (command.val1 != 0 or command.val2 != 9999990)
+        return;
+
+      // Mission completed, record into character's missions
+      saveMissionRecord(clientContext.characterUid, parameters.missionId);
+
+      break;
+    }
+    case MissionEvent::EVENT_SCRIPT:
+    {
+      // val1 is the mission event type
+      switch (static_cast<MissionEventValue>(command.val1))
+      {
+        case MissionEventValue::CS_EVENT_MISSION_GO_NEXT:
+        {
+          // Client sends next missionId in val2
+          const uint16_t nextMissionId = static_cast<uint16_t>(command.val2);
+
+          // Get current mission record and find next mission, if any
+          const auto& missionRecord = GetServerInstance().GetMissionRegistry().GetMission(
+            nextMissionId);
+          if (not missionRecord.has_value() or missionRecord->id != nextMissionId)
+            return;
+
+          // Update parameters
+          parameters.missionId = missionRecord->id;
+          parameters.mapBlockId = missionRecord->mapId;
+
+          // Update room values
+          raceInstance.GetRoom([&missionRecord](Room& room)
+          {
+            auto& details = room.GetRoomDetails();
+            details.missionId = missionRecord->id;
+            details.courseId = missionRecord->mapId;
+          });
+
+          spdlog::info("Advanced room {} to next mission ID {} (map ID {})",
+            raceInstance.GetRoomUid(),
+            parameters.missionId,
+            parameters.mapBlockId);
+          break;
+        }
+        default:
+        {
+          break;
+        }
+      }
+    }
+    default:
+    {
+      break;
+    }
+  }
+}
+
+void RaceNetworkHandler::HandleRestartRace(
+  ClientId clientId,
+  const protocol::AcCmdCRRestartRace&)
+{
+  [[maybe_unused]] const auto& clientContext = GetClientContext(clientId);
+
+  HandleStartRace(clientId, protocol::AcCmdCRStartRace{});
 }
 
 } // namespace server

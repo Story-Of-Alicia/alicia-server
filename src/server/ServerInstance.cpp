@@ -298,6 +298,7 @@ void ServerInstance::LoadConfigurations()
   _housingRegistry.ReadConfig(_resourceDirectory / "config/game/housing.yaml");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items");
   _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
+  _missionRegistry.ReadConfig(_resourceDirectory / "config/game/missions.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
   _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
   _speedRegistry.ReadConfig(_resourceDirectory / "config/game/speed.yaml");
@@ -376,6 +377,11 @@ registry::PetRegistry& ServerInstance::GetPetRegistry()
 registry::QuestRegistry& ServerInstance::GetQuestRegistry()
 {
   return _questRegistry;
+}
+
+registry::MissionRegistry& ServerInstance::GetMissionRegistry()
+{
+  return _missionRegistry;
 }
 
 registry::MagicRegistry& ServerInstance::GetMagicRegistry()

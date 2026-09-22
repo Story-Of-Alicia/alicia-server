@@ -478,6 +478,11 @@ const RaceInstance::Parameters& RaceInstance::GetParameters() const
   return _parameters;
 }
 
+RaceInstance::Parameters& RaceInstance::GetParameters()
+{
+  return _parameters;
+}
+
 registry::GameModeId RaceInstance::GetGameModeId() const
 {
   return _gameModeId;
@@ -661,9 +666,12 @@ void RaceInstance::TickActiveRaceContent()
 {
   // Tick active race content
   this->TickItemSpawners();
-  if (this->GetParameters().gameMode == protocol::GameMode::Magic)
+  if (_parameters.gameMode != protocol::GameMode::Mission and
+      this->GetGameModeId() == static_cast<registry::GameModeId>(protocol::GameMode::Magic))
+  {
     // Tick magic gauge
     this->TickMagicGauge();
+  }
 }
 
 void RaceInstance::TickItemSpawners()
@@ -843,6 +851,25 @@ void RaceInstance::TickMagicGauge()
 void RaceInstance::PrepareGameMode()
 {
   _gameModeId = static_cast<registry::GameModeId>(_parameters.gameMode);
+
+  // If this is a mission, get the underlying gamemode and set it to the true gamemode
+  // Room will contain the gamemode type as mission anyway
+  if (_parameters.gameMode == protocol::GameMode::Mission)
+  {
+    const auto& mission = _raceNetworkHandler
+      .GetServerInstance()
+      .GetMissionRegistry()
+      .GetMission(_parameters.missionId);
+
+    if (not mission)
+    {
+      throw std::runtime_error(
+        std::format("Mission with id {} not found in MissionRegistry", _parameters.missionId));
+    }
+
+    _gameModeId = static_cast<registry::GameModeId>(mission->gameMode);
+  }
+
   _gameModeInfo = _raceNetworkHandler
     .GetServerInstance()
     .GetCourseRegistry()

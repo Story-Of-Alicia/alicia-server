@@ -469,6 +469,35 @@ void BuildProtocolQuests(
   }
 }
 
+void BuildProtocolMission(
+  protocol::Mission& protocolMission,
+  const data::Character::Mission& mission)
+{
+  protocolMission.id = static_cast<uint16_t>(mission.id);
+  protocolMission.progress.clear();
+  protocolMission.progress.reserve(mission.progress.size());
+  for (const auto& progress : mission.progress)
+  {
+    protocolMission.progress.emplace_back(protocol::Mission::Progress{
+      .id = progress.id,
+      .value = progress.value
+    });
+  }
+}
+
+void BuildProtocolMissions(
+  std::vector<protocol::Mission>& protocolMissions,
+  const std::map<uint32_t, data::Character::Mission>& missions)
+{
+  protocolMissions.clear();
+  protocolMissions.reserve(missions.size());
+  for (const auto& [missionId, mission] : missions)
+  {
+    auto& protocolMission = protocolMissions.emplace_back();
+    BuildProtocolMission(protocolMission, mission);
+  }
+}
+
 } // namespace protocol
 
 } // namespace server

@@ -90,11 +90,11 @@ private:
   void RegisterUserCommands();
   void RegisterAdminCommands();
 
-  //! Gets t
+  //! Resolves the staff permission tier of a character.
   //! @param characterUid UID of the character.
   //! @returns The staff rank if the character exists and is staff
   //!          (role != User); std::nullopt otherwise.
-  [[nodiscard]] std::optional<data::Character::RoleRank> GetRoleRank(
+  [[nodiscard]] std::optional<data::Character::StaffRank> GetStaffRank(
     data::Uid characterUid);
 
   //! A server instance.

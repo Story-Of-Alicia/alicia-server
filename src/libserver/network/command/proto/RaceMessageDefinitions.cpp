@@ -2197,4 +2197,18 @@ void AcCmdRCObtainEgg::Read(
   throw std::runtime_error("Not implemented");
 }
 
+void AcCmdCRRestartRace::Write(
+  const AcCmdCRRestartRace&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdCRRestartRace::Read(
+  AcCmdCRRestartRace&,
+  SourceStream&)
+{
+  // Empty
+}
+
 } // namespace server::protocol

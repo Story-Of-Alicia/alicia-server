@@ -547,6 +547,30 @@ void LobbyNetworkHandler::NotifyMatchmakeResult(
   }
 }
 
+void LobbyNetworkHandler::NotifyMissionRecordUpdate(
+  data::Uid characterUid,
+  const protocol::Mission& mission)
+{
+  try
+  {
+    const auto clientId = GetClientIdByCharacterUid(characterUid);
+
+    const protocol::AcCmdLCMissionRecordUpdate notify{
+      .missionId = mission.id,
+      .mission = mission};
+    _commandServer.QueueCommand<decltype(notify)>(
+      clientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+  catch (const std::exception&)
+  {
+    // We really don't care if the user disconnected.
+  }
+}
+
 CommandServer& LobbyNetworkHandler::GetCommandServer() noexcept
 {
   return _commandServer;
@@ -721,6 +745,16 @@ void LobbyNetworkHandler::HandleLogin(
     });
 }
 
+namespace
+{
+
+//! Mission id of the prologue, as defined in the client's `Mission` table.
+constexpr uint16_t PrologueMissionId = 24;
+//! The progress id the client reads as "mission cleared".
+constexpr uint32_t MissionClearedProgressId = 2;
+
+} // anonymous namespace
+
 void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
 {
   auto& clientContext = GetClientContext(clientId);
@@ -769,69 +803,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     .lobbyTime = util::TimePointToFileTime(util::Clock::now()),
     // .member0 = 0xCA794,
     .val3 = 0x0,
-
-    .missions = {
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x18,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-          .id = 2,
-          .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x1F,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x23,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x29,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2A,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2B,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2C,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2D,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2E,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},
-      protocol::LobbyCommandLoginOK::Mission{
-        .id = 0x2F,
-        .progress = {
-          protocol::LobbyCommandLoginOK::Mission::Progress{
-            .id = 2,
-            .value = 1}}},},
-
     .ranchAddress = lobbyConfig.advertisement.ranch.address.to_uint(),
     .ranchPort = lobbyConfig.advertisement.ranch.port,
     .scramblingConstant = 0,
@@ -873,9 +844,11 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
       response.ranchBonusRaceCount = character.ranchManagement.totalRaces();
       response.role = std::bit_cast<protocol::LobbyCommandLoginOK::Role>(
         character.role());
-
-      if (not justCreatedCharacter)
-        response.bitfield = protocol::LobbyCommandLoginOK::HasPlayedBefore;
+      // The client replays the intro only while it believes the character has not
+      // played before. THis makes "//create" not crash the client.
+      response.bitfield = character.isIntroCompleted() && not justCreatedCharacter
+        ? protocol::LobbyCommandLoginOK::AvatarBitset::IntroCompleted
+        : protocol::LobbyCommandLoginOK::AvatarBitset::NewPlayer;
 
       const auto equipmentItems = _serverInstance.GetDataDirector().GetItemCache().Get(
         character.characterEquipment());
@@ -895,6 +868,25 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
       protocol::BuildProtocolCharacter(
         response.character,
         character);
+
+      protocol::BuildProtocolMissions(
+        response.missions,
+        character.missions());
+
+      if (justCreatedCharacter)
+      {
+        const auto prologueMission = std::ranges::find(
+          response.missions, PrologueMissionId, &protocol::Mission::id);
+        if (prologueMission != response.missions.end())
+        {
+          std::erase_if(
+            prologueMission->progress,
+            [](const protocol::Mission::Progress& progress)
+            {
+              return progress.id == MissionClearedProgressId;
+            });
+        }
+      }
 
       if (character.guildUid() != data::InvalidUid)
       {
@@ -998,14 +990,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   {
     response.notice = notice;
   }
-  protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo mapProgressInfo{
-    .mapBlockId= 1,
-    .gameMode = protocol::GameMode::Speed,
-    .clearStage = protocol::LobbyCommandLoginOK::TrainingProgression::MapProgressInfo::ClearStage::None,
-  };
-
-  response.trainingProgression.mapProggressInfos = {
-    mapProgressInfo};
 
   _commandServer.SetCode(clientId, {});
 
@@ -1249,8 +1233,8 @@ void LobbyNetworkHandler::HandleMakeRoom(
         case protocol::GameMode::Magic:
           room.GetRoomDetails().gameMode = Room::GameMode::Magic;
           break;
-        case protocol::GameMode::Tutorial:
-          room.GetRoomDetails().gameMode = Room::GameMode::Tutorial;
+        case protocol::GameMode::Mission:
+          room.GetRoomDetails().gameMode = Room::GameMode::Mission;
           break;
         default:
           spdlog::error("Unknown game mode '{}'", static_cast<uint32_t>(command.gameMode));

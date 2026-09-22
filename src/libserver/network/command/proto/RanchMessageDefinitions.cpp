@@ -1958,21 +1958,6 @@ void RanchCommandUserPetInfosOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void AcCmdCRAchievementUpdateProperty::Write(
-  const AcCmdCRAchievementUpdateProperty&,
-  SinkStream&)
-{
-  throw std::runtime_error("Not implemented");
-}
-
-void AcCmdCRAchievementUpdateProperty::Read(
-  AcCmdCRAchievementUpdateProperty& command,
-  SourceStream& stream)
-{
-  stream.Read(command.achievementEvent)
-    .Read(command.member2);
-}
-
 void AcCmdCRHousingBuild::Write(
   const AcCmdCRHousingBuild&,
   SinkStream&)
@@ -2088,23 +2073,6 @@ void AcCmdCRHousingRepairNotify::Read(
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");
-}
-void AcCmdRCMissionEvent::Write(
-  const AcCmdRCMissionEvent& command,
-  SinkStream& stream)
-{
-  stream.Write(command.event)
-    .Write(command.callerOid)
-    .Write(command.calledOid);
-}
-
-void AcCmdRCMissionEvent::Read(
-  AcCmdRCMissionEvent& command,
-  SourceStream& stream)
-{
-  stream.Read(command.event)
-    .Read(command.callerOid)
-    .Read(command.calledOid);
 }
 
 void RanchCommandKickRanch::Write(

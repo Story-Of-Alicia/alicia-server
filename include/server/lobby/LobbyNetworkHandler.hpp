@@ -72,6 +72,10 @@ public:
     const data::Uid characterUid,
     const MatchmakingSystem::Result& result);
 
+  void NotifyMissionRecordUpdate(
+    data::Uid characterUid,
+    const protocol::Mission& mission);
+
   [[nodiscard]] CommandServer& GetCommandServer() noexcept;
 
 private:
