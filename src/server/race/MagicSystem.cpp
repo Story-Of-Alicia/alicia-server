@@ -301,7 +301,9 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
     if (uid == racerUid)
       continue;
 
-    // TODO: do we ignore disconnected racers too?
+    // Ignore disconnected racers
+    if (instanceRacer.state == tracker::RaceTracker::Racer::State::Disconnected)
+      continue;
 
     // Check if instance racer is ahead of the racer requesting item
     if (instanceRacer.raceProgress > racer.raceProgress)
