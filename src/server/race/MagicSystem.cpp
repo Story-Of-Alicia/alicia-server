@@ -291,37 +291,48 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
 {
   const auto& racer = tracker.GetRacer(racerUid);
 
-  // Determine the racer's position (0 = 1st place)
-  uint32_t racerPosition = 0;
-  const auto& allRacers = tracker.GetRacers();
-  size_t totalRacers = allRacers.size();
-
-  for (const auto& [uid, instanceRacer] : allRacers)
+  // Determine the racer's position (1 = 1st place)
+  size_t racerCount = 0;
+  uint32_t racerPosition = 1;
+  for (const auto& [instanceRacerUid, instanceRacer] : tracker.GetRacers())
   {
-    if (uid == racerUid)
-      continue;
-
     // Ignore disconnected racers
     if (instanceRacer.state == tracker::RaceTracker::Racer::State::Disconnected)
+      continue;
+    ++racerCount;
+
+    // Do not compare self
+    if (instanceRacerUid == racerUid)
       continue;
 
     // Check if instance racer is ahead of the racer requesting item
     if (instanceRacer.raceProgress > racer.raceProgress)
-      racerPosition++;
+      ++racerPosition;
   }
 
-  // Map the actual position to one of the 8 weight slots [0, 7] via linear interpolation.
-  // This ensures last place in a small race gets "last-place" item weights.
-  uint32_t effectivePosition = racerPosition;
-  if (totalRacers > 1)
+  // Get effective racer position by position mapping info
+  uint32_t effectivePosition;
+  if (const auto configIter = RankingConversionInfo.find(racerCount); configIter != RankingConversionInfo.cend())
   {
-    effectivePosition = static_cast<uint32_t>(
-      static_cast<float>(racerPosition) * 7.0f /
-      static_cast<float>(totalRacers - 1));
+    // Get config info and find position mapping by racer position 
+    const auto& configInfo = configIter->second;
+    if (const auto positionIter = configInfo.find(racerPosition); positionIter != configInfo.cend() && positionIter->second > 0)
+    {
+      effectivePosition = positionIter->second - 1;
+    }
+    else
+    {
+      throw std::runtime_error(
+        std::format(
+          "Could not find position mapping info by position {}", racerPosition));
+    }
   }
-
-  // Clamp effective position to [0, 7] for safety
-  effectivePosition = std::clamp(effectivePosition, 0u, 7u);
+  else
+  {
+    throw std::runtime_error(
+      std::format(
+        "Could not find position mapping info by racer count {}", racerCount));
+  }
 
   const registry::Magic::SlotInfo& magicSlotInfo = SelectMagicTypeByPosition(
     magicRegistry,
