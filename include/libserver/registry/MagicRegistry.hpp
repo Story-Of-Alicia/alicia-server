@@ -148,6 +148,9 @@ public:
   [[nodiscard]] const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& GetSoloPositionWeights(uint32_t position) const;
   [[nodiscard]] const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& GetTeamPositionWeights(uint32_t position) const;
 
+  using RankingConversionMap = std::unordered_map<size_t, std::unordered_map<uint32_t, uint8_t>>;
+  [[nodiscard]] const RankingConversionMap& GetRankingConversionInfo() const;
+
 private:
   std::unordered_map<uint32_t, Magic::SlotInfo> _slotInfo{};
   std::vector<uint32_t> _soloPool{};
@@ -160,6 +163,7 @@ private:
   //! Position weights for use in random magic selection.
   std::array<std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>, 8> _soloPositionWeights;
   std::array<std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>, 8> _teamPositionWeights;
+  RankingConversionMap _rankingConversionInfo{};
 };
 
 } // namespace server::registry

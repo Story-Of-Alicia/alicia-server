@@ -312,7 +312,8 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
 
   // Get effective racer position by position mapping info
   uint32_t effectivePosition;
-  if (const auto configIter = RankingConversionInfo.find(racerCount); configIter != RankingConversionInfo.cend())
+  const auto& rankingConversionInfo = magicRegistry.GetRankingConversionInfo();
+  if (const auto configIter = rankingConversionInfo.find(racerCount); configIter != rankingConversionInfo.cend())
   {
     // Get config info and find position mapping by racer position 
     const auto& configInfo = configIter->second;

@@ -90,6 +90,7 @@ void MagicRegistry::Clear()
   _regenInfo = {};
   _setBonusInfo = {};
   _baseCritChanceBp = 500;
+  _rankingConversionInfo.clear();
 }
 
 void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
@@ -196,6 +197,22 @@ void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
     }
   }
 
+  if (const auto rankingSection = magicSection["rankingConversionInfo"])
+  {
+    for (const auto& racerCountEntry : rankingSection)
+    {
+      const auto racerCount = racerCountEntry.first.as<size_t>();
+      auto& positionMap = _rankingConversionInfo[racerCount];
+
+      for (const auto& positionEntry : racerCountEntry.second)
+      {
+        const auto position = positionEntry.first.as<uint32_t>();
+        const auto mappedPosition = positionEntry.second.as<uint8_t>();
+        positionMap.emplace(position, mappedPosition);
+      }
+    }
+  }
+
   spdlog::info(
     "Magic registry loaded {} slot(s) ({} solo, {} team)",
     _slotInfo.size(),
@@ -265,6 +282,11 @@ const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& MagicRegistry:
 const std::vector<std::pair<Magic::SlotWeight, Magic::SlotInfo>>& MagicRegistry::GetTeamPositionWeights(uint32_t position) const
 {
   return _teamPositionWeights.at(position);
+}
+
+const MagicRegistry::RankingConversionMap& MagicRegistry::GetRankingConversionInfo() const
+{
+  return _rankingConversionInfo;
 }
 
 } // namespace server::registry
