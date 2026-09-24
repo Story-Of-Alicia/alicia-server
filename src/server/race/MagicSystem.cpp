@@ -23,6 +23,8 @@
 
 #include <libserver/util/Util.hpp>
 
+#include <spdlog/spdlog.h>
+
 #include <algorithm>
 #include <random>
 #include <ranges>
@@ -310,7 +312,7 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
       ++racerPosition;
   }
 
-  // Get effective racer position by position mapping info
+  // Get effective racer position by position mapping info (0-based)
   uint32_t effectivePosition;
   const auto& rankingConversionInfo = magicRegistry.GetRankingConversionInfo();
   if (const auto configIter = rankingConversionInfo.find(racerCount); configIter != rankingConversionInfo.cend())
@@ -354,10 +356,26 @@ const registry::Magic::SlotInfo& MagicSystem::RandomMagicItem(
       critChanceBp += magicRegistry.GetSetBonusInfo().critChanceBonusBp;
   }
 
-  if (std::uniform_int_distribution<int>(0, 9999)(server::util::GetRandomEngine()) < static_cast<int>(critChanceBp))
-    return magicRegistry.GetSlotInfo(magicSlotInfo.criticalType);
+  const bool isCrit = std::uniform_int_distribution<int>(0, 9999)(
+    server::util::GetRandomEngine()) < static_cast<int>(critChanceBp);
 
-  return magicSlotInfo;
+  const auto& selectedSlotInfo = isCrit
+    ? magicRegistry.GetSlotInfo(magicSlotInfo.criticalType)
+    : magicSlotInfo;
+
+  spdlog::info(
+    "Racer '{}' (uid '{}') got random magic item (progress={:.2f}%): [racerCount={}/position={} (effective={})] magicItemType={}, isCrit={}/critChanceBp={}",
+    racer.oid,
+    racerUid,
+    racer.raceProgress * 100.0f,
+    racerCount,
+    racerPosition,
+    effectivePosition,
+    selectedSlotInfo.type,
+    isCrit,
+    critChanceBp);
+
+  return selectedSlotInfo;
 }
 
 } // namespace server::race
