@@ -29,6 +29,7 @@
 #include <boost/container_hash/hash.hpp>
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/bin_to_hex.h>
+#include <spdlog/fmt/ranges.h>
 
 #include <bitset>
 #include <ranges>
@@ -2578,11 +2579,31 @@ void RaceNetworkHandler::HandleRequestMagicItem(
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(parameters.gameMode));
 
+  spdlog::info(
+    "Racer '{}' (uid '{}') requested magic item",
+    racer.oid,
+    clientContext.characterUid);
+
   // Only assign + respond if the gauge is full and the racer is empty-handed.
   // Anything else (stale request, duplicate after assignment, request while holding an item) drops.
-  if (racer.magicItem.has_value()
-    || racer.starPointValue < gameModeTemplate.starPointsMax)
+  if (racer.magicItem.has_value())
   {
+    spdlog::warn(
+      "Racer '{}' (uid '{}') requested magic item but is already holding item {}",
+      racer.oid,
+      clientContext.characterUid,
+      racer.magicItem.value());
+    return;
+  }
+
+  if (racer.starPointValue < gameModeTemplate.starPointsMax)
+  {
+    spdlog::warn(
+      "Racer '{}' (uid '{}') requested magic item with insufficient gauge ({} / {})",
+      racer.oid,
+      clientContext.characterUid,
+      racer.starPointValue,
+      gameModeTemplate.starPointsMax);
     return;
   }
 
@@ -2615,6 +2636,12 @@ void RaceNetworkHandler::GrantMagicItem(
     characterUid);
   racer.magicItem.emplace(magicItemSlotInfo.type);
   ++racer.magicItemGeneration;
+
+  spdlog::info(
+    "Racer '{}' (uid '{}') was granted magic item {}",
+    racer.oid,
+    characterUid,
+    magicItemSlotInfo.type);
 
   const protocol::AcCmdCRRequestMagicItemOK response{
     .characterOid = racer.oid,
@@ -2823,17 +2850,56 @@ void RaceNetworkHandler::HandleUseMagicItem(
   // Nothing to cast — acknowledge anyway so the client drops its held item indicator.
   if (not racer.magicItem.has_value() || command.magicItemId == 0)
   {
+    if (not racer.magicItem.has_value())
+    {
+      spdlog::warn(
+        "Racer '{}' (uid '{}') attempted to use magic item {} while holding nothing",
+        racer.oid,
+        clientContext.characterUid,
+        command.magicItemId);
+    }
+    
+    if (command.magicItemId == 0)
+    {
+      spdlog::warn(
+        "Racer '{}' (uid '{}') attempted to use invalid magic item {}",
+        racer.oid,
+        clientContext.characterUid,
+        command.magicItemId);
+    }
+
     racer.magicItem.reset();
     AcknowledgeEmptyMagicUse(clientId, command.characterOid);
     return;
   }
 
+  if (racer.magicItem.value() != command.magicItemId)
+  {
+    spdlog::warn(
+      "Racer '{}' (uid '{}') attempted to use magic item {} but was holding item {}",
+      racer.oid,
+      clientContext.characterUid,
+      command.magicItemId,
+      racer.magicItem.value());
+  }
+
   if (not GetServerInstance().GetMagicRegistry().GetSlotInfoMap().contains(command.magicItemId))
   {
-    spdlog::warn("Racer {} tried to use unknown magic item id {}",
-      racer.oid, command.magicItemId);
+    spdlog::warn(
+      "Racer '{}' (uid '{}') tried to use unknown magic item id {}",
+      racer.oid,
+      clientContext.characterUid,
+      command.magicItemId);
     return;
   }
+
+  spdlog::info(
+    "Racer '{}' (uid '{}') used magic item {} (held {}) with target list {}",
+    racer.oid,
+    clientContext.characterUid,
+    command.magicItemId,
+    racer.magicItem.value(),
+    command.targetList);
 
   const auto& magicSlotInfo = ConsumeCriticalAura(
     raceInstance,
@@ -3080,6 +3146,13 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
           {
             return starPointResponse;
           });
+
+        spdlog::info(
+          "Racer '{}' (uid '{}') picked up magic item {} from item deck {}",
+          racer.oid,
+          clientContext.characterUid,
+          magicItem,
+          command.itemDeckId);
       }
       else
       {
@@ -3140,6 +3213,12 @@ void RaceNetworkHandler::HandleStartMagicTarget(
     return;
   }
 
+  spdlog::info(
+    "Racer '{}' (uid '{}') started magic target against racer OID {}",
+    racer.oid,
+    clientContext.characterUid,
+    command.targetOid);
+
   auto& racers = raceInstance.GetTracker().GetRacers();
   const auto targetIter = std::ranges::find_if(
     racers,
@@ -3188,6 +3267,15 @@ void RaceNetworkHandler::HandleChangeMagicTarget(
     return;
   }
 
+  spdlog::info(
+    "Racer '{}' (uid '{}') changed target for magic effect instance id {}, with caster {}, to target OID {} - target OID2  {}",
+    racer.oid,
+    clientContext.characterUid,
+    command.effectInstanceId,
+    command.casterOid,
+    command.targetOid,
+    command.targetOid2);
+
   if (!racer.pendingMagicTarget.has_value())
   {
     spdlog::warn("Caster does not have dragon in HandleChangeMagicTarget");
@@ -3220,7 +3308,7 @@ void RaceNetworkHandler::HandleChangeMagicTarget(
 
   if (targetIter == racers.end())
   {
-    spdlog::warn("Target OID {} not found in HandleStartMagicTarget", command.targetOid);
+    spdlog::warn("Target OID {} not found in HandleChangeMagicTarget", command.targetOid);
     return;
   }
 
@@ -3348,6 +3436,15 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
     spdlog::warn("Client tried to perform action on behalf of different racer");
     return;
   }
+
+  spdlog::info(
+    "Racer '{}' (uid '{}') requested skill effect activation (target OID {}, effectId {}, attacker OID {}, instance {})",
+    targetRacer.oid,
+    clientContext.characterUid,
+    command.targetOid,
+    command.effectId,
+    command.attackerOid,
+    command.effectInstanceId);
 
   const auto& magicRegistry = GetServerInstance().GetMagicRegistry();
   const auto* magicSlotInfo = &magicRegistry.GetSlotInfoByEffectId(command.effectId);

@@ -25,6 +25,9 @@
 
 #include <libserver/util/Util.hpp>
 
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ranges.h>
+
 #include <tuple>
 #include <format>
 #include <limits>
@@ -572,6 +575,22 @@ void RaceInstance::TickLoading()
 
   // Switch to the racing stage and set the timeout time point.
   _stage = Stage::Racing;
+
+  {
+    std::map<uint32_t, uint16_t> racerMappings{};
+    for (const auto& [characterUid, racer] : _tracker.GetRacers())
+    {
+      if (racer.state != tracker::RaceTracker::Racer::State::Racing)
+        continue;
+      racerMappings.try_emplace(characterUid, racer.oid);
+    }
+
+    spdlog::info(
+      "Room {} transitioned from loading to racing. Active racers (uid -> oid): {}",
+      this->GetRoomUid(),
+      racerMappings);
+  }
+
   if (_parameters.teamMode == protocol::TeamMode::Single)
     _stageTimeoutTimePoint = Clock::time_point::max();
   else
