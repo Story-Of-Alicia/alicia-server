@@ -25,6 +25,7 @@
 #include <libserver/util/Util.hpp>
 
 #include <charconv>
+#include <cstdlib>
 #include <limits>
 #include <regex>
 #include <format>
@@ -1717,7 +1718,8 @@ void ChatSystem::RegisterAdminCommands()
         return {"mod",
           " reset user [name]",
           " rename [horse/pet/guild/room] [uid] [name]",
-          " transfer guild [guildUid] [newOwnerUsername]"};
+          " transfer guild [guildUid] [newOwnerUsername]",
+          " give carrots [amount] [name]"};
 
       const auto& subcommand = arguments[0];
       if (subcommand == "reset")
@@ -2027,7 +2029,6 @@ void ChatSystem::RegisterAdminCommands()
           return {std::format("All macros cleared for user '{}'", targetUserName)};
         }
       }
-
       else if (subcommand == "transfer")
       {
         if (arguments.size() < 2)
@@ -2106,6 +2107,126 @@ void ChatSystem::RegisterAdminCommands()
 
           return {
             std::format("Guild '{}' ownership transferred to '{}'", guildName, newOwnerUserName)};
+        }
+      }
+      else if (subcommand == "give")
+      {
+        const std::vector<std::string> giveHelp = {
+            "mod give",
+            "  carrots [amount] [name]"};
+
+        if (arguments.size() < 2)
+          return giveHelp;
+
+        const auto& subCommandOption = arguments[1];
+        if (subCommandOption == "carrots")
+        {
+          if (arguments.size() < 3)
+            return {
+              std::format("mod give carrots"),
+              "   [amount] [name]"};
+
+          int32_t carrotAmount{};
+          try
+          {
+            const int64_t amount = std::stoll(arguments[2].c_str());
+            if (amount > std::numeric_limits<int32_t>::max())
+              carrotAmount = std::numeric_limits<int32_t>::max();
+            else if (amount < std::numeric_limits<int32_t>::min())
+              carrotAmount = std::numeric_limits<int32_t>::min();
+            else
+              carrotAmount = static_cast<int32_t>(amount);
+          }
+          catch (const std::invalid_argument&)
+          {
+            return {"The amount entered was not valid."};
+          }
+          catch (const std::out_of_range&)
+          {
+            return {"The amount entered was out of range."};
+          }
+          catch (const std::exception& ex)
+          {
+            return {
+              "There was an error parsing carrot amount.\n",
+              std::format("{}", ex.what())};
+          }
+
+          if (arguments.size() < 4)
+            return {
+              std::format("mod give carrots {}", carrotAmount),
+              "    [name]"};
+
+          const std::string& targetUserName = arguments[3];
+          const auto targetUserRecord = _serverInstance.GetDataDirector().GetUser(targetUserName);
+          if (not targetUserRecord.IsAvailable())
+            return {std::format("User '{}' does not exist or is currently unavailable", targetUserName)};
+
+          data::Uid targetCharacterUid{data::InvalidUid};
+          targetUserRecord.Immutable(
+            [&targetCharacterUid](const data::User& user)
+            {
+              targetCharacterUid = user.characterUid();
+            });
+
+          if (targetCharacterUid == data::InvalidUid)
+            return {std::format("User '{}' does not have a character", targetUserName)};
+
+          const auto targetCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(targetCharacterUid);
+          if (not targetCharacterRecord.IsAvailable())
+            return {std::format("Character '{}' does not exist or is currently unavailable", targetCharacterUid)};
+
+          int32_t previousBalance{};
+          int32_t newBalance{};
+          std::string targetCharacterName{};
+          targetCharacterRecord.Mutable(
+            [&targetCharacterName, &previousBalance, &newBalance, carrotAmount](data::Character& character)
+            {
+              targetCharacterName = character.name();
+              previousBalance = character.carrots();
+
+              const int64_t temporaryCarrotBalance = static_cast<int64_t>(character.carrots());
+              if (temporaryCarrotBalance + carrotAmount > std::numeric_limits<int32_t>::max())
+                character.carrots() = std::numeric_limits<int32_t>::max();
+              else if (temporaryCarrotBalance + carrotAmount < std::numeric_limits<int32_t>::min())
+                character.carrots() = std::numeric_limits<int32_t>::min();
+              else
+                character.carrots() = character.carrots() + carrotAmount;
+
+              newBalance = character.carrots();
+            });
+
+          if (newBalance == previousBalance)
+            return {
+              std::format(
+                "No changes were made to the character {} ('{}') balance.",
+                targetCharacterUid,
+                targetCharacterName)};
+
+          spdlog::info("GM {} ({}) gave {} carrots to character {} ('{}') (previous balance {}, new balance {})",
+            invokerUserName,
+            invokerCharacterName,
+            carrotAmount,
+            targetCharacterUid,
+            targetCharacterName,
+            previousBalance,
+            newBalance);
+
+          return {
+            std::format(
+              "Character {} ('{}') was {} {} carrots (previous balance {}, new balance {})",
+              targetCharacterUid,
+              targetCharacterName,
+              newBalance > previousBalance
+                ? "credited"
+                : "debited",
+              std::abs(newBalance - previousBalance),
+              previousBalance,
+              newBalance)};
+        }
+        else
+        {
+          return giveHelp;
         }
       }
 
