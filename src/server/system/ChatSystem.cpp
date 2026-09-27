@@ -25,6 +25,7 @@
 #include <libserver/util/Util.hpp>
 
 #include <charconv>
+#include <cstdlib>
 #include <limits>
 #include <regex>
 #include <format>
@@ -177,7 +178,7 @@ ChatSystem::CommandVerdict ChatSystem::ProcessCommandMessage(
   return verdict;
 }
 
-std::optional<data::Character::RoleRank> ChatSystem::GetRoleRank(
+std::optional<data::Character::StaffRank> ChatSystem::GetStaffRank(
   const data::Uid characterUid)
 {
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -185,13 +186,14 @@ std::optional<data::Character::RoleRank> ChatSystem::GetRoleRank(
   if (not characterRecord)
     return std::nullopt;
 
-  std::optional<data::Character::RoleRank> rank;
+  std::optional<data::Character::StaffRank> rank;
   characterRecord.Immutable([&rank](const data::Character& character)
-    {
-      // Only staff (any role other than User) carry a meaningful rank.
-      if (character.role() != data::Character::Role::User && character.roleRank() != data::Character::RoleRank::None)
-        rank = character.roleRank();
-    });
+  {
+    // Only staff (any role other than User) carry a meaningful rank.
+    if (character.role() != data::Character::Role::User
+      && character.staffRank() != data::Character::StaffRank::None)
+      rank = character.staffRank();
+  });
 
   return rank;
 }
@@ -358,8 +360,8 @@ void ChatSystem::RegisterUserCommands()
       // todo: development command, to be removed
 
       // Horse manipulation is Admin-only.
-      const auto rank = GetRoleRank(characterUid);
-      if (not rank || *rank < data::Character::RoleRank::Admin)
+      const auto rank = GetStaffRank(characterUid);
+      if (not rank || *rank < data::Character::StaffRank::Admin)
         return {"Only Admin-rank staff can use this command."};
 
       if (arguments.size() < 1)
@@ -584,7 +586,7 @@ void ChatSystem::RegisterUserCommands()
       if (subLiteral == "item")
       {
         // Any staff member.
-        const auto rank = GetRoleRank(characterUid);
+        const auto rank = GetStaffRank(characterUid);
         if (not rank)
         {
           return {
@@ -688,8 +690,8 @@ void ChatSystem::RegisterUserCommands()
       else if (subLiteral == "preset")
       {
         // Admin-only.
-        const auto rank = GetRoleRank(characterUid);
-        if (not rank || *rank < data::Character::RoleRank::Admin)
+        const auto rank = GetStaffRank(characterUid);
+        if (not rank || *rank < data::Character::StaffRank::Admin)
           return {"Only Admin-rank staff can use this command."};
 
         // //give preset <care> [<count>]
@@ -780,8 +782,8 @@ void ChatSystem::RegisterUserCommands()
       else if (subLiteral == "horse")
       {
         // Giving horses is Admin-only.
-        const auto rank = GetRoleRank(characterUid);
-        if (not rank || *rank < data::Character::RoleRank::Admin)
+        const auto rank = GetStaffRank(characterUid);
+        if (not rank || *rank < data::Character::StaffRank::Admin)
           return {"Only Admin-rank staff can use this command.",
             "Go breed some horses!"};
 
@@ -812,9 +814,13 @@ void ChatSystem::RegisterUserCommands()
           [this, &horseUid](data::Horse& horse)
           {
             // Prepare new horse with initial values
+            const auto now = data::Clock::now();
+
             horse.tid() = 20002;
-            horse.dateOfBirth() = data::Clock::now();
+            horse.dateOfBirth() = now;
             horse.mountCondition.stamina = 3500;
+            horse.mountCondition.boredom = HorseSystem::MaxBoredom;
+            horse.mountCondition.lastDailyCareTick = now;
             horse.growthPoints() = 150;
             horse.clazz = 1;
             horse.tendency() = 1;
@@ -846,11 +852,11 @@ void ChatSystem::RegisterUserCommands()
       else if (subLiteral == "carrots")
       {
         // Only allow Admin-rank staff to use this subcommand.
-        const auto rank = GetRoleRank(characterUid);
+        const auto rank = GetStaffRank(characterUid);
         if (not rank)
           return {"You don't have permission to use this command."};
 
-        if (*rank < data::Character::RoleRank::Admin)
+        if (*rank < data::Character::StaffRank::Admin)
           return {"Only Admin-rank staff can use this command."};
 
         if (arguments.size() < 2)
@@ -906,7 +912,7 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
-      const auto invokerRank = GetRoleRank(characterUid);
+      const auto invokerRank = GetStaffRank(characterUid);
       if (not invokerRank)
         return {};
 
@@ -969,7 +975,7 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
-      const auto invokerRank = GetRoleRank(characterUid);
+      const auto invokerRank = GetStaffRank(characterUid);
       if (not invokerRank)
         return {};
 
@@ -1017,11 +1023,11 @@ void ChatSystem::RegisterAdminCommands()
       data::Uid invokerCharacterUid) -> std::vector<std::string>
     {
       // Only Admin-rank staff may promote, and only with the configured passphrase.
-      const auto invokerRank = GetRoleRank(invokerCharacterUid);
+      const auto invokerRank = GetStaffRank(invokerCharacterUid);
       if (not invokerRank)
         return {};
 
-      if (*invokerRank < data::Character::RoleRank::Admin)
+      if (*invokerRank < data::Character::StaffRank::Admin)
         return {"Only Admin-rank staff can promote users."};
 
       if (arguments.size() < 3)
@@ -1042,13 +1048,13 @@ void ChatSystem::RegisterAdminCommands()
       if (passphrase != configuredPassphrase)
         return {"Incorrect passphrase."};
 
-      data::Character::RoleRank grantedRank;
+      data::Character::StaffRank grantedRank;
       if (rankArgument == "trial" || rankArgument == "t")
-        grantedRank = data::Character::RoleRank::Trial;
+        grantedRank = data::Character::StaffRank::Trial;
       else if (rankArgument == "mod" || rankArgument == "moderator" || rankArgument == "m")
-        grantedRank = data::Character::RoleRank::Moderator;
+        grantedRank = data::Character::StaffRank::Moderator;
       else if (rankArgument == "admin" || rankArgument == "a")
-        grantedRank = data::Character::RoleRank::Admin;
+        grantedRank = data::Character::StaffRank::Admin;
       else
         return {"Invalid rank. Use one of: trial, mod, admin"};
 
@@ -1078,16 +1084,16 @@ void ChatSystem::RegisterAdminCommands()
 
       std::string characterName;
       characterRecord.Mutable([&characterName, grantedRank](data::Character& character)
-        {
-          character.role() = data::Character::Role::GameMaster;
-          character.roleRank() = grantedRank;
-          characterName = character.name();
-        });
+      {
+        character.role() = data::Character::Role::GameMaster;
+        character.staffRank() = grantedRank;
+        characterName = character.name();
+      });
 
       const auto rankName =
-        grantedRank == data::Character::RoleRank::Trial       ? "Trial"
-        : grantedRank == data::Character::RoleRank::Moderator ? "Moderator"
-                                                              : "Admin";
+        grantedRank == data::Character::StaffRank::Trial ? "Trial"
+        : grantedRank == data::Character::StaffRank::Moderator ? "Moderator"
+        : "Admin";
 
       const auto invokerUserName =
         _serverInstance.GetLobbyDirector().GetUserByCharacterUid(invokerCharacterUid).userName;
@@ -1108,11 +1114,11 @@ void ChatSystem::RegisterAdminCommands()
       data::Uid invokerCharacterUid) -> std::vector<std::string>
     {
       // Only Admin-rank staff may demote.
-      const auto invokerRank = GetRoleRank(invokerCharacterUid);
+      const auto invokerRank = GetStaffRank(invokerCharacterUid);
       if (not invokerRank)
         return {};
 
-      if (*invokerRank < data::Character::RoleRank::Admin)
+      if (*invokerRank < data::Character::StaffRank::Admin)
         return {"Only Admin-rank staff can demote users."};
 
       if (arguments.empty())
@@ -1146,11 +1152,11 @@ void ChatSystem::RegisterAdminCommands()
 
       std::string characterName;
       characterRecord.Mutable([&characterName](data::Character& character)
-        {
-          character.role() = data::Character::Role::User;
-          character.roleRank() = data::Character::RoleRank::None;
-          characterName = character.name();
-        });
+      {
+        character.role() = data::Character::Role::User;
+        character.staffRank() = data::Character::StaffRank::None;
+        characterName = character.name();
+      });
 
       return {std::format("User '{}' ({}) demoted to user", userName, characterName)};
     });
@@ -1160,7 +1166,7 @@ void ChatSystem::RegisterAdminCommands()
                                    const std::span<const std::string>& arguments,
                                    data::Uid characterUid) -> std::vector<std::string>
   {
-    const auto invokerRank = GetRoleRank(characterUid);
+    const auto invokerRank = GetStaffRank(characterUid);
     if (not invokerRank)
       return {};
 
@@ -1228,7 +1234,7 @@ void ChatSystem::RegisterAdminCommands()
 
       // Trial staff may only issue temporary bans of up to 30 days.
       // Mutes and "none" records are unrestricted for all ranks.
-      if (punishmentType == data::Infraction::Punishment::Ban && *invokerRank < data::Character::RoleRank::Moderator)
+      if (punishmentType == data::Infraction::Punishment::Ban && *invokerRank < data::Character::StaffRank::Moderator)
       {
         constexpr auto MaxTrialBan = std::chrono::days(30);
         if (duration == std::chrono::seconds::max() || duration > MaxTrialBan)
@@ -1501,7 +1507,7 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
-      const auto invokerRank = GetRoleRank(characterUid);
+      const auto invokerRank = GetStaffRank(characterUid);
       if (not invokerRank)
         return {};
 
@@ -1693,7 +1699,7 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
-      const auto invokerRank = GetRoleRank(characterUid);
+      const auto invokerRank = GetStaffRank(characterUid);
       if (not invokerRank)
         return {};
 
@@ -1703,16 +1709,17 @@ void ChatSystem::RegisterAdminCommands()
 
       std::string invokerCharacterName{};
       invokerRecord.Immutable([&invokerCharacterName](const data::Character& character)
-        {
-          invokerCharacterName = character.name();
-        });
+      {
+        invokerCharacterName = character.name();
+      });
       const auto invokerUserName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(characterUid).userName;
 
       if (arguments.empty())
         return {"mod",
           " reset user [name]",
           " rename [horse/pet/guild/room] [uid] [name]",
-          " transfer guild [guildUid] [newOwnerUsername]"};
+          " transfer guild [guildUid] [newOwnerUsername]",
+          " give carrots [amount] [name]"};
 
       const auto& subcommand = arguments[0];
       if (subcommand == "reset")
@@ -2022,7 +2029,6 @@ void ChatSystem::RegisterAdminCommands()
           return {std::format("All macros cleared for user '{}'", targetUserName)};
         }
       }
-
       else if (subcommand == "transfer")
       {
         if (arguments.size() < 2)
@@ -2103,6 +2109,129 @@ void ChatSystem::RegisterAdminCommands()
             std::format("Guild '{}' ownership transferred to '{}'", guildName, newOwnerUserName)};
         }
       }
+      else if (subcommand == "give")
+      {
+        if (*invokerRank < data::Character::StaffRank::Admin)
+          return {"Only Admin-rank staff can give carrots to users."};
+
+        const std::vector<std::string> giveHelp = {
+            "mod give",
+            "  carrots [amount] [name]"};
+
+        if (arguments.size() < 2)
+          return giveHelp;
+
+        const auto& subCommandOption = arguments[1];
+        if (subCommandOption == "carrots")
+        {
+          if (arguments.size() < 3)
+            return {
+              std::format("mod give carrots"),
+              "   [amount] [name]"};
+
+          int32_t carrotAmount{};
+          try
+          {
+            const int64_t amount = std::stoll(arguments[2].c_str());
+            if (amount > std::numeric_limits<int32_t>::max())
+              carrotAmount = std::numeric_limits<int32_t>::max();
+            else if (amount < std::numeric_limits<int32_t>::min())
+              carrotAmount = std::numeric_limits<int32_t>::min();
+            else
+              carrotAmount = static_cast<int32_t>(amount);
+          }
+          catch (const std::invalid_argument&)
+          {
+            return {"The amount entered was not valid."};
+          }
+          catch (const std::out_of_range&)
+          {
+            return {"The amount entered was out of range."};
+          }
+          catch (const std::exception& ex)
+          {
+            return {
+              "There was an error parsing carrot amount.\n",
+              std::format("{}", ex.what())};
+          }
+
+          if (arguments.size() < 4)
+            return {
+              std::format("mod give carrots {}", carrotAmount),
+              "    [name]"};
+
+          const std::string& targetUserName = arguments[3];
+          const auto targetUserRecord = _serverInstance.GetDataDirector().GetUser(targetUserName);
+          if (not targetUserRecord.IsAvailable())
+            return {std::format("User '{}' does not exist or is currently unavailable", targetUserName)};
+
+          data::Uid targetCharacterUid{data::InvalidUid};
+          targetUserRecord.Immutable(
+            [&targetCharacterUid](const data::User& user)
+            {
+              targetCharacterUid = user.characterUid();
+            });
+
+          if (targetCharacterUid == data::InvalidUid)
+            return {std::format("User '{}' does not have a character", targetUserName)};
+
+          const auto targetCharacterRecord = _serverInstance.GetDataDirector().GetCharacter(targetCharacterUid);
+          if (not targetCharacterRecord.IsAvailable())
+            return {std::format("Character '{}' does not exist or is currently unavailable", targetCharacterUid)};
+
+          int32_t previousBalance{};
+          int32_t newBalance{};
+          std::string targetCharacterName{};
+          targetCharacterRecord.Mutable(
+            [&targetCharacterName, &previousBalance, &newBalance, carrotAmount](data::Character& character)
+            {
+              targetCharacterName = character.name();
+              previousBalance = character.carrots();
+
+              const int64_t temporaryCarrotBalance = static_cast<int64_t>(character.carrots());
+              if (temporaryCarrotBalance + carrotAmount > std::numeric_limits<int32_t>::max())
+                character.carrots() = std::numeric_limits<int32_t>::max();
+              else if (temporaryCarrotBalance + carrotAmount < std::numeric_limits<int32_t>::min())
+                character.carrots() = std::numeric_limits<int32_t>::min();
+              else
+                character.carrots() = character.carrots() + carrotAmount;
+
+              newBalance = character.carrots();
+            });
+
+          if (newBalance == previousBalance)
+            return {
+              std::format(
+                "No changes were made to the character {} ('{}') balance.",
+                targetCharacterUid,
+                targetCharacterName)};
+
+          spdlog::info("GM {} ({}) gave {} carrots to character {} ('{}') (previous balance {}, new balance {})",
+            invokerUserName,
+            invokerCharacterName,
+            carrotAmount,
+            targetCharacterUid,
+            targetCharacterName,
+            previousBalance,
+            newBalance);
+
+          return {
+            std::format(
+              "Character {} ('{}') was {} {} carrots (previous balance {}, new balance {})",
+              targetCharacterUid,
+              targetCharacterName,
+              newBalance > previousBalance
+                ? "credited"
+                : "debited",
+              std::abs(newBalance - previousBalance),
+              previousBalance,
+              newBalance)};
+        }
+        else
+        {
+          return giveHelp;
+        }
+      }
 
       return {"Unknown sub-command"};
     });
@@ -2180,11 +2309,11 @@ void ChatSystem::RegisterAdminCommands()
       data::Uid invokerCharacterUid) -> std::vector<std::string>
     {
       // Overwriting progression values is Admin-only.
-      const auto invokerRank = GetRoleRank(invokerCharacterUid);
+      const auto invokerRank = GetStaffRank(invokerCharacterUid);
       if (not invokerRank)
         return {};
 
-      if (*invokerRank < data::Character::RoleRank::Admin)
+      if (*invokerRank < data::Character::StaffRank::Admin)
         return {"Only Admin-rank staff can use this command."};
 
       if (arguments.size() < 2)
@@ -2328,8 +2457,8 @@ void ChatSystem::RegisterAdminCommands()
       const std::span<const std::string>& arguments,
       data::Uid characterUid) -> std::vector<std::string>
     {
-      const auto invokerRank = GetRoleRank(characterUid);
-      if (not invokerRank || *invokerRank != data::Character::RoleRank::Admin)
+      const auto invokerRank = GetStaffRank(characterUid);
+      if (not invokerRank || *invokerRank != data::Character::StaffRank::Admin)
         return {};
 
       if (arguments.empty())

@@ -181,6 +181,39 @@ void AcCmdRCMobDead::Read(
   stream.Read(command.mobOid);
 }
 
+void AcCmdRCMissionEvent::Write(
+  const AcCmdRCMissionEvent& command,
+  SinkStream& stream)
+{
+  stream.Write(command.event)
+    .Write(command.val1)
+    .Write(command.val2);
+}
+
+void AcCmdRCMissionEvent::Read(
+  AcCmdRCMissionEvent& command,
+  SourceStream& stream)
+{
+  stream.Read(command.event)
+    .Read(command.val1)
+    .Read(command.val2);
+}
+
+void AcCmdCRAchievementUpdateProperty::Write(
+  const AcCmdCRAchievementUpdateProperty&,
+  SinkStream&)
+{
+  throw std::runtime_error("Not implemented.");
+}
+
+void AcCmdCRAchievementUpdateProperty::Read(
+  AcCmdCRAchievementUpdateProperty& command,
+  SourceStream& stream)
+{
+  stream.Read(command.achievementEvent)
+    .Read(command.achievementValue);
+}
+
 void AcCmdCRUpdateRanchLevelNotify::Write(
   const AcCmdCRUpdateRanchLevelNotify& command,
   SinkStream& stream)
@@ -215,21 +248,6 @@ void AcCmdRCUpdateDailyQuestNotify::Read(
   SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
-}
-
-void AcCmdCRAchievementUpdateProperty::Write(
-  const AcCmdCRAchievementUpdateProperty&,
-  SinkStream&)
-{
-  throw std::runtime_error("Not implemented");
-}
-
-void AcCmdCRAchievementUpdateProperty::Read(
-  AcCmdCRAchievementUpdateProperty& command,
-  SourceStream& stream)
-{
-  stream.Read(command.achievementEvent)
-    .Read(command.achievementValue);
 }
 
 } // namespace server::protocol

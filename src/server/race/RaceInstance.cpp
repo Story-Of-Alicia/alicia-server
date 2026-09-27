@@ -27,6 +27,9 @@
 
 #include <libserver/util/Util.hpp>
 
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ranges.h>
+
 #include <algorithm>
 #include <format>
 #include <limits>
@@ -196,7 +199,7 @@ void RaceInstance::Stop()
     const auto characterRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
 
-    characterRecord.Mutable([this, &score](data::Character& character)
+    characterRecord.Mutable([this, &score, &racer](data::Character& character)
     {
       character.carrots() += score.carrots;
       character.experience() += score.experience;
@@ -215,13 +218,25 @@ void RaceInstance::Stop()
       score.level = character.level();
       score.levelProgress = character.experience();
 
-      _raceNetworkHandler.GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
-        [&score](const data::Horse& horse)
+      _raceNetworkHandler.GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Mutable(
+        [this, &score, &racer, characterLevel = character.level()](data::Horse& horse)
         {
           score.mountName = horse.name();
           score.horseClass = static_cast<uint8_t>(horse.clazz());
           score.horseClassProgress = horse.clazzProgress();
           score.growthPoints = static_cast<uint16_t>(horse.growthPoints());
+          // TODO: Implement PC Bang status check for racers
+          constexpr bool isPcBang = false;
+          score.staminaDecRatio = isPcBang ? 50 : 100;
+
+          if (racer.state == State::Disconnected)
+            return;
+
+          // Racer is not disconnected, apply race condition reductions
+          _raceNetworkHandler.GetServerInstance().GetHorseSystem().ApplyPostRaceHorseConditionDebuffs(
+            horse,
+            characterLevel,
+            score.staminaDecRatio);
         });
     });
   }
@@ -545,6 +560,11 @@ const RaceInstance::Parameters& RaceInstance::GetParameters() const
   return _parameters;
 }
 
+RaceInstance::Parameters& RaceInstance::GetParameters()
+{
+  return _parameters;
+}
+
 registry::GameModeId RaceInstance::GetGameModeId() const
 {
   return _gameModeId;
@@ -634,6 +654,22 @@ void RaceInstance::TickLoading()
 
   // Switch to the racing stage and set the timeout time point.
   _stage = Stage::Racing;
+
+  {
+    std::map<uint32_t, uint16_t> racerMappings{};
+    for (const auto& [characterUid, racer] : _tracker.GetRacers())
+    {
+      if (racer.state != tracker::RaceTracker::Racer::State::Racing)
+        continue;
+      racerMappings.try_emplace(characterUid, racer.oid);
+    }
+
+    spdlog::info(
+      "Room {} transitioned from loading to racing. Active racers (uid -> oid): {}",
+      this->GetRoomUid(),
+      racerMappings);
+  }
+
   if (_parameters.teamMode == protocol::TeamMode::Single)
     _stageTimeoutTimePoint = Clock::time_point::max();
   else
@@ -728,9 +764,12 @@ void RaceInstance::TickActiveRaceContent()
 {
   // Tick active race content
   this->TickItemSpawners();
-  if (this->GetParameters().gameMode == protocol::GameMode::Magic)
+  if (_parameters.gameMode != protocol::GameMode::Mission and
+      this->GetGameModeId() == static_cast<registry::GameModeId>(protocol::GameMode::Magic))
+  {
     // Tick magic gauge
     this->TickMagicGauge();
+  }
 }
 
 void RaceInstance::TickItemSpawners()
@@ -954,6 +993,25 @@ void RaceInstance::TickMagicGauge()
 void RaceInstance::PrepareGameMode()
 {
   _gameModeId = static_cast<registry::GameModeId>(_parameters.gameMode);
+
+  // If this is a mission, get the underlying gamemode and set it to the true gamemode
+  // Room will contain the gamemode type as mission anyway
+  if (_parameters.gameMode == protocol::GameMode::Mission)
+  {
+    const auto& mission = _raceNetworkHandler
+      .GetServerInstance()
+      .GetMissionRegistry()
+      .GetMission(_parameters.missionId);
+
+    if (not mission)
+    {
+      throw std::runtime_error(
+        std::format("Mission with id {} not found in MissionRegistry", _parameters.missionId));
+    }
+
+    _gameModeId = static_cast<registry::GameModeId>(mission->gameMode);
+  }
+
   _gameModeInfo = _raceNetworkHandler
     .GetServerInstance()
     .GetCourseRegistry()

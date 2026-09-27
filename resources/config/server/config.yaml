@@ -8,7 +8,7 @@ server:
     # Passphrase required to use the //promote command. Acts as a second factor
     # Leave empty to disable promotion entirely.
     promotePassphrase: ""
-  # Configuration section of authentication.
+  # Authentication configuration section
   authentication:
     # Type of authentication backend.
     # Supported types are `local` and `postgres`.

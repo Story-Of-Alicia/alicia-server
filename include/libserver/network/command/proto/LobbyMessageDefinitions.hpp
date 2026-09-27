@@ -86,6 +86,8 @@ struct LobbyCommandLoginOK
   uint16_t level{};
   int32_t carrots{};
 
+  //! The level progress of the character.
+  //! This must be `0` for the prologue.
   uint32_t levelProgress{};
 
   enum class Role : uint32_t
@@ -99,18 +101,6 @@ struct LobbyCommandLoginOK
   uint8_t val3{};
 
   Settings settings{};
-
-  struct Mission
-  {
-    uint16_t id{};
-
-    struct Progress
-    {
-      uint32_t id{};
-      uint32_t value{};
-    };
-    std::vector<Progress> progress{};
-  };
 
   //! Max 17
   std::vector<Mission> missions{};
@@ -140,7 +130,8 @@ struct LobbyCommandLoginOK
 
   enum AvatarBitset : uint32_t
   {
-    HasPlayedBefore = 2,
+    NewPlayer = 0,
+    IntroCompleted = 2,
   };
   // std::bitset
   //! Bit 2: Has played before
@@ -2608,6 +2599,31 @@ struct AcCmdCLEnterRoomQuickSuccess
   //! @param stream Source stream.
   static void Read(
     AcCmdCLEnterRoomQuickSuccess& command,
+    SourceStream& stream);
+};
+
+struct AcCmdLCMissionRecordUpdate
+{
+  uint16_t missionId{};
+  protocol::Mission mission{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdLCMissionRecordUpdate;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdLCMissionRecordUpdate& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdLCMissionRecordUpdate& command,
     SourceStream& stream);
 };
 

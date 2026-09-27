@@ -268,21 +268,20 @@ struct Character
   };
   dao::Field<Role> role{};
 
-  //! Role privilege rank.
+  //! Staff permission tier.
   //! None: regular user, no staff powers.
   //! Trial: mute and temporary bans (up to 30 days).
   //! Moderator: mute and any type of ban.
   //! Admin: any admin command, including carrots and promoting/demoting.
-  enum class RoleRank
+  enum class StaffRank
   {
     None,
     Trial,
     Moderator,
     Admin
   };
-
   //! Regular users are always None; a rank is only granted via promotion.
-  dao::Field<RoleRank> roleRank{RoleRank::None};
+  dao::Field<StaffRank> staffRank{StaffRank::None};
 
   struct Parts
   {
@@ -352,6 +351,7 @@ struct Character
   } ranchManagement{};
 
   dao::Field<bool> isRanchLocked{};
+  dao::Field<bool> isIntroCompleted{false};
 
   dao::Field<Uid> settingsUid{InvalidUid};
 
@@ -384,6 +384,19 @@ struct Character
     dao::Field<std::vector<Uid>> inbox{};
     dao::Field<std::vector<Uid>> sent{};
   } mailbox{};
+
+  struct Mission
+  {
+    struct Progress
+    {
+      uint32_t id{};
+      uint32_t value{};
+    };
+
+    uint32_t id{};
+    std::vector<Progress> progress{};
+  };
+  dao::Field<std::map<uint32_t, Mission>> missions{};
 
   dao::Field<std::vector<Uid>> quests{};
 };
@@ -491,6 +504,7 @@ struct Horse
     dao::Field<uint32_t> tailPolish{};
     dao::Field<uint32_t> attachment{};
     dao::Field<uint32_t> boredom{};
+    dao::Field<Clock::time_point> lastDailyCareTick{};
     dao::Field<uint32_t> stopAmendsPoint{};
   } mountCondition{};
 

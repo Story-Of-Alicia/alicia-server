@@ -25,6 +25,7 @@
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/network/command/CommandServer.hpp>
 #include <libserver/network/command/proto/LobbyMessageDefinitions.hpp>
+#include <libserver/util/Scheduler.hpp>
 
 namespace server
 {
@@ -70,6 +71,10 @@ public:
   void NotifyMatchmakeResult(
     const data::Uid characterUid,
     const MatchmakingSystem::Result& result);
+
+  void NotifyMissionRecordUpdate(
+    data::Uid characterUid,
+    const protocol::Mission& mission);
 
   [[nodiscard]] CommandServer& GetCommandServer() noexcept;
 
@@ -131,6 +136,10 @@ private:
   void HandleEnterRoom(
     ClientId clientId,
     const protocol::AcCmdCLEnterRoom& command);
+
+  void SendRoomEntryResponse(
+    bool leftRanch,
+    Scheduler::Task sendResponse);
 
   void HandleLeaveRoom(
     ClientId clientId);

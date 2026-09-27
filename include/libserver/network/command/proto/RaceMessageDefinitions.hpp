@@ -1053,7 +1053,8 @@ struct AcCmdRCRaceResultNotify
     //! Relates to `AcCmdCRStartRaceNotify::Struct1::clearedDifficulty`
     uint32_t trainingCarrotReward{};
     uint8_t member25{};
-    uint32_t member26{};
+    //! Stamina reduction ratio percentage. Default is 100 (100% consumption).
+    uint32_t staminaDecRatio{100};
     uint32_t member27{};
   };
 
@@ -2952,6 +2953,30 @@ struct AcCmdRCObtainEgg
   //! @param stream Source stream.
   static void Read(
     AcCmdRCObtainEgg& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRRestartRace
+{
+  // Empty
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRRestartRace;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRRestartRace& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRRestartRace& command,
     SourceStream& stream);
 };
 

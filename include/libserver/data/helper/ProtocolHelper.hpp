@@ -100,6 +100,13 @@ void BuildProtocolQuests(
   std::vector<Quest>& protocolQuests,
   const std::vector<Record<data::Quest>>& questRecords);
 
+void BuildProtocolMission(
+  protocol::Mission& protocolMission,
+  const data::Character::Mission& mission);
+
+void BuildProtocolMissions(
+  std::vector<protocol::Mission>& protocolMissions,
+  const std::map<uint32_t, data::Character::Mission>& missions);
 
 } // namespace protocol
 

@@ -93,7 +93,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
-        positionalWeights: [103, 10, 10, 5, 4, 3, 3, 3]
+        positionalWeights: [103, 10, 10, 5, 4, 3, 0, 0]
         givePositionalMagic: 0
 
       - type: 5               # WaterShield (Critical)
@@ -215,7 +215,7 @@ magic:
         massEffect: 0
         affectByCriticalAura: 1
         criticalByDarkFire: 0
-        positionalWeights:  [0, 0, 0, 0, 1, 3, 35, 35]
+        positionalWeights:  [0, 0, 0, 0, 1, 3, 10, 10]
         givePositionalMagic: 0
 
       - type: 9               # HotRodding (Critical)
@@ -277,7 +277,7 @@ magic:
         affectByCriticalAura: 1
         criticalByDarkFire: 0
         attackRank: 1
-        positionalWeights: [89, 31, 20, 20, 10, 12, 3, 3]
+        positionalWeights: [89, 31, 20, 20, 10, 12, 0, 0]
         givePositionalMagic: 0
 
       - type: 11              # IceWall (Critical)
@@ -525,7 +525,7 @@ magic:
         affectByCriticalAura: 1
         criticalByDarkFire: 1
         attackRank: 3
-        positionalWeights: [0, 3, 3, 3, 4, 4, 4, 4]
+        positionalWeights: [0, 1, 1, 1, 1, 1, 2, 2]
         givePositionalMagic: 0
 
       - type: 19              # Lightning (Critical)
@@ -807,3 +807,15 @@ magic:
       stat: ambition
       critStepBp: 250
       targetDurationReductionBp: 5
+
+  # Maps racer count to positional mapping configuration.
+  # racer count -> 1-based positional index mapping
+  rankingConversionInfo:
+    1: {1: 1, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0}
+    2: {1: 1, 2: 2, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0}
+    3: {1: 1, 2: 2, 3: 8, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0}
+    4: {1: 1, 2: 2, 3: 4, 4: 8, 5: 0, 6: 0, 7: 0, 8: 0}
+    5: {1: 1, 2: 2, 3: 4, 4: 5, 5: 8, 6: 0, 7: 0, 8: 0}
+    6: {1: 1, 2: 2, 3: 4, 4: 5, 5: 7, 6: 8, 7: 0, 8: 0}
+    7: {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 7, 7: 8, 8: 0}
+    8: {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8}

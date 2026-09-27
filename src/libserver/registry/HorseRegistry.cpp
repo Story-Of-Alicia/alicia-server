@@ -323,11 +323,16 @@ void HorseRegistry::BuildDefaultHorse(
   data::Tid horseTid)
 {
   constexpr uint32_t DefaultHorseStamina = 4000;
+  constexpr uint32_t DefaultHorseBoredom = 25;
   constexpr uint32_t DefaultHorseAppearanceValue = 5;
 
+  const auto now = data::Clock::now();
+
   horse.tid() = horseTid;
-  horse.dateOfBirth() = data::Clock::now();
+  horse.dateOfBirth() = now;
   horse.mountCondition.stamina = DefaultHorseStamina;
+  horse.mountCondition.boredom = DefaultHorseBoredom;
+  horse.mountCondition.lastDailyCareTick = now;
   horse.tendency() = 1;
   horse.clazz = 1;
   horse.grade = 1;

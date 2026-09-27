@@ -31,6 +31,7 @@
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 #include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 
+#include <optional>
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
@@ -60,6 +61,8 @@ public:
 
   //!
   void Disconnect(data::Uid characterUid);
+
+  [[nodiscard]] bool LeaveRanch(data::Uid characterUid);
 
   //!
   void BroadcastSetIntroductionNotify(
@@ -195,6 +198,10 @@ private:
   void HandleRanchLeave(
     ClientId clientId);
 
+  void RemoveClientFromRanch(
+    ClientId clientId,
+    ClientContext& clientContext);
+
   //! Rebuilds the client's set of maturing foals, promoting any that already
   //! reached the grow-up duration to adults in the data store. Called on ranch
   //! entry so foals matured while away are adults before the snapshot is sent.
@@ -282,11 +289,15 @@ private:
   //! Calculates the breeding success rate (0-100).
   //! @param stallionGrade Grade of the stallion.
   //! @param stallionBreedingCount Lifetime breeding count of the stallion.
+  //! @param mareUid UID of the character's own mare.
+  //! @param mareCharm Current charm points of the mare.
   //! @param bonus Rolled breeding bonus.
   //! @returns Success rate as a percentage capped at 100.
   [[nodiscard]] uint32_t CalculateBreedingSuccessRate(
     uint32_t stallionGrade,
     uint32_t stallionBreedingCount,
+    data::Uid mareUid,
+    uint32_t mareCharm,
     const protocol::BreedingBonus& bonus);
 
   //! Creates a foal from a successful breeding, spawns it on the ranch and fills
@@ -608,6 +619,7 @@ private:
   void HandleBreedingWishlistDelete(
     ClientId clientId,
     const protocol::AcCmdCRBreedingWishlistDel& command);
+
 
   //!
   ServerInstance& _serverInstance;
