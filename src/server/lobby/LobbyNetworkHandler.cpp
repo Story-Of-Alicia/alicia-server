@@ -2367,10 +2367,10 @@ void LobbyNetworkHandler::HandleUpdateSystemContent(
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  bool hasPermission = false;
+  bool hasPermission = _serverInstance.GetSettings().general.testMode;
   characterRecord.Immutable([&hasPermission](const data::Character& character)
   {
-    hasPermission = character.role() != data::Character::Role::User;
+    hasPermission = hasPermission || character.role() != data::Character::Role::User;
   });
 
   if (not hasPermission)

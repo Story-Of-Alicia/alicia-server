@@ -3970,12 +3970,12 @@ void RaceNetworkHandler::HandleRequestUser(
   if (not invokerRecord)
     return;
 
-  bool isAdmin = false;
+  bool isAdmin = _serverInstance.GetSettings().general.testMode;
   std::string invokerCharacterName{};
   invokerRecord.Immutable([&isAdmin, &invokerCharacterName](const data::Character& character)
     {
 
-      isAdmin = character.role() != data::Character::Role::User;
+      isAdmin = isAdmin || character.role() != data::Character::Role::User;
       invokerCharacterName = character.name();
     });
   const auto& userName = clientContext.userName;

@@ -82,6 +82,13 @@ void Config::LoadFromEnvironment()
     }
   };
 
+  // Test mode toggle: makes every staff-only command usable by anyone.
+  const std::string testModeValue = getEnvValue("TEST_MODE");
+  if (not testModeValue.empty())
+  {
+    general.testMode = testModeValue == "true" || testModeValue == "1";
+  }
+
   // Lobby address and port.
   getAddressAndPortVariables(
     std::format("LOBBY_SERVER_ADDRESS"),
@@ -187,6 +194,7 @@ void Config::LoadFromFile(const std::filesystem::path& filePath)
       general.brand = generalYaml["brand"].as<std::string>("<not set>");
       general.notice = generalYaml["notice"].as<std::string>("");
       general.promotePassphrase = generalYaml["promotePassphrase"].as<std::string>("");
+      general.testMode = generalYaml["testMode"].as<bool>(false);
     }
     catch (const std::exception& e)
     {
