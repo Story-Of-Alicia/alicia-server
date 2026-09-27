@@ -51,6 +51,7 @@ ServerInstance::ServerInstance(
   , _ranchDirector(*this)
   , _raceDirector(*this)
   , _chatSystem(*this)
+  , _gameEventSystem(*this)
   , _infractionSystem(*this)
   , _itemSystem(*this)
   , _horseSystem(*this)
@@ -291,6 +292,7 @@ void ServerInstance::LoadConfigurations()
   _systemContentRegistry.ReadConfig(_resourceDirectory / "config/server/system_content.yaml");
 
   // Read game configurations
+  _achievementRegistry.ReadConfig(_resourceDirectory / "config/game/achievements.yaml");
   _breedingRegistry.ReadConfig(_resourceDirectory / "config/game/breeding.yaml");
   _characterRegistry.ReadConfig(_resourceDirectory / "config/game/character.yaml");
   _courseRegistry.ReadConfig(_resourceDirectory / "config/game/courses.yaml");
@@ -301,6 +303,7 @@ void ServerInstance::LoadConfigurations()
   _missionRegistry.ReadConfig(_resourceDirectory / "config/game/missions.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
   _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
+  _questItemRegistry.ReadConfig(_resourceDirectory / "config/game/questitems.yaml");
   _speedRegistry.ReadConfig(_resourceDirectory / "config/game/speed.yaml");
 }
 
@@ -344,6 +347,11 @@ PrivateChatDirector& ServerInstance::GetPrivateChatDirector()
   return _privateChatDirector;
 }
 
+registry::AchievementRegistry& ServerInstance::GetAchievementRegistry()
+{
+  return _achievementRegistry;
+}
+
 registry::CharacterRegistry& ServerInstance::GetCharacterRegistry()
 {
   return _characterRegistry;
@@ -379,6 +387,11 @@ registry::QuestRegistry& ServerInstance::GetQuestRegistry()
   return _questRegistry;
 }
 
+registry::QuestItemRegistry& ServerInstance::GetQuestItemRegistry()
+{
+  return _questItemRegistry;
+}
+
 registry::MissionRegistry& ServerInstance::GetMissionRegistry()
 {
   return _missionRegistry;
@@ -402,6 +415,16 @@ registry::BreedingRegistry& ServerInstance::GetBreedingRegistry()
 registry::SpeedRegistry& ServerInstance::GetSpeedRegistry()
 {
   return _speedRegistry;
+}
+
+GameEventBus& ServerInstance::GetGameEventBus()
+{
+  return _gameEventBus;
+}
+
+GameEventSystem& ServerInstance::GetGameEventSystem()
+{
+  return _gameEventSystem;
 }
 
 ChatSystem& ServerInstance::GetChatSystem()

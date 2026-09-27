@@ -29,6 +29,7 @@
 #include <array>
 #include <chrono>
 #include <map>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -50,6 +51,7 @@ public:
     Oid oid{};
     uint32_t itemType{};
     protocol::Vector3 position{};
+    std::optional<uint32_t> qTemId{};
   };
 
   //! A racer.

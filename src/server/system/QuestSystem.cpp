@@ -26,87 +26,108 @@
 
 #include <spdlog/spdlog.h>
 
+#include <chrono>
+
 namespace server
 {
+
+namespace
+{
+//! Daily quest reset hour (6AM server time)
+constexpr std::chrono::hours DailyResetHour{6};
+
+} // anonymous namespace
 
 QuestSystem::QuestSystem(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
 {
+  _gameEventListenerHandle = _serverInstance.GetGameEventBus().Subscribe(
+    [this](const GameEvent& event)
+    {
+      HandleGameEvent(event);
+    });
 }
 
 bool QuestSystem::IsModeMatch(
-  const registry::Quest::GameModeFlag questFlag,
-  const registry::Quest::GameModeFlag eventMode)
+  const registry::GameModeFlag questFlag,
+  const registry::GameModeFlag eventMode)
 {
   // Flag None (0): no mode restriction
-  if (questFlag == registry::Quest::GameModeFlag::None)
+  if (questFlag == registry::GameModeFlag::None)
     return true;
   // Flag Any (111): explicitly matches all race modes
-  if (questFlag == registry::Quest::GameModeFlag::Any)
+  if (questFlag == registry::GameModeFlag::Any)
     return true;
   return questFlag == eventMode;
 }
 
-registry::Quest::GameModeFlag QuestSystem::ToGameModeFlag(
-  const protocol::GameMode gameMode,
-  const protocol::TeamMode teamMode)
+bool QuestSystem::Matches(
+  const registry::Quest& quest,
+  const GameEvent& event)
 {
-  using GameModeFlag = registry::Quest::GameModeFlag;
-  const bool isTeam = teamMode == protocol::TeamMode::Team;
+  if (quest.userAchvEvent != static_cast<uint32_t>(event.userAchvEvent))
+    return false;
 
-  switch (gameMode)
+  if (quest.function != event.function)
+    return false;
+
+  if (not IsModeMatch(quest.gameModeFlag, event.gameMode))
+    return false;
+
+  return quest.functionValue == 0 || quest.functionValue == event.value;
+}
+
+uint32_t QuestSystem::GetProgressIncrement(
+  const registry::Function function,
+  const GameEvent& event)
+{
+  switch (function)
   {
-    case protocol::GameMode::Speed:
-      return isTeam ? GameModeFlag::SpeedTeam : GameModeFlag::SpeedSoloAction;
-    case protocol::GameMode::Magic:
-      return isTeam ? GameModeFlag::MagicTeam : GameModeFlag::MagicSoloAction;
+    case registry::Function::GlidingDistanceValue:
+      return event.value;
+
     default:
-      return GameModeFlag::None;
+      return 1;
   }
 }
 
-bool QuestSystem::IsEventMatch(
-  const registry::Quest::Function function,
-  const QuestEvent event,
-  const uint32_t questFunctionValue,
-  const uint32_t eventValue)
+bool QuestSystem::EnsureDailyQuestGroupFresh(data::DailyQuestGroup& group)
 {
-  switch (event)
-  {
-    case QuestEvent::Any:
-      return function == registry::Quest::Function::True;
-    case QuestEvent::PrizeWinner:
-      return function == registry::Quest::Function::PrizeWinnerForLowLevel ||
-             function == registry::Quest::Function::PrizeWinnerInMapForLowLevel;
-    case QuestEvent::PerfectJump:
-      return function == registry::Quest::Function::PerfectJump;
-    case QuestEvent::FireballAttack:
-      return function == registry::Quest::Function::FireballAttack;
-    case QuestEvent::RunMap:
-      return function == registry::Quest::Function::RunMap && questFunctionValue == eventValue;
-    case QuestEvent::TeamWin:
-      return function == registry::Quest::Function::TeamWin;
-    case QuestEvent::GlidingDistance:
-      return function == registry::Quest::Function::GlidingDistanceValue;
-    case QuestEvent::CollectDropItem:
-      return function == registry::Quest::Function::CollectDropItem;
-    default:
-      return false;
-  }
+  using namespace std::chrono;
+
+  const auto now = data::Clock::now();
+  const auto currentDay = floor<days>(now - DailyResetHour);
+  const auto lastResetDay = floor<days>(group.lastResetAt() - DailyResetHour);
+
+  if (lastResetDay >= currentDay)
+    return false;
+
+  group.rewardId = 0;
+  group.rewardType = 0;
+  group.rewardPoints = 0;
+  group.carrotsClaimed = false;
+  group.rewardClaimed = false;
+  group.quests = std::array<data::DailyQuestEntry, 3>{};
+  group.lastResetAt = now;
+
+  return true;
 }
 
 std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
   const data::Uid characterUid,
-  const QuestEvent event,
-  const registry::Quest::GameModeFlag gameMode,
-  const uint32_t value)
+  const GameEvent& event)
 {
   auto& dataDirector = _serverInstance.GetDataDirector();
   const auto& questRegistry = _serverInstance.GetQuestRegistry();
 
   const auto characterRecord = dataDirector.GetCharacter(characterUid);
   if (!characterRecord)
+  {
+    spdlog::debug(
+      "QuestSystem::OnQuestEvent: character {} record unavailable, ignoring event",
+      characterUid);
     return {};
+  }
 
   // Read the character's daily quest group UID
   data::Uid dailyQuestGroupUid = data::InvalidUid;
@@ -116,11 +137,22 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
   });
 
   if (dailyQuestGroupUid == data::InvalidUid)
+  {
+    spdlog::debug(
+      "QuestSystem::OnQuestEvent: character {} has no daily quest group assigned",
+      characterUid);
     return {};
+  }
 
   auto questGroupRecord = dataDirector.GetDailyQuestGroup(dailyQuestGroupUid);
   if (!questGroupRecord)
+  {
+    spdlog::debug(
+      "QuestSystem::OnQuestEvent: daily quest group {} for character {} unavailable",
+      dailyQuestGroupUid,
+      characterUid);
     return {};
+  }
 
   std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> notifies;
 
@@ -134,20 +166,38 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
 
       const auto questDef = questRegistry.GetQuest(entry.questId);
       if (!questDef)
+      {
+        spdlog::warn(
+          "QuestSystem::OnQuestEvent: quest {} in group {} not found in registry",
+          entry.questId,
+          dailyQuestGroupUid);
         continue;
+      }
 
       // Already satisfied
       if (entry.progress >= questDef->successValue)
         continue;
 
-      // Check game mode and function match
-      if (!IsModeMatch(questDef->gameModeFlag, gameMode))
+      if (not Matches(*questDef, event))
+      {
+        spdlog::debug(
+          "QuestSystem::OnQuestEvent: quest {} does not match event "
+          "(quest uae {} fn {} fnValue {} mode {}; event uae {} fn {} value {} mode {})",
+          entry.questId,
+          questDef->userAchvEvent,
+          static_cast<uint32_t>(questDef->function),
+          questDef->functionValue,
+          static_cast<uint32_t>(questDef->gameModeFlag),
+          static_cast<uint32_t>(event.userAchvEvent),
+          static_cast<uint32_t>(event.function),
+          event.value,
+          static_cast<uint32_t>(event.gameMode));
         continue;
-      if (!IsEventMatch(questDef->function, event, questDef->functionValue, value))
-        continue;
+      }
 
-      // Advance progress by 1 (all quest functions are count-based)
-      entry.progress = std::min(entry.progress + 1, questDef->successValue);
+      entry.progress = std::min(
+        entry.progress + GetProgressIncrement(questDef->function, event),
+        questDef->successValue);
 
       const bool completed = entry.progress >= questDef->successValue;
 
@@ -164,6 +214,35 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
           ? questDef->rewardExp
           : 0;
 
+      uint32_t carrotsTotal = 0;
+
+      if (carrotsReward > 0)
+      {
+        characterRecord.Mutable([carrotsReward, &carrotsTotal](data::Character& character)
+        {
+          character.carrots() += carrotsReward;
+          carrotsTotal = static_cast<uint32_t>(character.carrots());
+        });
+      }
+
+      if (mountExp > 0)
+      {
+        data::Uid mountUid = data::InvalidUid;
+        characterRecord.Immutable([&mountUid](const data::Character& character)
+        {
+          mountUid = character.mountUid();
+        });
+
+        auto mountRecord = dataDirector.GetHorse(mountUid);
+        if (mountRecord)
+        {
+          mountRecord.Mutable([this, mountExp](data::Horse& horse)
+          {
+            _serverInstance.GetHorseRegistry().ApplyClassProgress(horse, mountExp);
+          });
+        }
+      }
+
       notifies.push_back({
         .characterUid = static_cast<uint32_t>(characterUid),
         .questId = static_cast<uint16_t>(entry.questId),
@@ -171,7 +250,7 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
           .isCompleted = completed,
           .progress = entry.progress,
         },
-        .carrotsReward = carrotsReward,
+        .carrotsReward = carrotsTotal,
         .rewardType = rewardType,
         .unk2 = 0,
         .mountExp = mountExp,
@@ -183,6 +262,118 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
   });
 
   return notifies;
+}
+
+std::vector<protocol::AcCmdRCUpdateQuestNotify> QuestSystem::OnRegularQuestEvent(
+  const data::Uid characterUid,
+  const GameEvent& event)
+{
+  auto& dataDirector = _serverInstance.GetDataDirector();
+  const auto& questRegistry = _serverInstance.GetQuestRegistry();
+
+  const auto characterRecord = dataDirector.GetCharacter(characterUid);
+  if (!characterRecord)
+    return {};
+
+  std::vector<data::Uid> questUids;
+  characterRecord.Immutable([&questUids](const data::Character& character)
+  {
+    questUids = character.quests();
+  });
+
+  std::vector<protocol::AcCmdRCUpdateQuestNotify> notifies;
+
+  for (const data::Uid questUid : questUids)
+  {
+    auto questRecord = dataDirector.GetQuest(questUid);
+    if (!questRecord)
+      continue;
+
+    questRecord.Mutable([&](data::Quest& quest)
+    {
+      // Only in-progress quests can advance.
+      if (quest.isCompleted() != data::Quest::Status::InProgress)
+        return;
+
+      const auto questDef = questRegistry.GetQuest(quest.questId());
+      if (!questDef)
+      {
+        spdlog::warn(
+          "QuestSystem::OnRegularQuestEvent: quest {} not found in registry",
+          quest.questId());
+        return;
+      }
+
+      if (not Matches(*questDef, event))
+        return;
+
+      // Advance progress by the event's contribution (count-based functions
+      // contribute 1; value-accumulating functions contribute their value).
+      quest.progress() = std::min(
+        quest.progress() + GetProgressIncrement(questDef->function, event),
+        questDef->successValue);
+
+      const bool completed = quest.progress() >= questDef->successValue;
+      if (completed)
+        quest.isCompleted() = data::Quest::Status::ReadyToClaim;
+
+      notifies.push_back({
+        .characterUid = static_cast<uint32_t>(characterUid),
+        .questTid = static_cast<uint16_t>(quest.questId()),
+        .objectiveProgress = {
+          .isCompleted = completed,
+          .progress = quest.progress(),
+        },
+      });
+    });
+  }
+
+  return notifies;
+}
+
+void QuestSystem::HandleGameEvent(const GameEvent& event)
+{
+  if (event.userAchvEvent == registry::UserAchvEvent::None)
+    return;
+
+  const auto notifies = OnQuestEvent(event.characterUid, event);
+  const auto regularNotifies = OnRegularQuestEvent(event.characterUid, event);
+
+  // Send the notify packets to the appropriate director based on the event origin
+  switch (event.origin)
+  {
+    case GameEvent::Origin::Ranch:
+    {
+      auto& ranchDirector = _serverInstance.GetRanchDirector();
+      for (const auto& notify : notifies)
+        ranchDirector.SendDailyQuestNotificationToCharacter(event.characterUid, notify);
+      for (const auto& notify : regularNotifies)
+        ranchDirector.SendQuestNotificationToCharacter(event.characterUid, notify);
+      break;
+    }
+    case GameEvent::Origin::Race:
+    {
+      auto& raceDirector = _serverInstance.GetRaceDirector();
+      for (const auto& notify : notifies)
+      {
+        raceDirector.SendDailyQuestNotificationToCharacter(
+          event.characterUid,
+          notify.questId,
+          notify.objectiveProgress,
+          notify.carrotsReward,
+          notify.rewardType,
+          notify.mountExp);
+      }
+      for (const auto& notify : regularNotifies)
+      {
+        raceDirector.SendQuestNotificationToCharacter(
+          event.characterUid,
+          notify.questTid,
+          notify.objectiveProgress);
+      }
+      break;
+    }
+  }
 }
 
 } // namespace server

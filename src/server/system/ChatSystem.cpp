@@ -181,6 +181,11 @@ ChatSystem::CommandVerdict ChatSystem::ProcessCommandMessage(
 std::optional<data::Character::StaffRank> ChatSystem::GetStaffRank(
   const data::Uid characterUid)
 {
+  // In test mode, every command normally gated behind a staff rank is
+  // available to everyone.
+  if (_serverInstance.GetSettings().general.testMode)
+    return data::Character::StaffRank::Admin;
+
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     characterUid);
   if (not characterRecord)
@@ -1468,11 +1473,14 @@ void ChatSystem::RegisterAdminCommands()
       if (not invokerRecord)
         return {"Server error"};
 
-      bool isAdmin = false;
-      invokerRecord.Immutable([&isAdmin](const data::Character& character)
-        {
-          isAdmin = character.role() != data::Character::Role::User;
-        });
+      bool isAdmin = _serverInstance.GetSettings().general.testMode;
+      if (not isAdmin)
+      {
+        invokerRecord.Immutable([&isAdmin](const data::Character& character)
+          {
+            isAdmin = character.role() != data::Character::Role::User;
+          });
+      }
 
       if (not isAdmin)
         return {};

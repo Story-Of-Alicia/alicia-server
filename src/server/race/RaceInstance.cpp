@@ -19,18 +19,23 @@
 
 #include "server/ServerInstance.hpp"
 
+#include "server/event/GameEvent.hpp"
 #include "server/race/MagicSystem.hpp"
 #include "server/race/RaceInstance.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
+#include "server/system/GameEventSystem.hpp"
 
 #include <libserver/util/Util.hpp>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ranges.h>
 
-#include <tuple>
+#include <algorithm>
 #include <format>
 #include <limits>
+#include <optional>
+#include <tuple>
+#include <unordered_set>
 
 namespace server
 {
@@ -262,6 +267,69 @@ void RaceInstance::Stop()
 
   // Broadcast the race result
   _raceNetworkHandler.Broadcast(*this, raceResult);
+
+  // Fire game events for progress-tracking systems (quests, achievements, ...)
+  // subscribed to the game event bus.
+  {
+    auto& gameEventBus = _raceNetworkHandler.GetServerInstance().GetGameEventBus();
+    const auto gameModeFlag = GameEventSystem::ToGameModeFlag(_parameters.gameMode, _parameters.teamMode);
+
+    for (std::size_t index = 0; index < raceResult.scores.size(); ++index)
+    {
+      const auto& score = raceResult.scores[index];
+      // Did not finish (disconnected or timed out).
+      if (score.courseTime == tracker::InvalidCourseTime)
+        continue;
+
+      const data::Uid characterUid = score.uid;
+
+      gameEventBus.Fire({
+        .userAchvEvent = registry::UserAchvEvent::RaceCompleted,
+        .function = registry::Function::True,
+        .origin = GameEvent::Origin::Race,
+        .characterUid = characterUid,
+        .gameMode = gameModeFlag});
+
+      gameEventBus.Fire({
+        .userAchvEvent = registry::UserAchvEvent::RaceCompleted,
+        .function = registry::Function::RunMap,
+        .origin = GameEvent::Origin::Race,
+        .characterUid = characterUid,
+        .gameMode = gameModeFlag,
+        .value = _parameters.mapBlockId});
+
+      // Top 3 finishers, by placement order already established by the sort above.
+      if (index < 3)
+      {
+        const auto winGameModeFlag = GameEventSystem::ToWinGameModeFlag(_parameters.gameMode, _parameters.teamMode);
+
+        gameEventBus.Fire({
+          .userAchvEvent = registry::UserAchvEvent::RaceCompleted,
+          .function = registry::Function::PrizeWinnerForLowLevel,
+          .origin = GameEvent::Origin::Race,
+          .characterUid = characterUid,
+          .gameMode = winGameModeFlag});
+
+        gameEventBus.Fire({
+          .userAchvEvent = registry::UserAchvEvent::RaceCompleted,
+          .function = registry::Function::PrizeWinnerInMapForLowLevel,
+          .origin = GameEvent::Origin::Race,
+          .characterUid = characterUid,
+          .gameMode = winGameModeFlag,
+          .value = _parameters.mapBlockId});
+      }
+
+      if (_parameters.teamMode == protocol::TeamMode::Team && score.teamColor == winningTeam)
+      {
+        gameEventBus.Fire({
+          .userAchvEvent = registry::UserAchvEvent::RaceCompleted,
+          .function = registry::Function::TeamWin,
+          .origin = GameEvent::Origin::Race,
+          .characterUid = characterUid,
+          .gameMode = gameModeFlag});
+      }
+    }
+  }
 
   // The race counts towards every racer's ranch bonus, which pays out on each
   // twentieth race. The client expects the update to follow the race result.
@@ -740,8 +808,47 @@ void RaceInstance::TickItemSpawners()
       });
   };
 
+  const auto processQuestItemSpawn = [&](
+    ClientId clientId,
+    tracker::RaceTracker::Racer& racer,
+    const tracker::RaceTracker::EventItem& item)
+  {
+    const auto distance = (racer.worldPosition - item.position).Length();
+
+    const bool isInProximity = distance < ItemSpawnDistanceThreshold;
+    const bool isAlreadyTracked = racer.trackedDecks.contains(item.oid);
+
+    if (isAlreadyTracked)
+    {
+      if (not isInProximity)
+        racer.trackedDecks.erase(item.oid);
+
+      return;
+    }
+
+    if (not isInProximity and not this->GetTracker().firstPassItemSpawn)
+      return;
+
+    const protocol::AcCmdGameQuestItemSpawn spawn{
+      .itemId = item.oid,
+      .questItemId = *item.qTemId,
+      .itemType = item.itemType,
+      .position = {item.position.x, item.position.y, item.position.z},
+      .orientation = {0.f, 0.f, 0.f, 1.f},
+      .sizeLevel = 0,
+      .removeDelay = 0};
+
+    racer.trackedDecks.insert(item.oid);
+    _raceNetworkHandler.GetCommandServer().QueueCommand<decltype(spawn)>(
+      clientId,
+      [spawn]()
+      {
+        return spawn;
+      });
+  };
+
   // Loop through each player in the room
-  this->GetRoom([this, &processItemSpawn](const Room& room)
+  this->GetRoom([this, &processItemSpawn, &processQuestItemSpawn](const Room& room)
   {
     for (const auto& [characterUid, player] : room.GetPlayers())
     {
@@ -769,13 +876,18 @@ void RaceInstance::TickItemSpawners()
       }
 
       for (const auto& eventItem : racer.eventItems)
-        processItemSpawn(
-          player.GetClientId(),
-          racer,
-          eventItem.oid,
-          eventItem.itemType,
-          eventItem.position,
-          3);
+      {
+        if (eventItem.qTemId.has_value())
+          processQuestItemSpawn(player.GetClientId(), racer, eventItem);
+        else
+          processItemSpawn(
+            player.GetClientId(),
+            racer,
+            eventItem.oid,
+            eventItem.itemType,
+            eventItem.position,
+            3);
+      }
     }
   });
 
@@ -969,6 +1081,8 @@ void RaceInstance::PrepareMap()
   {
     // Prepare the item decks on the map.
     PrepareItemDecks();
+    // Prepare quest collectible spawns on the map.
+    PrepareQuestItems();
   }
   catch (const std::exception& e)
   {
@@ -1039,6 +1153,146 @@ void RaceInstance::PrepareItemDecks()
       deck.position = deckInstance.position + offset;
 
       PickRandomItemFromDeck(deck);
+    }
+  }
+}
+
+void RaceInstance::PrepareQuestItems()
+{
+  _questItemPools.clear();
+
+  auto& serverInstance = _raceNetworkHandler.GetServerInstance();
+  const auto& questItemRegistry = serverInstance.GetQuestItemRegistry();
+  const auto& questRegistry = serverInstance.GetQuestRegistry();
+  auto& dataDirector = serverInstance.GetDataDirector();
+
+  std::unordered_set<uint32_t> neededQTemIds;
+  this->GetRoom([&](const Room& room)
+  {
+    for (const auto& characterUid : room.GetPlayers() | std::views::keys)
+    {
+      const auto characterRecord = dataDirector.GetCharacter(characterUid);
+      if (!characterRecord)
+        continue;
+
+      std::vector<data::Uid> questUids;
+      characterRecord.Immutable([&questUids](const data::Character& character)
+      {
+        questUids = character.quests();
+      });
+
+      for (const auto questUid : questUids)
+      {
+        const auto questRecord = dataDirector.GetQuest(questUid);
+        if (!questRecord)
+          continue;
+
+        questRecord.Immutable([&](const data::Quest& quest)
+        {
+          if (quest.isCompleted() != data::Quest::Status::InProgress)
+            return;
+
+          const auto questDef = questRegistry.GetQuest(quest.questId());
+          if (!questDef || questDef->function != registry::Function::CollectDropItem)
+            return;
+
+          neededQTemIds.insert(questDef->functionValue);
+        });
+      }
+    }
+  });
+
+  if (neededQTemIds.empty())
+    return;
+
+  for (const auto& [qDeckId, deck] : questItemRegistry.GetQuestItemDecks())
+  {
+    if (not neededQTemIds.contains(deck.qTemId))
+      continue;
+
+    // Find the deckId whose candidate positions apply to this map block, if any.
+    std::optional<registry::DeckId> matchingDeckId;
+    for (const auto& spawnPoint : deck.spawnPoints)
+    {
+      if (spawnPoint.mapBlockId == _mapBlockId)
+      {
+        matchingDeckId = spawnPoint.deckId;
+        break;
+      }
+    }
+
+    if (not matchingDeckId)
+      continue;
+
+    // Gather this map block's candidate positions for that deckId.
+    std::vector<protocol::Vector3> candidates;
+    for (const auto& deckInstance : _mapBlockInfo.itemDecks)
+    {
+      if (deckInstance.deckId == *matchingDeckId)
+        candidates.push_back(deckInstance.position);
+    }
+
+    if (candidates.empty())
+      continue;
+
+    _questItemPools.emplace(deck.qTemId, std::make_pair(*matchingDeckId, std::move(candidates)));
+  }
+}
+
+void RaceInstance::AssignQuestItemsToRacers()
+{
+  if (_questItemPools.empty())
+    return;
+
+  const auto& offset = _mapBlockInfo.offset;
+  auto& serverInstance = _raceNetworkHandler.GetServerInstance();
+  const auto& questRegistry = serverInstance.GetQuestRegistry();
+  auto& dataDirector = serverInstance.GetDataDirector();
+
+  for (const auto& [characterUid, racer] : _tracker.GetRacers())
+  {
+    const auto characterRecord = dataDirector.GetCharacter(characterUid);
+    if (!characterRecord)
+      continue;
+
+    std::vector<data::Uid> questUids;
+    characterRecord.Immutable([&questUids](const data::Character& character)
+    {
+      questUids = character.quests();
+    });
+
+    std::unordered_set<uint32_t> racerNeededQTemIds;
+    for (const auto questUid : questUids)
+    {
+      const auto questRecord = dataDirector.GetQuest(questUid);
+      if (!questRecord)
+        continue;
+
+      questRecord.Immutable([&](const data::Quest& quest)
+      {
+        if (quest.isCompleted() != data::Quest::Status::InProgress)
+          return;
+
+        const auto questDef = questRegistry.GetQuest(quest.questId());
+        if (!questDef || questDef->function != registry::Function::CollectDropItem)
+          return;
+
+        if (_questItemPools.contains(questDef->functionValue))
+          racerNeededQTemIds.insert(questDef->functionValue);
+      });
+    }
+
+    for (const auto qTemId : racerNeededQTemIds)
+    {
+      const auto& [deckId, candidates] = _questItemPools.at(qTemId);
+
+      std::uniform_int_distribution<size_t> positionDist(0, candidates.size() - 1);
+      const auto& chosenPosition = candidates[positionDist(server::util::GetRandomEngine())];
+
+      auto& item = _tracker.AddEventItem(characterUid);
+      item.qTemId = qTemId;
+      item.itemType = deckId;
+      item.position = chosenPosition + offset;
     }
   }
 }
