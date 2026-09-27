@@ -2112,7 +2112,7 @@ void ChatSystem::RegisterAdminCommands()
       else if (subcommand == "give")
       {
         if (*invokerRank < data::Character::StaffRank::Admin)
-          return {"Only Admin-rank staff can give carrots users."};
+          return {"Only Admin-rank staff can give carrots to users."};
 
         const std::vector<std::string> giveHelp = {
             "mod give",
