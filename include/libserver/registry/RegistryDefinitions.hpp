@@ -131,6 +131,7 @@ enum class GameModeFlag : uint32_t
   None           = 0,
   SpeedTeam      = 2,
   MagicTeam      = 8,
+  MissionSoloAction = 16,  //!< Mission/training course actions.
   WinSpeedSolo   = 33,
   SpeedSoloAction = 35,  //!< Perfect jumps, boosts
   WinMagicSolo   = 68,

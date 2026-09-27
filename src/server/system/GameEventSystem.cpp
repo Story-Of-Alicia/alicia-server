@@ -117,6 +117,8 @@ registry::GameModeFlag GameEventSystem::ToGameModeFlag(
       return isTeam ? GameModeFlag::SpeedTeam : GameModeFlag::SpeedSoloAction;
     case protocol::GameMode::Magic:
       return isTeam ? GameModeFlag::MagicTeam : GameModeFlag::MagicSoloAction;
+    case protocol::GameMode::Mission:
+      return GameModeFlag::MissionSoloAction;
     default:
       return GameModeFlag::None;
   }

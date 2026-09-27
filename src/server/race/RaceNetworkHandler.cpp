@@ -4515,6 +4515,14 @@ void RaceNetworkHandler::HandleMissionEvent(
       // Mission completed, record into character's missions
       saveMissionRecord(clientContext.characterUid, parameters.missionId);
 
+      GetServerInstance().GetGameEventBus().Fire({
+        .userAchvEvent = registry::UserAchvEvent::RaceCompleted,
+        .function = registry::Function::ClearMission,
+        .origin = GameEvent::Origin::Race,
+        .characterUid = clientContext.characterUid,
+        .gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode),
+        .value = parameters.missionId});
+
       break;
     }
     case MissionEvent::EVENT_SCRIPT:

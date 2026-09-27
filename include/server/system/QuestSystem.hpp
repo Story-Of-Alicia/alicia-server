@@ -74,6 +74,10 @@ private:
     registry::GameModeFlag questFlag,
     registry::GameModeFlag eventMode);
 
+  static uint32_t GetProgressIncrement(
+    registry::Function function,
+    const GameEvent& event);
+
   //! Listener for the server's game event bus.
   void HandleGameEvent(const GameEvent& event);
 

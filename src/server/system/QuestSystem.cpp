@@ -77,6 +77,20 @@ bool QuestSystem::Matches(
   return quest.functionValue == 0 || quest.functionValue == event.value;
 }
 
+uint32_t QuestSystem::GetProgressIncrement(
+  const registry::Function function,
+  const GameEvent& event)
+{
+  switch (function)
+  {
+    case registry::Function::GlidingDistanceValue:
+      return event.value;
+
+    default:
+      return 1;
+  }
+}
+
 bool QuestSystem::EnsureDailyQuestGroupFresh(data::DailyQuestGroup& group)
 {
   using namespace std::chrono;
@@ -181,8 +195,9 @@ std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> QuestSystem::OnQuestEvent(
         continue;
       }
 
-      // Advance progress by 1 (all quest functions are count-based)
-      entry.progress = std::min(entry.progress + 1, questDef->successValue);
+      entry.progress = std::min(
+        entry.progress + GetProgressIncrement(questDef->function, event),
+        questDef->successValue);
 
       const bool completed = entry.progress >= questDef->successValue;
 
@@ -292,8 +307,11 @@ std::vector<protocol::AcCmdRCUpdateQuestNotify> QuestSystem::OnRegularQuestEvent
       if (not Matches(*questDef, event))
         return;
 
-      // Advance progress by 1 (all quest functions are count-based)
-      quest.progress() = std::min(quest.progress() + 1, questDef->successValue);
+      // Advance progress by the event's contribution (count-based functions
+      // contribute 1; value-accumulating functions contribute their value).
+      quest.progress() = std::min(
+        quest.progress() + GetProgressIncrement(questDef->function, event),
+        questDef->successValue);
 
       const bool completed = quest.progress() >= questDef->successValue;
       if (completed)
