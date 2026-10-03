@@ -194,6 +194,11 @@ private:
   //! Rolls a percentage value in [0, 99].
   int RollPercent();
 
+  //! Moves up to a few points from the largest stat to random low stats.
+  //! Preserves the stat total, so the foal's grade is unaffected.
+  //! @param stats Foal stats, already fitted to the target grade.
+  void ApplyStatMutation(std::array<uint32_t, 5>& stats);
+
   //! Extracts shape from a mane or tail TID.
   //! @param tid Mane or tail TID.
   //! @param part Part::Mane or Part::Tail.

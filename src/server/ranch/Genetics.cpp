@@ -43,6 +43,16 @@ constexpr int kGrandparentStep = 5;
 //! Stallion breeding count is capped here before it feeds the pregnancy/coat bonus.
 constexpr uint32_t kMaxPregnancyChance = 30;
 
+//! Foal stats whose parent average is at or below this are inherited point by point
+//! and are the only stats a mutation can land on.
+constexpr uint32_t kLowStatThreshold = 2;
+//! Chance for each stray point on a parent's low stat to be passed down to the foal.
+constexpr int kStrayPointInheritChance = 20;
+//! Chance of the first mutation point, then of each further point, up to the max.
+constexpr int kMutationChance = 67;
+constexpr int kExtraMutationChance = 25;
+constexpr uint32_t kMaxMutationPoints = 3;
+
 //! Picks one value weighted by its parallel weight, or returns the fallback when empty.
 template <typename T, typename W>
 T PickWeighted(
@@ -495,27 +505,31 @@ data::Horse::Stats Genetics::CalculateFoalStats(
   const uint32_t targetTotal =
     std::uniform_int_distribution<uint32_t>(minTotal, maxTotal)(server::util::GetRandomEngine());
 
-  // Base each stat on the parent average. Very low averages get a small mutation bonus
-  // so two weak parents can still produce a slightly better foal.
+  // Base each developed stat on the parent average. Low stats are left at zero here and, 
+  // so a specialised line stays specialised.
   const auto calcBaseStat = [&](uint32_t mareStat, uint32_t stallionStat) -> uint32_t
   {
     const uint32_t avgStat = (mareStat + stallionStat) / 2;
-
-    if (avgStat <= 2)
-    {
-      // Weighted bonus of +0..+3, increasingly generous as the average rises.
-      static const std::array<std::array<int, 4>, 3> bonusWeights{{
-        {{30, 40, 20, 10}}, // avg 0
-        {{20, 50, 25, 5}},  // avg 1
-        {{10, 30, 50, 10}}, // avg 2
-      }};
-      const auto& w = bonusWeights[avgStat];
-      std::discrete_distribution<int> bonusDist(w.begin(), w.end());
-      return std::min<uint32_t>(avgStat + bonusDist(server::util::GetRandomEngine()), 100);
-    }
+    if (avgStat <= kLowStatThreshold)
+      return 0;
 
     const int32_t offset = std::uniform_int_distribution<int32_t>(-3, 3)(server::util::GetRandomEngine());
     return static_cast<uint32_t>(std::clamp(static_cast<int32_t>(avgStat) + offset, 0, 100));
+  };
+
+  // pass down stray points from low stats, which are the only stats a mutation can land on.
+  const auto calcStrayStat = [&](uint32_t mareStat, uint32_t stallionStat) -> uint32_t
+  {
+    if ((mareStat + stallionStat) / 2 > kLowStatThreshold)
+      return 0;
+
+    uint32_t inherited = 0;
+    for (uint32_t point = 0; point < mareStat + stallionStat; ++point)
+    {
+      if (RollPercent() < kStrayPointInheritChance)
+        inherited += 1;
+    }
+    return inherited;
   };
 
   std::array<uint32_t, 5> stats{
@@ -525,14 +539,40 @@ data::Horse::Stats Genetics::CalculateFoalStats(
     calcBaseStat(mareStats.endurance(), stallionStats.endurance()),
     calcBaseStat(mareStats.ambition(), stallionStats.ambition())};
 
+  std::array<uint32_t, 5> strayStats{
+    calcStrayStat(mareStats.agility(), stallionStats.agility()),
+    calcStrayStat(mareStats.courage(), stallionStats.courage()),
+    calcStrayStat(mareStats.rush(), stallionStats.rush()),
+    calcStrayStat(mareStats.endurance(), stallionStats.endurance()),
+    calcStrayStat(mareStats.ambition(), stallionStats.ambition())};
+
+  uint32_t strayTotal = 0;
+  for (const uint32_t stat : strayStats)
+    strayTotal += stat;
+
+  // drop the stray points if they exceed the target
+  if (strayTotal > targetTotal)
+  {
+    strayStats.fill(0);
+    strayTotal = 0;
+  }
+
+  // fill the remaining points to reach the target grade's bucket and scale the stats proportionally to fit.
+  const uint32_t scaledTarget = targetTotal - strayTotal;
+
   uint32_t currentTotal = 0;
   for (const uint32_t stat : stats)
     currentTotal += stat;
 
-  // Scale the stats proportionally so their sum lands inside the target grade's bucket.
-  if (currentTotal != targetTotal && currentTotal > 0)
+  if (currentTotal == 0)
   {
-    const double scale = static_cast<double>(targetTotal) / static_cast<double>(currentTotal);
+    stats.fill(1);
+    currentTotal = static_cast<uint32_t>(stats.size());
+  }
+
+  if (currentTotal != scaledTarget)
+  {
+    const double scale = static_cast<double>(scaledTarget) / static_cast<double>(currentTotal);
     uint32_t scaledTotal = 0;
     for (uint32_t& stat : stats)
     {
@@ -541,16 +581,18 @@ data::Horse::Stats Genetics::CalculateFoalStats(
     }
 
     // Absorb the rounding remainder into the largest stat.
-    const int32_t difference = static_cast<int32_t>(targetTotal) - static_cast<int32_t>(scaledTotal);
+    const int32_t difference = static_cast<int32_t>(scaledTarget) - static_cast<int32_t>(scaledTotal);
     if (difference != 0)
     {
       uint32_t& largest = *std::max_element(stats.begin(), stats.end());
       largest = static_cast<uint32_t>(static_cast<int32_t>(largest) + difference);
     }
-
-    for (uint32_t& stat : stats)
-      stat = std::min(stat, 100u);
   }
+
+  for (size_t i = 0; i < stats.size(); ++i)
+    stats[i] = std::min(stats[i] + strayStats[i], 100u);
+
+  ApplyStatMutation(stats);
 
   data::Horse::Stats result;
   result.agility = stats[0];
@@ -560,6 +602,35 @@ data::Horse::Stats Genetics::CalculateFoalStats(
   result.ambition = stats[4];
 
   return result;
+}
+
+void Genetics::ApplyStatMutation(std::array<uint32_t, 5>& stats)
+{
+  std::vector<size_t> lowStats;
+  for (size_t i = 0; i < stats.size(); ++i)
+  {
+    if (stats[i] <= kLowStatThreshold)
+      lowStats.push_back(i);
+  }
+
+  if (lowStats.empty())
+    return;
+
+  uint32_t& largest = *std::max_element(stats.begin(), stats.end());
+  for (uint32_t point = 0; point < kMaxMutationPoints; ++point)
+  {
+    if (largest <= kLowStatThreshold + 1)
+      return;
+
+    const int chance = point == 0 ? kMutationChance : kExtraMutationChance;
+    if (RollPercent() >= chance)
+      return;
+
+    const size_t pick = std::uniform_int_distribution<size_t>(0, lowStats.size() - 1)(
+      server::util::GetRandomEngine());
+    stats[lowStats[pick]] += 1;
+    largest -= 1;
+  }
 }
 
 data::Horse::Appearance Genetics::CalculateFoalAppearance(
