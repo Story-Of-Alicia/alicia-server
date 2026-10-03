@@ -119,6 +119,15 @@ void RaceInstance::Stop()
   // Build the score board.
   for (const auto& [characterUid, racer] : _tracker.GetRacers())
   {
+    const auto characterRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
+      characterUid);
+    if (not characterRecord.IsAvailable())
+    {
+      spdlog::warn("Room {} skipping race result for character {}: record unavailable",
+        GetRoomUid(), characterUid);
+      continue;
+    }
+
     auto& score = raceResult.scores.emplace_back();
 
     // todo: figure out the other bit set values
@@ -191,8 +200,6 @@ void RaceInstance::Stop()
     }
 
     score.teamColor = racer.team;
-    const auto characterRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
-      characterUid);
 
     characterRecord.Mutable([this, &score, &racer](data::Character& character)
     {
@@ -213,7 +220,12 @@ void RaceInstance::Stop()
       score.level = character.level();
       score.levelProgress = character.experience();
 
-      _raceNetworkHandler.GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Mutable(
+      const auto horseRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetHorse(
+        character.mountUid());
+      if (not horseRecord.IsAvailable())
+        return;
+
+      horseRecord.Mutable(
         [this, &score, &racer, characterLevel = character.level()](data::Horse& horse)
         {
           score.mountName = horse.name();
@@ -677,8 +689,8 @@ void RaceInstance::TickFinishing()
       this->GetRoomUid());
   }
 
+  _stage = Stage::Waiting;
   Stop();
- _stage = Stage::Waiting;
 }
 
 void RaceInstance::TickActiveRaceContent()
