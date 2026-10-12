@@ -322,26 +322,19 @@ void LobbyNetworkHandler::AcceptLogin(
   ClientId clientId,
   const bool sendToCharacterCreator)
 {
-  try
+  auto& clientContext = GetClientContext(clientId, false);
+
+  clientContext.isAuthenticated = true;
+
+  if (sendToCharacterCreator)
   {
-    auto& clientContext = GetClientContext(clientId, false);
-
-    clientContext.isAuthenticated = true;
-
-    if (sendToCharacterCreator)
-    {
-      // Reset the waiting sequence number so the client does not soft lock.
-      // SendWaitingSeqno(clientId, 0);
-      SendCreateNicknameNotify(clientId);
-    }
-    else
-    {
-      SendLoginOK(clientId);
-    }
+    // Reset the waiting sequence number so the client does not soft lock.
+    // SendWaitingSeqno(clientId, 0);
+    SendCreateNicknameNotify(clientId);
   }
-  catch (const std::exception&)
+  else
   {
-    // We really don't care if the user disconnected.
+    SendLoginOK(clientId);
   }
 }
 
