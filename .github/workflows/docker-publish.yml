@@ -21,8 +21,33 @@ env:
 
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: gcc:15
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update -y
+          apt-get install git cmake libboost-dev libicu-dev libpq-dev -y --no-install-recommends
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build --config RelWithDebInfo --parallel $(nproc)
+
+      - name: Run tests
+        run: ctest --test-dir build --build-config RelWithDebInfo --output-on-failure --parallel $(nproc)
+
   build:
     runs-on: ubuntu-latest
+    needs: test
     permissions:
       contents: read
       packages: write
