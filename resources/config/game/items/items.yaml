@@ -12317,8 +12317,12 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 1
-      price: 6000
+    - range: 24
+      price: 500
+    - range: 168
+      price: 1500
+    - range: 720
+      price: 5000
 - tid: 10160
   type: 1
   level: 1
@@ -12333,8 +12337,12 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 1
-      price: 2000
+    - range: 24
+      price: 500
+    - range: 168
+      price: 1500
+    - range: 720
+      price: 5000
 - tid: 30154
   type: 1
   level: 1
@@ -12349,8 +12357,12 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 1
-      price: 6000
+    - range: 24
+      price: 500
+    - range: 168
+      price: 1500
+    - range: 720
+      price: 5000
 - tid: 30155
   type: 1
   level: 1
@@ -12365,8 +12377,12 @@ collection:
     isPurchasable: true
     moneyType: 0
     priceRanges:
-    - range: 1
-      price: 2000
+    - range: 24
+      price: 500
+    - range: 168
+      price: 1500
+    - range: 720
+      price: 5000
 - tid: 46018
   type: 2
   level: 1
