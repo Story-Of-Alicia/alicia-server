@@ -19,7 +19,9 @@
 
 #include "server/ranch/RanchDirector.hpp"
 
+#include "server/event/GameEvent.hpp"
 #include "server/ServerInstance.hpp"
+#include "server/system/GameEventSystem.hpp"
 #include "server/system/ItemSystem.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
@@ -171,6 +173,12 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& command)
     {
       HandleChat(clientId, command);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRAchievementUpdateProperty>(
+    [this](ClientId clientId, const auto& command)
+    {
+      HandleAchievementUpdateProperty(clientId, command);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRanchSnapshot>(
@@ -617,12 +625,6 @@ RanchDirector::RanchDirector(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& command)
     {
       HandleBreedingWishlistDelete(clientId, command);
-    });
-
-  _commandServer.RegisterCommandHandler<protocol::AcCmdCRAchievementUpdateProperty>(
-    [this](ClientId clientId, const auto& command)
-    {
-      HandleUpdateAchievementProperty(clientId, command);
     });
 }
 
@@ -1652,6 +1654,9 @@ void RanchDirector::HandleRanchLeave(ClientId clientId)
 {
   auto& clientContext = GetClientContext(clientId);
 
+  if (clientContext.visitingRancherUid == data::InvalidUid)
+    return;
+
   RemoveClientFromRanch(clientId, clientContext);
 
   protocol::AcCmdCRLeaveRanchOK response{};
@@ -2045,6 +2050,12 @@ void RanchDirector::HandleRegisterStallion(
     return;
   }
 
+  GetServerInstance().GetGameEventBus().Fire({
+    .userAchvEvent = registry::UserAchvEvent::BreedRegister,
+    .function = registry::Function::True,
+    .origin = GameEvent::Origin::Ranch,
+    .characterUid = clientContext.characterUid});
+
   // Get the current carrot balance of the character.
   int32_t carrotBalance{};
   characterRecord.Immutable([&carrotBalance](const data::Character& character)
@@ -2267,6 +2278,12 @@ bool RanchDirector::HandleTryBreeding(
     return false;
   }
 
+  GetServerInstance().GetGameEventBus().Fire({
+    .userAchvEvent = registry::UserAchvEvent::BreedAttempt,
+    .function = registry::Function::True,
+    .origin = GameEvent::Origin::Ranch,
+    .characterUid = clientContext.characterUid});
+
   // Read the stallion grade and breeding count, and the player's own mare's charm,
   // needed for the success roll.
   uint32_t stallionGrade = 0;
@@ -2316,10 +2333,21 @@ bool RanchDirector::HandleTryBreeding(
 
     if (const auto stallionDbRecord = dataDirector.GetStallionCache().Get(stallionData->stallionUid))
     {
-      stallionDbRecord->Mutable([](data::Stallion& stallion)
+      data::Uid stallionOwnerUid = data::InvalidUid;
+      stallionDbRecord->Mutable([&stallionOwnerUid](data::Stallion& stallion)
       {
         stallion.timesMated() = stallion.timesMated() + 1;
+        stallionOwnerUid = stallion.ownerUid();
       });
+
+      if (stallionOwnerUid != data::InvalidUid)
+      {
+        GetServerInstance().GetGameEventBus().Fire({
+          .userAchvEvent = registry::UserAchvEvent::StudBreedCount,
+          .function = registry::Function::True,
+          .origin = GameEvent::Origin::Ranch,
+          .characterUid = stallionOwnerUid});
+      }
     }
   };
 
@@ -2339,6 +2367,12 @@ bool RanchDirector::HandleTryBreeding(
 
     applyBreedingAttemptUpdates();
 
+    GetServerInstance().GetGameEventBus().Fire({
+      .userAchvEvent = registry::UserAchvEvent::BreedSuccess,
+      .function = registry::Function::True,
+      .origin = GameEvent::Origin::Ranch,
+      .characterUid = clientContext.characterUid});
+
     spdlog::info("TryBreeding: created foal {}", foalUid);
 
     _commandServer.QueueCommand<decltype(response)>(
@@ -2348,6 +2382,12 @@ bool RanchDirector::HandleTryBreeding(
   }
 
   applyBreedingAttemptUpdates();
+
+  GetServerInstance().GetGameEventBus().Fire({
+    .userAchvEvent = registry::UserAchvEvent::BreedFail,
+    .function = registry::Function::True,
+    .origin = GameEvent::Origin::Ranch,
+    .characterUid = clientContext.characterUid});
 
   clientContext.hasPendingFailureCard = true;
   clientContext.pendingFailureCardSpend = stallionData->breedingCharge;
@@ -4684,6 +4724,15 @@ void RanchDirector::HandleUseItem(
       horseUid,
       usedItemTid,
       response);
+
+    if (consumeItem)
+    {
+      GetServerInstance().GetGameEventBus().Fire({
+        .userAchvEvent = registry::UserAchvEvent::Feeding,
+        .function = registry::Function::True,
+        .origin = GameEvent::Origin::Ranch,
+        .characterUid = clientContext.characterUid});
+    }
   }
   else if (itemTemplate->careParameters)
   {
@@ -4692,6 +4741,35 @@ void RanchDirector::HandleUseItem(
       horseUid,
       usedItemTid,
       response);
+
+    if (consumeItem)
+    {
+      GetServerInstance().GetGameEventBus().Fire({
+        .userAchvEvent = registry::UserAchvEvent::Grooming,
+        .function = registry::Function::True,
+        .origin = GameEvent::Origin::Ranch,
+        .characterUid = clientContext.characterUid});
+
+      registry::UserAchvEvent partEvent = registry::UserAchvEvent::BodyWash;
+      switch (itemTemplate->careParameters->parts)
+      {
+        case registry::Item::CareParameters::Part::Body:
+          partEvent = registry::UserAchvEvent::BodyWash;
+          break;
+        case registry::Item::CareParameters::Part::Mane:
+          partEvent = registry::UserAchvEvent::HorseBrushed;
+          break;
+        case registry::Item::CareParameters::Part::Tail:
+          partEvent = registry::UserAchvEvent::HorseTailCleaned;
+          break;
+      }
+
+      GetServerInstance().GetGameEventBus().Fire({
+        .userAchvEvent = partEvent,
+        .function = registry::Function::True,
+        .origin = GameEvent::Origin::Ranch,
+        .characterUid = clientContext.characterUid});
+    }
   }
   else if (itemTemplate->playParameters)
   {
@@ -4701,6 +4779,15 @@ void RanchDirector::HandleUseItem(
       usedItemTid,
       command.playSuccessLevel,
       response);
+
+    if (consumeItem)
+    {
+      GetServerInstance().GetGameEventBus().Fire({
+        .userAchvEvent = registry::UserAchvEvent::HorsePlay,
+        .function = registry::Function::True,
+        .origin = GameEvent::Origin::Ranch,
+        .characterUid = clientContext.characterUid});
+    }
   }
   else if (itemTemplate->cureParameters)
   {
@@ -6302,6 +6389,8 @@ void RanchDirector::HandleUpdateDailyQuest(
           });
       }
 
+      QuestSystem::EnsureDailyQuestGroupFresh(group);
+
       // Update quest progress.
       auto quests = group.quests();
       for (auto& entry : quests)
@@ -6367,6 +6456,8 @@ void RanchDirector::HandleRegisterDailyQuestGroup(
   // Fills a group's fields from the command and calculates total possible rewardPoints.
   const auto fillGroup = [&command, &questRegistry](data::DailyQuestGroup& group)
   {
+    QuestSystem::EnsureDailyQuestGroupFresh(group);
+
     if (!command.dailyQuests.empty())
     {
       group.rewardId   = command.dailyQuests[0].rewardId;
@@ -6587,13 +6678,27 @@ void RanchDirector::HandleBuyOwnItem(
 
   // Get current shop list
   const auto& shopList = GetServerInstance().GetLobbyDirector().GetShopManager().GetShopList();
+  bool transactionFailed = false;
+  std::vector<std::function<void()>> rollbackActions{};
+  std::vector<GameEvent> pendingGameEvents{};
 
   std::vector<data::Uid> newEquipmentUids{};
   std::vector<std::pair<data::Uid, protocol::Horse>> newHorseUids{};
   std::vector<std::pair<uint8_t, data::Uid>> expandMountSlotItems{};
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Mutable(
-    [this, &shopList, &command, &response, &newEquipmentUids, &newHorseUids, &expandMountSlotItems](data::Character& character)
+    [this, &shopList, &command, &response, &newEquipmentUids, &newHorseUids, &expandMountSlotItems, &transactionFailed, &rollbackActions, &pendingGameEvents](data::Character& character)
     {
+      const uint32_t originalCarrots = character.carrots();
+      const uint32_t originalCash = character.cash();
+
+      const auto rollBackTransaction = [&rollbackActions, &character, originalCarrots, originalCash]()
+      {
+        for (auto& rollbackAction : rollbackActions | std::views::reverse)
+          rollbackAction();
+        character.carrots() = originalCarrots;
+        character.cash() = originalCash;
+      };
+
       for (const auto& order : command.orders)
       {
         // Create an order result entry in the response
@@ -6663,9 +6768,27 @@ void RanchDirector::HandleBuyOwnItem(
         const bool hasSufficientCash = character.cash() >= cost;
         const bool canPurchaseCashItem = isCashItem and hasSufficientCash;
 
-        const bool hasItem = GetServerInstance().GetItemSystem().HasItem(
-          character, 
+        const data::Uid existingItemUid = GetServerInstance().GetItemSystem().GetItem(
+          character,
           itemRegistryRecord.value().tid);
+        const bool hasItem = existingItemUid != data::InvalidUid;
+
+        struct ExistingItemSnapshot
+        {
+          uint32_t count{};
+          std::chrono::seconds duration{};
+          data::Clock::time_point createdAt{};
+        };
+        std::optional<ExistingItemSnapshot> existingItemSnapshot{};
+        if (hasItem)
+        {
+          GetServerInstance().GetDataDirector().GetItem(existingItemUid).Immutable(
+            [&existingItemSnapshot](const data::Item& item)
+            {
+              existingItemSnapshot = ExistingItemSnapshot{
+                item.count(), item.duration(), item.createdAt()};
+            });
+        }
 
         if (not canPurchaseCarrotItem and not canPurchaseCashItem)
         {
@@ -6681,6 +6804,12 @@ void RanchDirector::HandleBuyOwnItem(
         else
           character.carrots() -= cost;
 
+        pendingGameEvents.push_back({
+          .userAchvEvent = registry::UserAchvEvent::ItemPurchase,
+          .function = registry::Function::True,
+          .origin = GameEvent::Origin::Ranch,
+          .characterUid = character.uid()});
+
         // Horse purchase — create a horse record and add it to the stable
         if (itemRegistryRecord.value().mountPartSetInfo.has_value())
         {
@@ -6688,13 +6817,9 @@ void RanchDirector::HandleBuyOwnItem(
           const auto& horseRecord = GetServerInstance().GetDataDirector().CreateHorse();
           if (not horseRecord)
           {
-            // Refund and report error
-            if (isCashItem)
-              character.cash() += cost;
-            else
-              character.carrots() += cost;
-            orderResult.result = OrderResult::Result::UnknownError;
-            continue;
+            rollBackTransaction();
+            transactionFailed = true;
+            break;
           }
 
           data::Uid horseUid{data::InvalidUid};
@@ -6740,6 +6865,15 @@ void RanchDirector::HandleBuyOwnItem(
 
           character.horses().emplace_back(horseUid);
 
+          rollbackActions.emplace_back(
+            [this, horseUid, &character]()
+            {
+              GetServerInstance().GetDataDirector().GetHorseCache().Delete(horseUid);
+              auto& horses = character.horses();
+              const auto range = std::ranges::remove(horses, horseUid);
+              horses.erase(range.begin(), range.end());
+            });
+
           // Add to the buy response so the client registers the horse purchase
           // (triggers horse naming dialog and stable update)
           auto& purchase = response.purchases.emplace_back(
@@ -6774,6 +6908,39 @@ void RanchDirector::HandleBuyOwnItem(
             priceRange);
         }
 
+        if (itemUid == data::InvalidUid)
+        {
+          rollBackTransaction();
+          transactionFailed = true;
+          break;
+        }
+
+        if (existingItemSnapshot.has_value())
+        {
+          rollbackActions.emplace_back(
+            [this, itemUid, snapshot = *existingItemSnapshot]()
+            {
+              GetServerInstance().GetDataDirector().GetItem(itemUid).Mutable(
+                [&snapshot](data::Item& item)
+                {
+                  item.count() = snapshot.count;
+                  item.duration() = snapshot.duration;
+                  item.createdAt() = snapshot.createdAt;
+                });
+            });
+        }
+        else
+        {
+          rollbackActions.emplace_back(
+            [this, itemUid, &character]()
+            {
+              GetServerInstance().GetDataDirector().GetItemCache().Delete(itemUid);
+              auto& inventory = character.inventory();
+              const auto range = std::ranges::remove(inventory, itemUid);
+              inventory.erase(range.begin(), range.end());
+            });
+        }
+
         // Append the purchase result into the response
         GetServerInstance().GetDataDirector().GetItem(itemUid).Immutable(
           [&order, &response](const data::Item& item)
@@ -6802,6 +6969,17 @@ void RanchDirector::HandleBuyOwnItem(
       response.newCarrots = character.carrots();
       response.newCash = character.cash();
     });
+
+  if (transactionFailed)
+  {
+    const protocol::AcCmdCRBuyOwnItemCancel cancel{
+      .error = protocol::AcCmdCRBuyOwnItemCancel::Error::GeneralError};
+    _commandServer.QueueCommand<decltype(cancel)>(clientId, [cancel](){ return cancel; });
+    return;
+  }
+
+  for (const auto& event : pendingGameEvents)
+    GetServerInstance().GetGameEventBus().Fire(event);
 
   // All checks are completed and transaction can go ahead
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
@@ -7109,11 +7287,16 @@ void RanchDirector::HandleRequestDailyQuestReward(
     return;
   }
 
-  // Check if the command rewardPoints match the accumulated points in the group
+  // Check if the command rewardPoints match the accumulated points in the group,
+  // and that the group reward hasn't already been claimed today.
   bool pointsMatch = false;
-  groupRecord.Immutable([&pointsMatch, commandPoints = command.rewardPoints](const data::DailyQuestGroup& group)
+  bool alreadyClaimed = false;
+  groupRecord.Mutable([&pointsMatch, &alreadyClaimed, commandPoints = command.rewardPoints](data::DailyQuestGroup& group)
   {
+    QuestSystem::EnsureDailyQuestGroupFresh(group);
+
     pointsMatch = (group.rewardPoints() >= commandPoints);
+    alreadyClaimed = group.rewardClaimed();
   });
 
   if (!pointsMatch)
@@ -7145,6 +7328,11 @@ void RanchDirector::HandleRequestDailyQuestReward(
   }
 
   const auto& rewardPoint = bestReward.value();
+
+  groupRecord.Mutable([](data::DailyQuestGroup& group)
+  {
+    group.rewardClaimed = true;
+  });
 
   // Award the items to the character
   characterRecord.Mutable([this, &response, &rewardPoint](data::Character& character)
@@ -7268,6 +7456,17 @@ void RanchDirector::HandleRegisterQuest(
   {
     character.quests().emplace_back(newQuestUid);
   });
+
+  const auto questTemplate = _serverInstance.GetQuestRegistry().GetQuest(command.questId);
+  if (questTemplate && questTemplate->userAchvEvent ==
+    static_cast<uint32_t>(registry::UserAchvEvent::NPCDialogLevel))
+  {
+    _serverInstance.GetGameEventBus().Fire({
+      .userAchvEvent = registry::UserAchvEvent::NPCDialogLevel,
+      .function = registry::Function::True,
+      .origin = GameEvent::Origin::Ranch,
+      .characterUid = clientContext.characterUid});
+  }
 
   protocol::AcCmdCRRegisterQuestOK response{};
   questRecord.Immutable([&response](const data::Quest& quest)
@@ -7393,6 +7592,45 @@ void RanchDirector::HandleRequestQuestReward(
 
   const auto& quest = questTemplate.value();
 
+  std::vector<data::Uid> questUids;
+  characterRecord.Immutable([&questUids](const data::Character& character)
+  {
+    questUids = character.quests();
+  });
+
+  data::Uid readyQuestUid = data::InvalidUid;
+  for (const data::Uid questUid : questUids)
+  {
+    auto questRecord = _serverInstance.GetDataDirector().GetQuest(questUid);
+    if (!questRecord)
+      continue;
+
+    questRecord.Immutable([&readyQuestUid, questTid = command.questTid](const data::Quest& characterQuest)
+    {
+      if (characterQuest.questId() == questTid
+        && characterQuest.isCompleted() == data::Quest::Status::ReadyToClaim)
+        readyQuestUid = characterQuest.uid();
+    });
+
+    if (readyQuestUid != data::InvalidUid)
+      break;
+  }
+
+  if (readyQuestUid == data::InvalidUid)
+  {
+    spdlog::warn(
+      "HandleRequestQuestReward: Character {} has no quest {} ready to claim",
+      clientContext.characterUid,
+      command.questTid);
+    return;
+  }
+
+  _serverInstance.GetDataDirector().GetQuest(readyQuestUid).Mutable(
+    [](data::Quest& characterQuest)
+    {
+      characterQuest.isCompleted() = data::Quest::Status::Completed;
+    });
+
   // Award rewards to the character
   characterRecord.Mutable([this, &response, &quest, command](data::Character& character)
   {
@@ -7408,7 +7646,7 @@ void RanchDirector::HandleRequestQuestReward(
         if (reward.carrots > 0)
         {
           character.carrots() += reward.carrots;
-          response.carrotsRewarded += reward.carrots;
+          response.carrotsRewarded += character.carrots();
         }
 
         // Award items from the reward
@@ -7438,27 +7676,44 @@ void RanchDirector::HandleRequestQuestReward(
           });
         }
 
-        // Set NPC dress effect if specified
         if (reward.keyNpcDress > 0)
         {
-          response.npcEffects[0] = {command.npcId, reward.keyNpcDress};
-        }
-        else
-        {
-          response.npcEffects[0] = {command.npcId, 1}; // Default effect
+          const auto npcDressEntries = _serverInstance.GetQuestRegistry().GetNpcDress(
+            reward.keyNpcDress);
+
+          if (npcDressEntries.empty())
+          {
+            spdlog::warn(
+              "HandleRequestQuestReward: NPC dress key {} of quest reward {} is not in"
+              " the npcDress table, sending no dress effect",
+              reward.keyNpcDress,
+              quest.rewardId);
+          }
+
+          size_t npcEffectIndex = 0;
+          for (const auto& npcDressEntry : npcDressEntries)
+          {
+            if (npcEffectIndex >= response.npcEffects.size())
+            {
+              spdlog::warn(
+                "HandleRequestQuestReward: NPC dress key {} has more than {} entries,"
+                " the remaining ones are dropped",
+                reward.keyNpcDress,
+                response.npcEffects.size());
+              break;
+            }
+
+            response.npcEffects[npcEffectIndex++] = {
+              npcDressEntry.npcId,
+              npcDressEntry.dress};
+          }
         }
       }
       else
       {
-        spdlog::warn("HandleRequestQuestReward: Quest reward {} not found for quest {}", 
+        spdlog::warn("HandleRequestQuestReward: Quest reward {} not found for quest {}",
           quest.rewardId, command.questTid);
-        response.npcEffects[0] = {command.npcId, 1}; // Default effect
       }
-    }
-    else
-    {
-      // No reward ID, just use default effect
-      response.npcEffects[0] = {command.npcId, 1};
     }
   });
 
@@ -7573,11 +7828,11 @@ void RanchDirector::HandleRequestUser(
   if (not invokerRecord)
     return;
 
-  bool isAdmin = false;
+  bool isAdmin = _serverInstance.GetSettings().general.testMode;
   std::string invokerCharacterName{};
   invokerRecord.Immutable([&isAdmin, &invokerCharacterName](const data::Character& character)
     {
-      isAdmin = character.role() != data::Character::Role::User;
+      isAdmin = isAdmin || character.role() != data::Character::Role::User;
       invokerCharacterName = character.name();
     });
   const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
@@ -7632,6 +7887,63 @@ void RanchDirector::HandleRequestUser(
   _commandServer.QueueCommand<decltype(response)>(clientId, [response](){ return response; });
 }
 
+void RanchDirector::HandleAchievementUpdateProperty(
+  const ClientId clientId,
+  const protocol::AcCmdCRAchievementUpdateProperty& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  spdlog::debug(
+    "Character {} reported achievement property {} = '{}'",
+    clientContext.characterUid,
+    static_cast<uint16_t>(command.achievementEvent),
+    command.achievementValue);
+
+  // Fire-and-forget; the client expects no response.
+  const auto userAchvEvent =
+    static_cast<registry::UserAchvEvent>(command.achievementEvent);
+
+  GetServerInstance().GetGameEventSystem().ReportAchievement(
+    clientContext.characterUid,
+    GameEvent::Origin::Ranch,
+    userAchvEvent,
+    command.achievementValue);
+
+  // TODO: support other fields
+  if (userAchvEvent != registry::UserAchvEvent::IntroEnd or command.achievementValue != "nil")
+    return;
+
+  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
+    clientContext.characterUid);
+
+  // IntroEnd achievement property received
+  // Verify prerequisite missions are in place
+  static const std::vector<uint16_t> prequisiteMissionIds{24, 31, 32, 33};
+  bool areMissionsCompleted = true;
+  characterRecord.Immutable(
+    [&areMissionsCompleted](const data::Character& character)
+    {
+      for (const uint16_t missionId : prequisiteMissionIds)
+      {
+        if (not character.missions().contains(missionId))
+        {
+          areMissionsCompleted = false;
+          break;
+        }
+      }
+    });
+
+  // If prerequisite missions are not completed then intro is not completed
+  if (not areMissionsCompleted)
+    return;
+
+  characterRecord.Mutable(
+    [](data::Character& character)
+    {
+      character.isIntroCompleted() = true;
+    });
+}
+
 void RanchDirector::SendDailyQuestNotificationToCharacter(
   const data::Uid characterUid,
   const protocol::AcCmdRCUpdateDailyQuestNotify& updateNotify)
@@ -7646,6 +7958,34 @@ void RanchDirector::SendDailyQuestNotificationToCharacter(
       return;
     }
   }
+
+  spdlog::warn(
+    "RanchDirector::SendDailyQuestNotificationToCharacter: character {} not found among {} connected ranch clients, notify for quest {} dropped",
+    characterUid,
+    _clients.size(),
+    updateNotify.questId);
+}
+
+void RanchDirector::SendQuestNotificationToCharacter(
+  const data::Uid characterUid,
+  const protocol::AcCmdRCUpdateQuestNotify& updateNotify)
+{
+  for (const auto& [clientId, clientContext] : _clients)
+  {
+    if (clientContext.characterUid == characterUid)
+    {
+      _commandServer.QueueCommand<protocol::AcCmdRCUpdateQuestNotify>(
+        clientId, [updateNotify]() { return updateNotify; });
+
+      return;
+    }
+  }
+
+  spdlog::warn(
+    "RanchDirector::SendQuestNotificationToCharacter: character {} not found among {} connected ranch clients, notify for quest {} dropped",
+    characterUid,
+    _clients.size(),
+    updateNotify.questTid);
 }
 
 void RanchDirector::HandleBreedingTakeMoney(
@@ -7866,47 +8206,6 @@ void RanchDirector::HandleBreedingWishlistDelete(
     [response]()
     {
       return response;
-    });
-}
-
-void RanchDirector::HandleUpdateAchievementProperty(
-  ClientId clientId,
-  const protocol::AcCmdCRAchievementUpdateProperty& command)
-{
-  const auto& clientContext = GetClientContext(clientId);
-
-  // TODO: support other fields
-  if (command.propertyKey != 45 or command.propertyValue != "nil")
-    return;
-
-  const auto& characterRecord = GetServerInstance().GetDataDirector().GetCharacter(
-    clientContext.characterUid);
-
-  // IntroEnd achievement property received
-  // Verify prerequisite missions are in place
-  static const std::vector<uint16_t> prequisiteMissionIds{24, 31, 32, 33};
-  bool areMissionsCompleted = true;
-  characterRecord.Immutable(
-    [&areMissionsCompleted](const data::Character& character)
-    {
-      for (const uint16_t missionId : prequisiteMissionIds)
-      {
-        if (not character.missions().contains(missionId))
-        {
-          areMissionsCompleted = false;
-          break;
-        }
-      }
-    });
-
-  // If prerequisite missions are not completed then intro is not completed
-  if (not areMissionsCompleted)
-    return;
-
-  characterRecord.Mutable(
-    [](data::Character& character)
-    {
-      character.isIntroCompleted() = true;
     });
 }
 

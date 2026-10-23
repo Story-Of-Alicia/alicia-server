@@ -237,6 +237,7 @@ struct AcCmdRCUpdateDailyQuestNotify
   ObjectiveProgress objectiveProgress;
   uint32_t carrotsReward; //used when rewardType is Carrots
   QuestRewardType rewardType{QuestRewardType::None};
+  //! Never read by the client.
   uint32_t unk2;
   uint32_t mountExp; //used when rewardType is Exp
 
@@ -257,6 +258,32 @@ struct AcCmdRCUpdateDailyQuestNotify
   //! @param stream Source stream.
   static void Read(
     AcCmdRCUpdateDailyQuestNotify& command,
+    SourceStream& stream);
+};
+
+struct AcCmdCRAchievementUpdateProperty
+{
+  uint16_t achievementEvent{};
+  // Sent as a string, but can represent numeric values.
+  std::string achievementValue{};
+
+  static Command GetCommand()
+  {
+    return Command::AcCmdCRAchievementUpdateProperty;
+  }
+
+  //! Writes the command to a provided sink stream.
+  //! @param command Command.
+  //! @param stream Sink stream.
+  static void Write(
+    const AcCmdCRAchievementUpdateProperty& command,
+    SinkStream& stream);
+
+  //! Reader a command from a provided source stream.
+  //! @param command Command.
+  //! @param stream Source stream.
+  static void Read(
+    AcCmdCRAchievementUpdateProperty& command,
     SourceStream& stream);
 };
 
@@ -464,31 +491,6 @@ struct AcCmdCRUpdateRanchLevelNotify
   //! @param stream Source stream.
   static void Read(
     AcCmdCRUpdateRanchLevelNotify& command,
-    SourceStream& stream);
-};
-
-struct AcCmdCRAchievementUpdateProperty
-{
-  uint16_t propertyKey{};
-  std::string propertyValue{};
-
-  static Command GetCommand()
-  {
-    return Command::AcCmdCRAchievementUpdateProperty;
-  }
-
-  //! Writes the command to a provided sink stream.
-  //! @param command Command.
-  //! @param stream Sink stream.
-  static void Write(
-    const AcCmdCRAchievementUpdateProperty& command,
-    SinkStream& stream);
-
-  //! Reader a command from a provided source stream.
-  //! @param command Command.
-  //! @param stream Source stream.
-  static void Read(
-    AcCmdCRAchievementUpdateProperty& command,
     SourceStream& stream);
 };
 

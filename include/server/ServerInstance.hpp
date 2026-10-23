@@ -24,6 +24,7 @@
 #include "server/chat/AllChatDirector.hpp"
 #include "server/chat/PrivateChatDirector.hpp"
 #include "server/Config.hpp"
+#include "server/event/GameEvent.hpp"
 #include "server/lobby/LobbyDirector.hpp"
 #include "server/messenger/MessengerDirector.hpp"
 #include "server/race/RaceDirector.hpp"
@@ -31,6 +32,7 @@
 #include "server/ranch/Genetics.hpp"
 #include "server/ranch/RanchDirector.hpp"
 #include "server/system/ChatSystem.hpp"
+#include "server/system/GameEventSystem.hpp"
 #include "server/system/HorseSystem.hpp"
 #include "server/system/InfractionSystem.hpp"
 #include "server/system/ItemSystem.hpp"
@@ -44,6 +46,7 @@
 #include "server/telemetry/Telemetry.hpp"
 
 #include <libserver/data/DataDirector.hpp>
+#include <libserver/registry/AchievementRegistry.hpp>
 #include <libserver/registry/BreedingRegistry.hpp>
 #include <libserver/registry/CharacterRegistry.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
@@ -53,6 +56,7 @@
 #include <libserver/registry/MagicRegistry.hpp>
 #include <libserver/registry/MissionRegistry.hpp>
 #include <libserver/registry/PetRegistry.hpp>
+#include <libserver/registry/QuestItemRegistry.hpp>
 #include <libserver/registry/QuestRegistry.hpp>
 #include <libserver/registry/SpeedRegistry.hpp>
 #include <libserver/registry/SystemContentRegistry.hpp>
@@ -110,6 +114,10 @@ public:
   //! @returns Reference to the private chat director.
   PrivateChatDirector& GetPrivateChatDirector();
 
+  //! Returns reference to the Achievement registry.
+  //! @returns Reference to the Achievement registry.
+  registry::AchievementRegistry& GetAchievementRegistry();
+
   //! Returns reference to the Character registry.
   //! @returns Reference to the Character registry.
   registry::CharacterRegistry& GetCharacterRegistry();
@@ -138,6 +146,10 @@ public:
   //! @returns Reference to the Quest registry.
   registry::QuestRegistry& GetQuestRegistry();
 
+  //! Returns reference to the Quest item registry.
+  //! @returns Reference to the Quest item registry.
+  registry::QuestItemRegistry& GetQuestItemRegistry();
+
   //! Returns reference to the Mission registry.
   //! @returns Reference to the Mission registry.
   registry::MissionRegistry& GetMissionRegistry();
@@ -157,6 +169,14 @@ public:
   //! Returns reference to the speed registry.
   //! @returns Reference to the speed registry.
   registry::SpeedRegistry& GetSpeedRegistry();
+
+  //! Returns reference to the game event bus.
+  //! @returns Reference to the game event bus.
+  GameEventBus& GetGameEventBus();
+
+  //! Returns reference to the game event system.
+  //! @returns Reference to the game event system.
+  GameEventSystem& GetGameEventSystem();
 
   //! Returns reference to the chat system.
   //! @returns Reference to the chat system.
@@ -304,6 +324,8 @@ private:
   //! A race director.
   RaceDirector _raceDirector;
 
+  //! A registry of achievements.
+  registry::AchievementRegistry _achievementRegistry;
   //! A registry of character level info.
   registry::CharacterRegistry _characterRegistry;
   //! A registry of courses.
@@ -320,6 +342,8 @@ private:
   registry::PetRegistry _petRegistry;
   //! A registry of quests.
   registry::QuestRegistry _questRegistry;
+  //! A registry of quest item spawn decks.
+  registry::QuestItemRegistry _questItemRegistry;
   //! A registry of missions.
   registry::MissionRegistry _missionRegistry;
   //! The system content registry.
@@ -329,8 +353,13 @@ private:
   //! A registry of speed config data.
   registry::SpeedRegistry _speedRegistry;
 
+  //! The game event bus.
+  GameEventBus _gameEventBus;
+
   //! A chat system.
   ChatSystem _chatSystem;
+  //! The game event system.
+  GameEventSystem _gameEventSystem;
   //! An infraction system.
   InfractionSystem _infractionSystem;
   //! An item system.

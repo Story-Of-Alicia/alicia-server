@@ -48,6 +48,9 @@ public:
     std::string notice;
     //! Passphrase required to use the //promote command.
     std::string promotePassphrase;
+    //! When enabled, commands normally restricted to staff become usable
+    //! by anyone. Intended for local testing/development only.
+    bool testMode{false};
   } general{};
 
   //!

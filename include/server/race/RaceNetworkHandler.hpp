@@ -65,13 +65,16 @@ public:
     uint32_t ranchUid) noexcept;
 
   void SendDailyQuestNotificationToCharacter(
-    uint32_t characterUid,
+    data::Uid characterUid,
     uint16_t questId,
     const protocol::ObjectiveProgress& objectiveProgress,
     uint32_t carrotsReward,
     protocol::QuestRewardType rewardType,
-    uint32_t unk2,
     uint32_t mountExp);
+
+  void SendQuestNotificationToCharacter(
+    data::Uid characterUid,
+    const protocol::AcCmdRCUpdateQuestNotify& updateNotify);
 
   //! Sends the recurring ranch bonus payout to a character, if connected.
   void SendRanchBonusNotify(
@@ -267,6 +270,10 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRStartRace& command);
 
+  void HandleAchievementUpdateProperty(
+    ClientId clientId,
+    const protocol::AcCmdCRAchievementUpdateProperty& command);
+
   void SendStartRaceCancel(
     ClientId clientId,
     protocol::AcCmdCRStartRaceCancel::Reason reason);
@@ -358,6 +365,10 @@ private:
   void HandleUserRaceItemGet(
     ClientId clientId,
     const protocol::AcCmdUserRaceItemGet& command);
+
+  void HandleGameQuestItemGet(
+    ClientId clientId,
+    const protocol::AcCmdGameQuestItemGet& command);
 
   // Magic Targeting Commands for Bolt System
   void HandleStartMagicTarget(

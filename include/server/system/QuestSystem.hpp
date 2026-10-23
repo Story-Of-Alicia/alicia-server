@@ -20,6 +20,8 @@
 #ifndef QUESTSYSTEM_HPP
 #define QUESTSYSTEM_HPP
 
+#include "server/event/GameEvent.hpp"
+
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/network/command/proto/CommonMessageDefinitions.hpp>
 #include <libserver/network/command/proto/CommonStructureDefinitions.hpp>
@@ -37,64 +39,51 @@ class QuestSystem
 public:
   explicit QuestSystem(ServerInstance& serverInstance);
 
-  //! Events that can advance daily quest objectives.
-  //! Each value corresponds to a quest `function` string in quests.yaml.
-  enum class QuestEvent
-  {
-    //! Any action (used by quests with function 'TRUE').
-    Any,
-    //! Finished in a placing position (1st–3rd).
-    PrizeWinner,
-    //! Achieved a perfect jump over a hurdle.
-    PerfectJump,
-    //! Used a fireball / magic attack.
-    FireballAttack,
-    //! Completed a specific map (value = map block ID).
-    RunMap,
-    //! Won a team race.
-    TeamWin,
-    //! Accumulated gliding distance (value = distance units).
-    GlidingDistance,
-    //! Collected a drop item during a race.
-    CollectDropItem,
-  };
-
-  //! Evaluates all active daily quests for a character against the given event
-  //! and advances progress on any matching quests.
+  //! Evaluates the character's active daily quests against an event and
+  //! advances any that it satisfies.
   //! @param characterUid UID of the character.
   //! @param event The event that occurred.
-  //! @param gameMode The game mode in which the event occurred.
-  //! @param value Optional scalar value for the event (e.g. map ID, distance).
-  //! @returns A list of notify packets to be sent to the character by the caller.
+  //! @returns Notify packets for the caller to send to the character.
   [[nodiscard]] std::vector<protocol::AcCmdRCUpdateDailyQuestNotify> OnQuestEvent(
     data::Uid characterUid,
-    QuestEvent event,
-    registry::Quest::GameModeFlag gameMode,
-    uint32_t value = 0);
+    const GameEvent& event);
 
-  //! Converts a protocol GameMode + TeamMode pair to the matching GameModeFlag
-  //! used by the quest registry for mode-based filtering.
-  //! @param gameMode Speed or Magic.
-  //! @param teamMode Team or Solo.
-  //! @returns The corresponding GameModeFlag value.
-  static registry::Quest::GameModeFlag ToGameModeFlag(
-    protocol::GameMode gameMode,
-    protocol::TeamMode teamMode);
+  //! @param characterUid UID of the character.
+  //! @param event The event that occurred.
+  //! @returns Notify packets for the caller to send to the character.
+  [[nodiscard]] std::vector<protocol::AcCmdRCUpdateQuestNotify> OnRegularQuestEvent(
+    data::Uid characterUid,
+    const GameEvent& event);
+
+  //! Tests whether an event satisfies a quest's completion condition.
+  //! @param quest Quest definition.
+  //! @param event The event that occurred.
+  //! @returns True when the event advances the quest.
+  [[nodiscard]] static bool Matches(
+    const registry::Quest& quest,
+    const GameEvent& event);
+
+  //! Resets a daily quest group at the new day
+  //! @param group Daily quest group to check and reset in place.
+  //! @returns True if the group was reset.
+  static bool EnsureDailyQuestGroupFresh(data::DailyQuestGroup& group);
 
 private:
   //! Returns true if the quest's gameModeFlag is compatible with the given mode.
   static bool IsModeMatch(
-    registry::Quest::GameModeFlag questFlag,
-    registry::Quest::GameModeFlag eventMode);
+    registry::GameModeFlag questFlag,
+    registry::GameModeFlag eventMode);
 
-  //! Returns true if the quest's function matches the given event.
-  static bool IsEventMatch(
-    registry::Quest::Function function,
-    QuestEvent event,
-    uint32_t questFunctionValue,
-    uint32_t eventValue);
+  static uint32_t GetProgressIncrement(
+    registry::Function function,
+    const GameEvent& event);
+
+  //! Listener for the server's game event bus.
+  void HandleGameEvent(const GameEvent& event);
 
   ServerInstance& _serverInstance;
+  //! Handle for this system's subscription to the game event bus.
+  GameEventBus::ListenerHandle _gameEventListenerHandle;
 };
 
 } // namespace server

@@ -21,6 +21,7 @@
 #define QUEST_REGISTRY_HPP
 
 #include <libserver/registry/Registry.hpp>
+#include <libserver/registry/RegistryDefinitions.hpp>
 
 #include <cstdint>
 #include <filesystem>
@@ -56,6 +57,14 @@ struct QuestReward
   uint32_t keyNpcDress{};
   //! Items included in the reward.
   std::vector<QuestRewardItem> items{};
+};
+
+struct NpcDress
+{
+  //! ID of the NPC to dress (From libconfig table)
+  uint32_t npcId{};
+  //! Dress ID to apply to the NPC (From libconfig table)
+  uint32_t dress{};
 };
 
 //! A single entry in the QuestRewardPoint table.
@@ -99,20 +108,6 @@ struct Quest
   uint32_t difficult{};
   //! Required player level.
   uint32_t level{};
-  //! Game mode flag (bitmask of applicable race modes for this quest)
-  //! Matches DailyQuestInfo::Type values.
-  enum class GameModeFlag : uint32_t
-  {
-    None           = 0,
-    SpeedTeam      = 2,
-    MagicTeam      = 8,
-    WinSpeedSolo   = 33,
-    SpeedSoloAction = 35,  //!< Perfect jumps, boosts
-    WinMagicSolo   = 68,
-    MagicSoloAction = 76,  //!< Bolt attack
-    Any            = 111,
-  };
-
   //! Game mode flag (bitmask of applicable race modes for this quest).
   GameModeFlag gameModeFlag{};
   //! NPC ID that starts the quest.
@@ -126,25 +121,11 @@ struct Quest
   //! Success condition value.
   uint32_t successValue{};
   //! Quest completion function / condition type.
-  enum class Function
-  {
-    Unknown,
-    True,                    //!< Used by "complete N races" quests.
-    RunMap,                  //!< Complete a specific map (matched against functionValue).
-    TeamWin,                 //!< Win a team race.
-    PerfectJump,             //!< Land a perfect jump over a hurdle.
-    FireballAttack,          //!< Hit an opponent with a fireball.
-    CollectDropItem,         //!< Collect a drop item during a race.
-    GlidingDistanceValue,    //!< Accumulate gliding distance.
-    ClearMission,            //!< Clear a mission stage.
-    PrizeWinnerForLowLevel,          //!< Place in the top 3 (low-level variant).
-    PrizeWinnerInMapForLowLevel,     //!< Place in the top 3 on a specific map.
-  };
-
-  //! Quest completion function / condition type.
   Function function{};
   //! Parameter value for the function (e.g. map ID, count, etc.).
   uint32_t functionValue{};
+  //! Client-side achievement event category (UserAchvEvent in libconfig).
+  uint32_t userAchvEvent{};
   //! Linked reward ID (references a QuestReward).
   uint32_t rewardId{};
   //! horse Exp reward.
@@ -164,6 +145,7 @@ public:
   [[nodiscard]] std::optional<Quest> GetQuest(uint32_t tid) const;
   [[nodiscard]] std::optional<QuestReward> GetQuestReward(uint32_t id) const;
   [[nodiscard]] std::optional<QuestRewardPoint> GetQuestRewardPoint(uint32_t point) const;
+  [[nodiscard]] std::vector<NpcDress> GetNpcDress(uint32_t key) const;
   [[nodiscard]] const std::unordered_map<uint32_t, Quest>& GetQuests() const;
   [[nodiscard]] const std::unordered_map<uint32_t, QuestReward>& GetQuestRewards() const;
   [[nodiscard]] const std::unordered_map<uint32_t, QuestRewardPoint>& GetQuestRewardPoints() const;
@@ -172,6 +154,7 @@ private:
   std::unordered_map<uint32_t, Quest> _quests{};
   std::unordered_map<uint32_t, QuestReward> _rewards{};
   std::unordered_map<uint32_t, QuestRewardPoint> _rewardPoints{};
+  std::unordered_map<uint32_t, std::vector<NpcDress>> _npcDress{};
 };
 
 } // namespace server::registry

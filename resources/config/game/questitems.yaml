@@ -1,0 +1,208 @@
+questItemDecks:
+  collection:
+    - qDeckId: 1
+      qTemId: 4
+      spawnCnt: 3
+      spawnPoints:
+        - mapBlockId: 1
+          deckId: 1001
+    - qDeckId: 2
+      qTemId: 5
+      spawnCnt: 3
+      spawnPoints:
+        - mapBlockId: 1
+          deckId: 1002
+    - qDeckId: 3
+      qTemId: 6
+      spawnCnt: 4
+      spawnPoints:
+        - mapBlockId: 1
+          deckId: 1002
+        - mapBlockId: 3
+          deckId: 1002
+        - mapBlockId: 13
+          deckId: 1002
+        - mapBlockId: 40
+          deckId: 1002
+        - mapBlockId: 46
+          deckId: 1002
+    - qDeckId: 4
+      qTemId: 1
+      spawnCnt: 2
+      spawnPoints:
+        - mapBlockId: 1
+          deckId: 1003
+    - qDeckId: 5
+      qTemId: 7
+      spawnCnt: 3
+      spawnPoints:
+        - mapBlockId: 1
+          deckId: 1001
+    - qDeckId: 6
+      qTemId: 4
+      spawnCnt: 1
+      spawnPoints:
+        - mapBlockId: 0
+          deckId: 701
+    - qDeckId: 7
+      qTemId: 3
+      spawnCnt: 1
+      spawnPoints:
+        - mapBlockId: 13
+          deckId: 1004
+    - qDeckId: 8
+      qTemId: 3
+      spawnCnt: 2
+      spawnPoints:
+        - mapBlockId: 12
+          deckId: 1003
+        - mapBlockId: 10
+          deckId: 1003
+    - qDeckId: 9
+      qTemId: 3
+      spawnCnt: 2
+      spawnPoints:
+        - mapBlockId: 18
+          deckId: 1003
+        - mapBlockId: 9
+          deckId: 1003
+    - qDeckId: 11
+      qTemId: 5
+      spawnCnt: 4
+      spawnPoints:
+        - mapBlockId: 42
+          deckId: 1006
+        - mapBlockId: 41
+          deckId: 1006
+    - qDeckId: 12
+      qTemId: 5
+      spawnCnt: 4
+      spawnPoints:
+        - mapBlockId: 24
+          deckId: 1006
+    - qDeckId: 13
+      qTemId: 3
+      spawnCnt: 2
+      spawnPoints:
+        - mapBlockId: 13
+          deckId: 1008
+        - mapBlockId: 3
+          deckId: 1008
+    - qDeckId: 14
+      qTemId: 8
+      spawnCnt: 4
+      spawnPoints:
+        - mapBlockId: 8
+          deckId: 1007
+        - mapBlockId: 11
+          deckId: 1007
+    - qDeckId: 16
+      qTemId: 3
+      spawnCnt: 2
+      spawnPoints:
+        - mapBlockId: 15
+          deckId: 1008
+        - mapBlockId: 4
+          deckId: 1008
+    - qDeckId: 17
+      qTemId: 15
+      spawnCnt: 3
+      spawnPoints:
+        - mapBlockId: 46
+          deckId: 2001
+    - qDeckId: 18
+      qTemId: 16
+      spawnCnt: 3
+      spawnPoints:
+        - mapBlockId: 46
+          deckId: 2001
+    - qDeckId: 19
+      qTemId: 17
+      spawnCnt: 3
+      spawnPoints:
+        - mapBlockId: 46
+          deckId: 2001
+    - qDeckId: 100
+      qTemId: 9
+      spawnCnt: 1
+      spawnPoints:
+        - mapBlockId: 0
+          deckId: 701
+    - qDeckId: 101
+      qTemId: 10
+      spawnCnt: 1
+      spawnPoints:
+        - mapBlockId: 0
+          deckId: 701
+    - qDeckId: 102
+      qTemId: 11
+      spawnCnt: 1
+      spawnPoints:
+        - mapBlockId: 0
+          deckId: 701
+    - qDeckId: 103
+      qTemId: 12
+      spawnCnt: 1
+      spawnPoints:
+        - mapBlockId: 0
+          deckId: 701
+    - qDeckId: 104
+      qTemId: 13
+      spawnCnt: 1
+      spawnPoints:
+        - mapBlockId: 0
+          deckId: 701
+    - qDeckId: 105
+      qTemId: 14
+      spawnCnt: 2
+      spawnPoints:
+        - mapBlockId: 1
+          deckId: 2000
+        - mapBlockId: 2
+          deckId: 2000
+        - mapBlockId: 3
+          deckId: 2000
+        - mapBlockId: 4
+          deckId: 2000
+        - mapBlockId: 5
+          deckId: 2000
+        - mapBlockId: 6
+          deckId: 2000
+        - mapBlockId: 7
+          deckId: 2000
+        - mapBlockId: 8
+          deckId: 2000
+        - mapBlockId: 9
+          deckId: 2000
+        - mapBlockId: 10
+          deckId: 2000
+        - mapBlockId: 11
+          deckId: 2000
+        - mapBlockId: 12
+          deckId: 2000
+        - mapBlockId: 13
+          deckId: 2000
+        - mapBlockId: 14
+          deckId: 2000
+        - mapBlockId: 15
+          deckId: 2000
+        - mapBlockId: 16
+          deckId: 2000
+        - mapBlockId: 18
+          deckId: 2000
+        - mapBlockId: 19
+          deckId: 2000
+        - mapBlockId: 20
+          deckId: 2000
+        - mapBlockId: 21
+          deckId: 2000
+        - mapBlockId: 22
+          deckId: 2000
+        - mapBlockId: 24
+          deckId: 2000
+        - mapBlockId: 40
+          deckId: 2000
+        - mapBlockId: 41
+          deckId: 2000
+        - mapBlockId: 42
+          deckId: 2000

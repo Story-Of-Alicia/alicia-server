@@ -8,6 +8,11 @@ server:
     # Passphrase required to use the //promote command. Acts as a second factor
     # Leave empty to disable promotion entirely.
     promotePassphrase: ""
+    # When true, every command normally restricted to staff (Admin, Moderator, etc.)
+    # becomes usable by anyone. Intended for local testing/development only —
+    # never enable this on a public-facing server. Can be overridden with the
+    # TEST_MODE environment variable.
+    testMode: false
   # Authentication configuration section
   authentication:
     # Type of authentication backend.

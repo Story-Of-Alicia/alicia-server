@@ -107,6 +107,10 @@ public:
     data::Uid characterUid,
     const protocol::AcCmdRCUpdateDailyQuestNotify& updateNotify);
 
+  void SendQuestNotificationToCharacter(
+    data::Uid characterUid,
+    const protocol::AcCmdRCUpdateQuestNotify& updateNotify);
+
   void SendGuildInviteDeclined(
     data::Uid characterUid,
     data::Uid inviterCharacterUid,
@@ -339,6 +343,10 @@ private:
   void HandleRanchStuff(
     ClientId clientId,
     const protocol::RanchCommandRanchStuff& command);
+
+  void HandleAchievementUpdateProperty(
+    ClientId clientId,
+    const protocol::AcCmdCRAchievementUpdateProperty& command);
 
   //!
   void HandleUpdateBusyState(
@@ -612,9 +620,6 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRBreedingWishlistDel& command);
 
-  void HandleUpdateAchievementProperty(
-    ClientId clientId,
-    const protocol::AcCmdCRAchievementUpdateProperty& command);
 
   //!
   ServerInstance& _serverInstance;
