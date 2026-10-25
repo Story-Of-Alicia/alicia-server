@@ -99,8 +99,9 @@ public:
 private:
   ShopList _shopList;
   std::string _serializedShopList;
-};
 
+  void Clear();
+};
 
 } // namespace server
 

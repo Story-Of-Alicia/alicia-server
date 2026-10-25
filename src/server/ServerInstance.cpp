@@ -297,6 +297,7 @@ void ServerInstance::LoadConfigurations()
   _horseRegistry.ReadConfig(_resourceDirectory / "config/game/horses");
   _housingRegistry.ReadConfig(_resourceDirectory / "config/game/housing.yaml");
   _itemRegistry.ReadConfig(_resourceDirectory / "config/game/items");
+  _lobbyDirector.GetShopManager().GenerateShopList(_itemRegistry);
   _magicRegistry.ReadConfig(_resourceDirectory / "config/game/magic.yaml");
   _missionRegistry.ReadConfig(_resourceDirectory / "config/game/missions.yaml");
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");

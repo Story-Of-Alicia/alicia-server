@@ -83,13 +83,23 @@ std::string ShopListToXmlString(const ShopList& shopList)
 
 } // namespace
 
+void ShopManager::Clear()
+{
+  // Reset so re-running on config reload does not accumulate
+  // stale/duplicate goods from a previous load
+  _shopList.goodsList.clear();
+  _serializedShopList.clear();
+}
+
 void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
 {
+  Clear();
+
   uint32_t goodsSequenceId = 0;
   uint32_t recommendNoId = 0;
 
-  auto items = itemRegistry.GetItems();
-  std::vector<std::pair<uint32_t, registry::Item>> sortedItems(items.begin(), items.end());
+  const auto& items = itemRegistry.GetItems();
+  std::vector<std::pair<uint32_t, registry::Item>> sortedItems(items.cbegin(), items.cend());
   // Limited goods first, then new goods, then everything else.
   const auto goodsTypePriority = [](const registry::Item& item)
   {
@@ -146,8 +156,8 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
       .recommendType = isTemporary ? 1u : 0u,
       .recommendNo = recommendNo,
       .giftType = item.characterPartInfo
-                    ? ShopList::Goods::GiftType::CanGift
-                    : ShopList::Goods::GiftType::NoGifting,
+        ? ShopList::Goods::GiftType::CanGift
+        : ShopList::Goods::GiftType::NoGifting,
       .salesRank = 0,
       .bonusGameMoney = 0,
       .goodsNm = item.name,
