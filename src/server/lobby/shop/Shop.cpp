@@ -90,12 +90,32 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
 
   auto items = itemRegistry.GetItems();
   std::vector<std::pair<uint32_t, registry::Item>> sortedItems(items.begin(), items.end());
-  // Sort by unlock level ascending, then by TID as a tiebreaker.
+  // Limited goods first, then new goods, then everything else.
+  const auto goodsTypePriority = [](const registry::Item& item)
+  {
+    if (not item.shopInfo)
+      return 2;
+    switch (item.shopInfo->goodsType)
+    {
+      case registry::Item::ShopInfo::GoodsType::Limited:
+        return 0;
+      case registry::Item::ShopInfo::GoodsType::New:
+        return 1;
+      default:
+        return 2;
+    }
+  };
+
+  // Sort by goods type priority, then by unlock level ascending, then by TID as a tiebreaker.
   std::sort(sortedItems.begin(), sortedItems.end(),
-    [](const auto& first, const auto& second)
+    [&goodsTypePriority](const auto& first, const auto& second)
     {
       const auto& [firstTid, firstItem] = first;
       const auto& [secondTid, secondItem] = second;
+      const auto firstPriority = goodsTypePriority(firstItem);
+      const auto secondPriority = goodsTypePriority(secondItem);
+      if (firstPriority != secondPriority)
+        return firstPriority < secondPriority;
       if (firstItem.level != secondItem.level)
         return firstItem.level < secondItem.level;
       return firstTid < secondTid;
@@ -121,7 +141,8 @@ void ShopManager::GenerateShopList(registry::ItemRegistry& itemRegistry)
       .setType = 0,
       .moneyType = static_cast<ShopList::Goods::MoneyType>(
         static_cast<uint32_t>(shopInfo.moneyType)),
-      .goodsType = ShopList::Goods::GoodsType::Default,
+      .goodsType = static_cast<ShopList::Goods::GoodsType>(
+        static_cast<uint32_t>(shopInfo.goodsType)),
       .recommendType = isTemporary ? 1u : 0u,
       .recommendNo = recommendNo,
       .giftType = item.characterPartInfo

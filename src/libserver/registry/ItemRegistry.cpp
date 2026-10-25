@@ -134,6 +134,8 @@ void ReadShopInfo(
   shopInfo.isPurchasable = yaml["isPurchasable"].as<bool>(true);
   shopInfo.moneyType = static_cast<Item::ShopInfo::MoneyType>(
     yaml["moneyType"].as<uint32_t>(0));
+  shopInfo.goodsType = static_cast<Item::ShopInfo::GoodsType>(
+    yaml["goodsType"].as<uint32_t>(0));
 
   if (const auto priceRangesNode = yaml["priceRanges"])
   {

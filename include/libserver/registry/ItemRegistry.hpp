@@ -134,6 +134,16 @@ struct Item
       Cash = 1,
     } moneyType{MoneyType::Carrots};
 
+    //! Offer badge shown in the shop
+    enum class GoodsType
+    {
+      Default = 0,
+      New = 1,
+      Limited = 2,
+      Sale = 3,
+      PCBang = 4,
+    } goodsType{GoodsType::Default};
+
     struct PriceRange
     {
       //! item count, or duration in hours for temporary items
@@ -168,9 +178,10 @@ struct Item
     uint32_t agility{};
     //! "Ambitious" in libconfig
     uint32_t ambition{};
-    //! "Inherent" in libconfig
+    //! "Rush" in libconfig (Control in-game)
     uint32_t courage{};
     uint32_t endurance{};
+    //! "Inherent" in libconfig (Speed in-game)
     uint32_t rush{};
   };
 
