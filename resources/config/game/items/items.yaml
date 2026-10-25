@@ -12316,6 +12316,7 @@ collection:
   shopInfo:
     isPurchasable: true
     moneyType: 0
+    goodstype: 2
     priceRanges:
     - range: 24
       price: 500
@@ -12336,6 +12337,7 @@ collection:
   shopInfo:
     isPurchasable: true
     moneyType: 0
+    goodstype: 2
     priceRanges:
     - range: 24
       price: 500
@@ -12356,6 +12358,7 @@ collection:
   shopInfo:
     isPurchasable: true
     moneyType: 0
+    goodstype: 2
     priceRanges:
     - range: 24
       price: 500
@@ -12376,6 +12379,7 @@ collection:
   shopInfo:
     isPurchasable: true
     moneyType: 0
+    goodstype: 2
     priceRanges:
     - range: 24
       price: 500
@@ -14897,3 +14901,227 @@ collection:
     priceRanges:
     - range: 1
       price: 10000
+- tid: 20127
+  type: 1
+  level: 1
+  name: 'Dread Knight Barding'
+  mountPartInfo:
+    slot: 1
+  itemIndex:
+    category: 2
+    subcategory: 2
+  shopInfo:
+    isPurchasable: false
+    moneyType: 0
+    goodsType: 1
+    priceRanges:
+    - range: 24
+      price: 1700
+    - range: 168
+      price: 9500
+    - range: 720
+      price: 33600
+  mountAbility:
+    grade: 0
+    agility: 7
+    ambition: 0
+    courage: 0
+    endurance: 0
+    rush: 0
+- tid: 20128
+  type: 1
+  level: 1
+  name: 'Dread Knight Trinket'
+  mountPartInfo:
+    slot: 16
+  itemIndex:
+    category: 2
+    subcategory: 3
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    goodsType: 1
+    priceRanges:
+    - range: 24
+      price: 1000
+    - range: 168
+      price: 5000
+    - range: 720
+      price: 18000
+  mountAbility:
+    grade: 0
+    agility: 0
+    ambition: 0
+    courage: 9
+    endurance: 0
+    rush: 0
+- tid: 20129
+  type: 1
+  level: 1
+  name: 'Dread Knight Horseshoes'
+  mountPartInfo:
+    slot: 8
+  itemIndex:
+    category: 2
+    subcategory: 4
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    goodsType: 1
+    priceRanges:
+    - range: 24
+      price: 700
+    - range: 168
+      price: 3800
+    - range: 720
+      price: 13400
+  mountAbility:
+    grade: 0
+    agility: 0
+    ambition: 0
+    courage: 0
+    endurance: 0
+    rush: 7
+- tid: 20130
+  type: 1
+  level: 1
+  name: 'Dread Knight Shield'
+  mountPartInfo:
+    slot: 32
+  itemIndex:
+    category: 2
+    subcategory: 5
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    goodsType: 1
+    priceRanges:
+    - range: 24
+      price: 1500
+    - range: 168
+      price: 8700
+    - range: 720
+      price: 30600
+  mountAbility:
+    grade: 0
+    agility: 0
+    ambition: 0
+    courage: 0
+    endurance: 10
+    rush: 0
+- tid: 99186
+  type: 0
+  level: 1
+  name: '흔한 형광나비 (할로윈)'
+  itemIndex:
+    category: 3
+    subcategory: 6
+  shopInfo:
+    isPurchasable: false
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 1
+- tid: 99187
+  type: 0
+  level: 1
+  name: '보통 형광나비 (할로윈)'
+  itemIndex:
+    category: 3
+    subcategory: 6
+  shopInfo:
+    isPurchasable: false
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 1
+- tid: 99188
+  type: 0
+  level: 1
+  name: '희귀한 형광나비 (할로윈)'
+  itemIndex:
+    category: 3
+    subcategory: 6
+  shopInfo:
+    isPurchasable: false
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 1
+- tid: 99189
+  type: 0
+  level: 1
+  name: '전설의 형광나비 (할로윈)'
+  itemIndex:
+    category: 3
+    subcategory: 6
+  shopInfo:
+    isPurchasable: false
+    moneyType: 0
+    priceRanges:
+    - range: 1
+      price: 1
+- tid: 10406
+  type: 0
+  name: 'Dusky Cat Ears'
+  characterPartInfo:
+    characterId: 20
+    slot: 1
+  itemIndex:
+    category: 1
+    subcategory: 4
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    goodsType: 1
+    priceRanges:
+    - range: 1
+      price: 15000
+- tid: 30402
+  type: 0
+  name: 'Smoky Tomcat Ears'
+  characterPartInfo:
+    characterId: 10
+    slot: 1
+  itemIndex:
+    category: 1
+    subcategory: 4
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    goodsType: 1
+    priceRanges:
+    - range: 1
+      price: 15000
+- tid: 10407
+  type: 0
+  name: 'Smug Zombie Mask'
+  characterPartInfo:
+    characterId: 20
+    slot: 64
+  itemIndex:
+    category: 1
+    subcategory: 5
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    goodsType: 2
+    priceRanges:
+    - range: 1
+      price: 20000
+- tid: 30403
+  type: 0
+  name: 'Haughty Zombie Mask'
+  characterPartInfo:
+    characterId: 10
+    slot: 64
+  itemIndex:
+    category: 1
+    subcategory: 5
+  shopInfo:
+    isPurchasable: true
+    moneyType: 0
+    goodsType: 2
+    priceRanges:
+    - range: 1
+      price: 20000

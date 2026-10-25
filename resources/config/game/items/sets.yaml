@@ -112,3 +112,10 @@ collection:
     itemTids: [20123, 20124, 20125, 20126]
     equipEffect: 2
     equipEffectValue: 0
+
+  - setId: 16
+    name: 'Dread Knight Set'
+    description: '[Magic Battle] Passive gauge fills faster'
+    itemTids: [20127, 20128, 20129, 20130]
+    equipEffect: 2
+    equipEffectValue: 0
