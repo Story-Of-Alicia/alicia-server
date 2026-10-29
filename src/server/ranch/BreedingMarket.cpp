@@ -32,7 +32,7 @@ namespace
 // todo: configure me
 constexpr float RegistrationFee = 0.50f;
 constexpr float EarningTaxes = 0.20f;
-constexpr size_t MaxStallionsPerCharacter = 3;
+constexpr size_t MaxStallionsPerCharacter = 5;
 
 constexpr auto MarketDuration = std::chrono::hours(24);
 
