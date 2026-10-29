@@ -42,12 +42,12 @@ namespace server
 
 class ServerInstance;
 
-class RanchDirector final
+class RanchNetworkHandler final
   : public CommandServer::EventHandlerInterface
 {
 public:
   //!
-  explicit RanchDirector(ServerInstance& serverInstance);
+  explicit RanchNetworkHandler(ServerInstance& serverInstance);
 
   void Initialize();
   void Terminate();

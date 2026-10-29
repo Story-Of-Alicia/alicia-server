@@ -29,7 +29,7 @@
 #include "server/race/RaceDirector.hpp"
 #include "server/ranch/BreedingMarket.hpp"
 #include "server/ranch/Genetics.hpp"
-#include "server/ranch/RanchDirector.hpp"
+#include "server/ranch/RanchNetworkHandler.hpp"
 #include "server/system/ChatSystem.hpp"
 #include "server/system/HorseSystem.hpp"
 #include "server/system/InfractionSystem.hpp"
@@ -92,7 +92,7 @@ public:
 
   //! Returns reference to the ranch director.
   //! @returns Reference to the ranch director.
-  RanchDirector& GetRanchDirector();
+  RanchNetworkHandler& GetRanchDirector();
 
   //! Returns reference to the race director.
   //! @returns Reference to the race director.
@@ -297,7 +297,7 @@ private:
   //! A thread of the ranch director.
   std::thread _ranchDirectorThread;
   //! A ranch director.
-  RanchDirector _ranchDirector;
+  RanchNetworkHandler _ranchDirector;
 
   //! A thread of the race director.
   std::thread _raceDirectorThread;
