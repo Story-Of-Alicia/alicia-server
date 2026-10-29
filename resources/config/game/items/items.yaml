@@ -12485,6 +12485,10 @@ collection:
     priceRanges:
     - range: 1
       price: 14000
+    - range: 10
+      price: 140000
+    - range: 30
+      price: 420000
 - tid: 46020
   type: 1
   level: 1
@@ -12549,6 +12553,10 @@ collection:
     priceRanges:
     - range: 1
       price: 7000
+    - range: 10
+      price: 70000
+    - range: 30
+      price: 210000
 - tid: 45004
   type: 2
   level: 1
