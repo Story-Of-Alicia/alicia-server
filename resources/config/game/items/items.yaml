@@ -14919,7 +14919,7 @@ collection:
     category: 2
     subcategory: 2
   shopInfo:
-    isPurchasable: false
+    isPurchasable: true
     moneyType: 0
     goodsType: 1
     priceRanges:
@@ -14946,7 +14946,7 @@ collection:
     category: 2
     subcategory: 3
   shopInfo:
-    isPurchasable: false
+    isPurchasable: true
     moneyType: 0
     goodsType: 1
     priceRanges:
@@ -14973,7 +14973,7 @@ collection:
     category: 2
     subcategory: 4
   shopInfo:
-    isPurchasable: false
+    isPurchasable: true
     moneyType: 0
     goodsType: 1
     priceRanges:
@@ -15000,7 +15000,7 @@ collection:
     category: 2
     subcategory: 5
   shopInfo:
-    isPurchasable: false
+    isPurchasable: true
     moneyType: 0
     goodsType: 1
     priceRanges:
