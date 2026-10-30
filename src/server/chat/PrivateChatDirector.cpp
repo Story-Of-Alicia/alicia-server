@@ -88,7 +88,7 @@ Config::PrivateChat& PrivateChatDirector::GetConfig()
 const std::optional<network::ClientId> PrivateChatDirector::GetTargetClientIdByContext(
   const ConversationContext& conversationContext) const
 {
-  std::optional<ClientId> clientId{};
+  std::optional<network::ClientId> clientId{};
 
   // Check if any character uids are invalid 
   if (conversationContext.characterUid == data::InvalidUid or
@@ -129,7 +129,7 @@ void PrivateChatDirector::HandleClientDisconnected(network::ClientId clientId)
 
   // Terminate the corresponding client's private chat instance
   const auto& conversationContext = _conversations.at(clientId);
-  const std::optional<ClientId> targetClientId = GetTargetClientIdByContext(
+  const std::optional<network::ClientId> targetClientId = GetTargetClientIdByContext(
     conversationContext);
   if (targetClientId.has_value())
   {
@@ -227,7 +227,7 @@ void PrivateChatDirector::HandleChatterChat(
   // buffer the message by waiting x secs to check if the target character has connected to the private chat.
 
   // Try send message to target character
-  const std::optional<ClientId> targetClientId = GetTargetClientIdByContext(
+  const std::optional<network::ClientId> targetClientId = GetTargetClientIdByContext(
     conversationContext);
   if (targetClientId.has_value())
   {
@@ -252,7 +252,7 @@ void PrivateChatDirector::HandleChatterInputState(
   // Corresponding command: ChatCmdInputStateTrs
 
   const auto& conversationContext = GetConversationContext(clientId);
-  const std::optional<ClientId> targetClientId = GetTargetClientIdByContext(
+  const std::optional<network::ClientId> targetClientId = GetTargetClientIdByContext(
     conversationContext);
 
   if (not targetClientId.has_value())

@@ -112,8 +112,7 @@ void RaceDirector::SendDailyQuestNotificationToCharacter(
 RaceNetworkHandler& RaceDirector::GetNetworkHandler()
 {
   if (_networkHandler == nullptr)
-    throw std::runtime_error("Race director does not have a network handler");
-
+    throw std::runtime_error("Race network handler not available");
   return *_networkHandler;
 }
 

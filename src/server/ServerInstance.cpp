@@ -54,13 +54,13 @@ ServerInstance::ServerInstance(
   , _infractionSystem(*this)
   , _itemSystem(*this)
   , _horseSystem(*this)
-  , _matchmakingSystem(*this)
   , _questSystem(*this)
   , _ranchManagementSystem(*this)
+  , _matchmakingSystem(*this)
   , _rewardSystem(*this)
   , _telemetry(*this)
-  , _breedingMarket(*this)
   , _genetics(*this)
+  , _breedingMarket(*this)
 {
 }
 
@@ -320,7 +320,7 @@ LobbyDirector& ServerInstance::GetLobbyDirector()
   return _lobbyDirector;
 }
 
-RanchDirector& ServerInstance::GetRanchDirector()
+RanchNetworkHandler& ServerInstance::GetRanchDirector()
 {
   return _ranchDirector;
 }

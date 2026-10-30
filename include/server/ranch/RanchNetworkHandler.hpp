@@ -1,6 +1,6 @@
 /**
  * Alicia Server - dedicated server software
- * Copyright (C) 2024 Story Of Alicia
+ * Copyright (C) 2024-2026 Story Of Alicia
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,22 +17,18 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
-#ifndef RANCHDIRECTOR_HPP
-#define RANCHDIRECTOR_HPP
+#ifndef RANCHNETWORKHANDLER_HPP
+#define RANCHNETWORKHANDLER_HPP
 
-#include "libserver/network/command/CommandDeferrer.hpp"
-#include "libserver/util/Scheduler.hpp"
-#include "server/Config.hpp"
-#include "server/ranch/BreedingMarket.hpp"
 #include "server/tracker/RanchTracker.hpp"
 
-#include "libserver/network/command/CommandServer.hpp"
-#include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
-#include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
-#include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
+#include <libserver/event/Event.hpp>
+#include <libserver/network/command/proto/CommonMessageDefinitions.hpp>
+#include <libserver/network/command/proto/RanchMessageDefinitions.hpp>
+#include <libserver/network/command/CommandDeferrer.hpp>
+#include <libserver/network/command/CommandServer.hpp>
+#include <libserver/util/Scheduler.hpp>
 
-#include <optional>
-#include <random>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -42,12 +38,21 @@ namespace server
 
 class ServerInstance;
 
-class RanchDirector final
+//! An event fired when character connects.
+using CharacterConnectEvent = Event<data::Uid>;
+//! An event fired when character disconnects.
+using CharacterDisconnectEvent = Event<data::Uid>;
+//! An event fired when character enters a ranch.
+using CharacterRanchEnterEvent = Event<data::Uid, data::Uid>;
+//! An event fired when character leaves a ranch.
+using CharacterRanchLeaveEvent = Event<data::Uid, data::Uid>;
+
+class RanchNetworkHandler final
   : public CommandServer::EventHandlerInterface
 {
 public:
   //!
-  explicit RanchDirector(ServerInstance& serverInstance);
+  explicit RanchNetworkHandler(ServerInstance& serverInstance);
 
   void Initialize();
   void Terminate();
@@ -60,7 +65,7 @@ public:
   void HandleClientDisconnected(ClientId client) override;
 
   //!
-  void Disconnect(data::Uid characterUid);
+  void DisconnectCharacter(data::Uid characterUid);
 
   [[nodiscard]] bool LeaveRanch(data::Uid characterUid);
 
@@ -76,7 +81,7 @@ public:
     data::Uid horseUid);
 
   //! Send a RequestUser notification to a character connected to this director.
-  void SummonCharacter(
+  void SendCharacterSummon(
     data::Uid characterUid,
     bool force,
     std::string characterName,
@@ -87,6 +92,14 @@ public:
   void SendStorageNotification(
     data::Uid characterUid,
     protocol::AcCmdCRRequestStorage::Category category);
+
+  //! Announces that a foal grew up to an adult to the owning client and the
+  //! visitors of its ranch.
+  //! @param characterUid UID of the owning character.
+  //! @param horseUid UID of the horse that grew up.
+  void SendFoalGrowUp(
+    data::Uid characterUid,
+    data::Uid horseUid);
 
   void BroadcastChangeAgeNotify(
     data::Uid characterUid,
@@ -123,9 +136,21 @@ public:
     data::Uid horseUid);
 
   ServerInstance& GetServerInstance();
-  Config::Ranch& GetConfig();
+
+  [[nodiscard]] CharacterConnectEvent& GetCharacterConnectEvent() noexcept;
+  [[nodiscard]] CharacterDisconnectEvent& GetCharacterDisconnectEvent() noexcept;
+  [[nodiscard]] CharacterRanchEnterEvent& GetCharacterRanchEnterEvent() noexcept;
+  [[nodiscard]] CharacterRanchLeaveEvent& GetCharacterRanchLeaveEvent() noexcept;
 
 private:
+  struct CharacterInstance
+  {
+    //! Collection of foals which are to mature.
+    std::vector<data::Uid> foals;
+    //! Collection of items which are to expire.
+    std::vector<data::Uid> items;
+  };
+
   struct ClientContext
   {
     //! User name.
@@ -144,17 +169,11 @@ private:
     //! Fee paid for the failed breeding; scales the failure-card reward grade.
     uint32_t pendingFailureCardSpend{0};
 
-    //! The client's foals still maturing into adults, each mapped to the time
-    //! it becomes an adult. Rebuilt on ranch entry and appended to when a foal
-    //! is bred; the maturity sweep only looks at these, and only does a record
-    //! lookup once an entry's deadline has passed.
-    std::unordered_map<data::Uid, data::Clock::time_point> maturingFoals;
-
     //! Number of times a deferred ranch entry has been retried while waiting
     //! for horse records to load. Capped so the client isn't stuck forever.
     uint32_t enterRanchDeferAttempts{0};
 
-    //! Number of times a deferred breeding attempt has been retried 
+    //! Number of times a deferred breeding attempt has been retried
     uint32_t tryBreedingDeferAttempts{0};
   };
 
@@ -462,6 +481,15 @@ private:
     data::Tid usedItemTid,
     protocol::AcCmdCRUseItemOK& response);
 
+  bool HandleUseGrowItem(
+    ClientId clientId,
+    data::Uid characterUid,
+    data::Uid foalUid);
+
+  void SendMountNotifyAdd(
+    ClientId clientId,
+    data::Uid horseUid);
+
   void HandleUseItem(
     ClientId clientId,
     const protocol::AcCmdCRUseItem& command);
@@ -480,7 +508,6 @@ private:
   //! @returns The uses left afterwards, or nullopt when there is nothing to
   //!          spend - no incubator built, or one that never runs out.
   std::optional<uint32_t> ConsumeIncubatorUse(data::Character& character);
-
 
   void HandleOpCmd(ClientId clientId,
     const protocol::AcCmdCROpCmd& command);
@@ -616,13 +643,16 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRAchievementUpdateProperty& command);
 
-  //!
+  CharacterConnectEvent _characterConnectEvent;
+  CharacterDisconnectEvent _characterDisconnectEvent;
+  CharacterRanchEnterEvent _characterRanchEnterEvent;
+  CharacterRanchLeaveEvent _characterRanchLeaveEvent;
+
+
+  //! A server instance reference.
   ServerInstance& _serverInstance;
   //!
   CommandServer _commandServer;
-
-  //! The breeding market system.
-  BreedingMarket _breedingMarket;
 
   //!
   std::unordered_map<ClientId, ClientContext> _clients;
@@ -644,4 +674,4 @@ private:
 
 } // namespace server
 
-#endif // RANCHDIRECTOR_HPP
+#endif // RANCHNETWORKHANDLER_HPP
