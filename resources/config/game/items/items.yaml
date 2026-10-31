@@ -14960,7 +14960,7 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 9
+    courage: 10
     endurance: 0
     rush: 0
 - tid: 20129
@@ -14989,7 +14989,7 @@ collection:
     ambition: 0
     courage: 0
     endurance: 0
-    rush: 7
+    rush: 10
 - tid: 20130
   type: 1
   level: 1
@@ -15015,7 +15015,7 @@ collection:
     agility: 0
     ambition: 0
     courage: 0
-    endurance: 10
+    endurance: 7
     rush: 0
 - tid: 99186
   type: 0
