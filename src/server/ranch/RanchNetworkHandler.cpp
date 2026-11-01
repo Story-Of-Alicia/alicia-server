@@ -51,13 +51,9 @@ constexpr uint16_t MaxPlenitude = 1200;
 //! which matures a foal into an adult horse.
 constexpr data::Tid InstantGrowUpItemTid = 43001;
 
-//! How often the foal maturity sweep runs while players are on their ranch.
-constexpr auto FoalMaturityCheckInterval = std::chrono::seconds(60);
-
-//! How many times a deferred ranch entry is retried while waiting for horse
-//! records to load before giving up and cancelling the entry.
-constexpr uint32_t MaxEnterRanchDeferAttempts = 2;
-constexpr uint32_t MaxTryBreedingDeferAttempts = 4;
+constexpr size_t MaxMountFamilyTreeDeferAttempts = 2;
+constexpr size_t MaxEnterRanchDeferAttempts = 2;
+constexpr size_t MaxTryBreedingDeferAttempts = 4;
 
 BreedingMarket::SnapshotOrder ConvertProtocolStallionOrderToSnapshotOrder(
   const protocol::AcCmdCRSearchStallion::StallionOrder order)
@@ -112,50 +108,57 @@ BreedingMarket::SnapshotFilter::Stat ConvertProtocolStallionStatToSnapshotStat(
 RanchNetworkHandler::RanchNetworkHandler(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
   , _commandServer(*this)
-  , _mountFamilyTreeDeferrer([this](const network::ClientId clientId, const protocol::AcCmdCRMountFamilyTree& command)
-  {
-    HandleMountFamilyTree(clientId, command);
-  })
-  , _enterRanchDeferrer([this](const network::ClientId clientId, const protocol::AcCmdCREnterRanch& command)
-  {
-    // The deferrer erases the command after each tick, so re-queue it here to
-    // keep retrying until the required horse records have loaded. Give up after
-    // a few attempts and cancel the entry so the client isn't stuck forever.
-    const bool deferAgain = HandleEnterRanch(clientId, command);
-    auto& clientContext = GetClientContext(clientId, false);
+  , _mountFamilyTreeDeferrer(
+      [this](
+        const network::ClientId clientId,
+        const protocol::AcCmdCRMountFamilyTree& command)
+      {
+        HandleMountFamilyTree(clientId, command);
+      },
+      MaxMountFamilyTreeDeferAttempts)
+  , _enterRanchDeferrer(
+      [this](
+        const network::ClientId clientId,
+        const protocol::AcCmdCREnterRanch& command)
+      {
+        const bool deferAgain = HandleEnterRanch(clientId, command);
+        auto& clientContext = GetClientContext(clientId, false);
 
-    if (not deferAgain)
-    {
-      clientContext.enterRanchDeferAttempts = 0;
-      return;
-    }
-
-    if (++clientContext.enterRanchDeferAttempts >= MaxEnterRanchDeferAttempts)
-    {
-      clientContext.enterRanchDeferAttempts = 0;
-
-      spdlog::warn(
-        "Ranch entry for client {} gave up after {} deferred attempts; horse records unavailable",
-        clientId,
-        MaxEnterRanchDeferAttempts);
-
-      protocol::RanchCommandEnterRanchCancel cancel{};
-      _commandServer.QueueCommand<decltype(cancel)>(
-        clientId,
-        [cancel]()
+        if (not deferAgain)
         {
-          return cancel;
-        });
-      return;
-    }
+          clientContext.enterRanchDeferAttempts = 0;
+          return;
+        }
 
-    _enterRanchDeferrer.Defer(clientId, command);
-  })
-  , _tryBreedingDeferrer([this](const network::ClientId clientId, const protocol::AcCmdCRTryBreeding& command)
-  {
-    if (HandleTryBreeding(clientId, command))
-      _tryBreedingDeferrer.Defer(clientId, command);
-  })
+        if (++clientContext.enterRanchDeferAttempts >= MaxEnterRanchDeferAttempts)
+        {
+          clientContext.enterRanchDeferAttempts = 0;
+
+          spdlog::warn(
+            "Ranch entry for client {} gave up after {} deferred attempts; horse records unavailable",
+            clientId,
+            MaxEnterRanchDeferAttempts);
+
+          protocol::RanchCommandEnterRanchCancel cancel{};
+          _commandServer.QueueCommand<decltype(cancel)>(
+            clientId,
+            [cancel]()
+            {
+              return cancel;
+            });
+          return;
+        }
+        _enterRanchDeferrer.Defer(clientId, command);
+      },
+      MaxEnterRanchDeferAttempts)
+  , _tryBreedingDeferrer(
+      [this](
+        const network::ClientId clientId,
+        const protocol::AcCmdCRTryBreeding& command)
+      {
+        return HandleTryBreeding(clientId, command);
+      },
+      MaxTryBreedingDeferAttempts)
 {
   _commandServer.RegisterCommandHandler<protocol::AcCmdCREnterRanch>(
     [this](ClientId clientId, const auto& message)
@@ -2147,7 +2150,7 @@ bool RanchNetworkHandler::HandleTryBreeding(
   // Hard cancel (resultCode 0, i.e. not the consolation path) for validation failures,
   // so the client doesn't hang.
   using CancelReason = protocol::RanchCommandTryBreedingCancel::CancelReason;
-  const auto sendBreedingCancel = [this, clientId](CancelReason reason)
+  const auto sendBreedingCancel = [this, clientId](const CancelReason reason)
   {
     const protocol::RanchCommandTryBreedingCancel cancel{.resultCode = reason};
     _commandServer.QueueCommand<protocol::RanchCommandTryBreedingCancel>(
@@ -2161,22 +2164,13 @@ bool RanchNetworkHandler::HandleTryBreeding(
     spdlog::warn("TryBreeding: mare {} or stallion {} not found",
       command.mareUid, command.stallionUid);
     sendBreedingCancel(CancelReason::GenericError);
-    clientContext.tryBreedingDeferAttempts = 0;
+    return true;
+  }
+
+  if (not GetServerInstance().GetGenetics().IsAncestryResident(command.mareUid, command.stallionUid))
+  {
     return false;
   }
-
-  if (not GetServerInstance().GetGenetics().IsAncestryResident(
-    command.mareUid, command.stallionUid))
-  {
-    if (++clientContext.tryBreedingDeferAttempts < MaxTryBreedingDeferAttempts)
-      return true;
-
-    spdlog::warn(
-      "TryBreeding: ancestry of mare {} and stallion {} still incomplete after {} attempts, "
-      "breeding with the records at hand",
-      command.mareUid, command.stallionUid, MaxTryBreedingDeferAttempts);
-  }
-  clientContext.tryBreedingDeferAttempts = 0;
 
   // The stallion must be registered in the breeding market.
   const auto stallionData = GetServerInstance().GetBreedingMarket().GetStallionData(
@@ -2215,7 +2209,7 @@ bool RanchNetworkHandler::HandleTryBreeding(
     spdlog::warn("TryBreeding: character {} has insufficient horse slots",
       clientContext.characterUid, stallionData->breedingCharge);
     sendBreedingCancel(CancelReason::InsufficientHorseSlots);
-    return false;
+    return true;
   }
 
   if (not charged)
@@ -2223,7 +2217,7 @@ bool RanchNetworkHandler::HandleTryBreeding(
     spdlog::warn("TryBreeding: character {} cannot afford breeding fee {}",
       clientContext.characterUid, stallionData->breedingCharge);
     sendBreedingCancel(CancelReason::InsufficientBalance);
-    return false;
+    return true;
   }
 
   // Read the stallion grade and breeding count, and the player's own mare's charm,
@@ -2303,7 +2297,7 @@ bool RanchNetworkHandler::HandleTryBreeding(
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
       [response]() { return response; });
-    return false;
+    return true;
   }
 
   ApplyBreedingAttemptUpdates();
@@ -2325,7 +2319,7 @@ bool RanchNetworkHandler::HandleTryBreeding(
       return response;
     });
 
-  return false;
+  return true;
 }
 
 protocol::BreedingBonus RanchNetworkHandler::RollBreedingBonus(const uint32_t stallionGrade)
@@ -5386,7 +5380,7 @@ bool RanchNetworkHandler::HandleMountFamilyTree(
   auto& dataDirector = GetServerInstance().GetDataDirector();
   protocol::AcCmdCRMountFamilyTreeOK response{};
 
-  const auto sendResponse = [this, clientId, &response]()
+  const auto SendResponse = [this, clientId, &response]()
   {
     _commandServer.QueueCommand<decltype(response)>(clientId, [response]()
     {
@@ -5397,7 +5391,7 @@ bool RanchNetworkHandler::HandleMountFamilyTree(
   const auto mountRecord = dataDirector.GetHorse(command.horseUid);
   if (not mountRecord)
   {
-    sendResponse();
+    SendResponse();
     return false;
   }
 
@@ -5464,7 +5458,7 @@ bool RanchNetworkHandler::HandleMountFamilyTree(
   if (defer)
     return true;
 
-  sendResponse();
+  SendResponse();
   return false;
 }
 
@@ -7902,6 +7896,5 @@ void RanchNetworkHandler::HandleUpdateAchievementProperty(
       character.isIntroCompleted() = true;
     });
 }
-
 
 } // namespace server

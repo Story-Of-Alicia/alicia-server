@@ -158,13 +158,6 @@ private:
     protocol::BreedingFailureCardType pendingCardType{};
     //! Fee paid for the failed breeding; scales the failure-card reward grade.
     uint32_t pendingFailureCardSpend{0};
-
-    //! Number of times a deferred ranch entry has been retried while waiting
-    //! for horse records to load. Capped so the client isn't stuck forever.
-    uint32_t enterRanchDeferAttempts{0};
-
-    //! Number of times a deferred breeding attempt has been retried
-    uint32_t tryBreedingDeferAttempts{0};
   };
 
   struct RanchInstance

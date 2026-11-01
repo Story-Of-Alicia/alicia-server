@@ -33,11 +33,12 @@ template <typename C>
 class CommandDeferrer
 {
 public:
-  using Handler = std::function<void(network::ClientId, const C&)>;
+  using Handler = std::function<bool(network::ClientId, const C&)>;
 
   //! Default constructor.
-  explicit CommandDeferrer(Handler handler) noexcept
+  explicit CommandDeferrer(Handler handler, const size_t maxTryCount = 1) noexcept
     : _handler(handler)
+    , _maxTryCount(maxTryCount)
   {
     _command = _commands.cend();
   }
@@ -65,8 +66,13 @@ public:
     try
     {
       // Call the handler.
-      _handler(_command->clientId, _command->command);
-      _command = _commands.erase(_command);
+      const auto completed = _handler(_command->clientId, _command->command);
+      ++_command->tryCount;
+
+      if (completed || _command->tryCount > _maxTryCount)
+        _command = _commands.erase(_command);
+      else
+        _command = _command++;
     }
     catch (const std::exception& x)
     {
@@ -87,11 +93,13 @@ private:
   {
     network::ClientId clientId;
     C command;
+    size_t tryCount = 0;
   };
 
   Handler _handler;
   std::list<CommandContext> _commands;
   decltype(_commands)::const_iterator _command;
+  size_t _maxTryCount = 1;
 };
 
 } // namespace server
