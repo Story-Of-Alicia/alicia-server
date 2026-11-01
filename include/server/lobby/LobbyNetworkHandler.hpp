@@ -139,7 +139,7 @@ private:
 
   void SendRoomEntryResponse(
     bool leftRanch,
-    Scheduler::Task sendResponse);
+    const Scheduler::Task& sendResponse);
 
   void HandleLeaveRoom(
     ClientId clientId);

@@ -20,6 +20,7 @@
 #include "server/lobby/LobbyNetworkHandler.hpp"
 
 #include "server/ServerInstance.hpp"
+#include "server/ranch/RanchNetworkHandler.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
 
@@ -44,6 +45,7 @@ constexpr uint32_t MissionClearedProgressId = 2;
 
 //! A random device for random number generation.
 std::random_device rd;
+
 constexpr auto RanchLeaveSettleDelay = std::chrono::milliseconds(150);
 
 } // anon namespace
@@ -1146,8 +1148,8 @@ void LobbyNetworkHandler::HandleHeartbeat(
 }
 
 void LobbyNetworkHandler::SendRoomEntryResponse(
-  bool leftRanch,
-  Scheduler::Task sendResponse)
+  const bool leftRanch,
+  const Scheduler::Task& sendResponse)
 {
   if (leftRanch)
   {
@@ -1285,7 +1287,7 @@ void LobbyNetworkHandler::HandleMakeRoom(
   const auto roomOtp = _serverInstance.GetOtpSystem().GrantCode(
     identityHash);
 
-  const bool leftRanch = _serverInstance.GetRanchDirector().LeaveRanch(
+  const bool leftRanch = _serverInstance.GetRanchDirector().GetNetworkHandler().LeaveRanch(
     clientContext.characterUid);
 
   const auto lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
@@ -1439,7 +1441,7 @@ void LobbyNetworkHandler::HandleEnterRoom(
   const auto roomOtp = _serverInstance.GetOtpSystem().GrantCode(
     identityHash);
 
-  const bool leftRanch = _serverInstance.GetRanchDirector().LeaveRanch(
+  const bool leftRanch = _serverInstance.GetRanchDirector().GetNetworkHandler().LeaveRanch(
     clientContext.characterUid);
 
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();

@@ -1,0 +1,218 @@
+/**
+ * Alicia Server - dedicated server software
+ * Copyright (C) 2026 Story Of Alicia
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ **/
+
+#include "server/ranch/RanchDirector.hpp"
+
+#include "server/ranch/RanchNetworkHandler.hpp"
+#include "server/ServerInstance.hpp"
+
+namespace server
+{
+
+namespace
+{
+
+//! How often the foal maturity sweep runs while players are on their ranch.
+constexpr auto FoalMaturityCheckInterval = std::chrono::seconds(60);
+
+} // namespace
+
+RanchDirector::RanchDirector(ServerInstance& serverInstance)
+  : _serverInstance(serverInstance)
+  , _networkHandler(new RanchNetworkHandler(_serverInstance))
+{
+}
+
+RanchDirector::~RanchDirector()
+{
+  delete _networkHandler;
+}
+
+void RanchDirector::Initialize()
+{
+  ScheduleFoalMaturityCheck();
+
+  _networkHandler->Initialize();
+
+  _networkHandler->GetCharacterConnectEvent().Subscribe(
+    [this](const data::Uid characterUid)
+    {
+      auto& characterInstance = _characterInstances[characterUid];
+
+      const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+        characterUid);
+      if (not characterRecord)
+        return;
+
+      // Collect the character's foals to track for maturing
+      // and items to track for expiring.
+      characterRecord.Immutable([this, &characterInstance](
+        const data::Character& character)
+      {
+        characterInstance.foals = _serverInstance.GetHorseSystem().CollectCharacterFoals(
+          character);
+        // todo: item expiration
+        //characterInstance.items = _serverInstance.GetItemSystem().CollectPerishableItems();
+      });
+    });
+
+  _networkHandler->GetCharacterDisconnectEvent().Subscribe(
+    [this](const data::Uid characterUid)
+    {
+      _characterInstances.erase(characterUid);
+    });
+}
+
+void RanchDirector::Terminate()
+{
+  _networkHandler->Terminate();
+}
+
+void RanchDirector::Tick()
+{
+  _networkHandler->Tick();
+}
+
+void RanchDirector::DisconnectCharacter(
+  const data::Uid characterUid)
+{
+  GetNetworkHandler().DisconnectCharacter(characterUid);
+}
+
+void RanchDirector::SendGuildInviteAccepted(
+  const data::Uid guildUid,
+  const data::Uid characterUid,
+  const std::string& newMemberCharacterName)
+{
+  GetNetworkHandler().SendGuildInviteAccepted(
+    guildUid,
+    characterUid,
+    newMemberCharacterName);
+}
+
+void RanchDirector::SendGuildInviteDeclined(
+  const data::Uid characterUid,
+  const data::Uid inviterCharacterUid,
+  const std::string& inviterCharacterName,
+  const data::Uid guildUid)
+{
+  GetNetworkHandler().SendGuildInviteDeclined(
+    characterUid,
+    inviterCharacterUid,
+    inviterCharacterName,
+    guildUid);
+}
+
+void RanchDirector::SendCharacterSummon(
+  const data::Uid characterUid,
+  const bool force,
+  const std::string& characterName,
+  const data::Uid roomUid,
+  const data::Uid ranchUid)
+{
+  GetNetworkHandler().SendCharacterSummon(
+    characterUid,
+    force,
+    characterName,
+    roomUid,
+    ranchUid);
+}
+
+void RanchDirector::BroadcastSetIntroductionNotify(
+  const data::Uid characterUid,
+  const std::string& introduction)
+{
+  GetNetworkHandler().BroadcastSetIntroductionNotify(
+    characterUid,
+    introduction);
+}
+
+RanchNetworkHandler& RanchDirector::GetNetworkHandler() const
+{
+  if (_networkHandler == nullptr)
+    throw std::runtime_error("Ranch network handler not available");
+  return *_networkHandler;
+}
+
+Scheduler& RanchDirector::GetScheduler() noexcept
+{
+  return _scheduler;
+}
+
+Config::Ranch& RanchDirector::GetConfig() noexcept
+{
+  return _serverInstance.GetSettings().ranch;
+}
+
+void RanchDirector::ScheduleFoalMaturityCheck() noexcept
+{
+  _scheduler.Queue(
+    [this]()
+    {
+      RunFoalMaturityCheck();
+      ScheduleFoalMaturityCheck();
+    },
+    Scheduler::Clock::now() + FoalMaturityCheckInterval);
+}
+
+void RanchDirector::RunFoalMaturityCheck()
+{
+  const auto now = data::Clock::now();
+
+  for (const auto& [characterUid, characterInstance] : _characterInstances)
+  {
+    if (characterInstance.foals.empty())
+      continue;
+
+    // Iterate over character's foals and mature them.
+    for (const data::Uid& foalUid : characterInstance.foals)
+    {
+      const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(
+        foalUid);
+
+      if (not horseRecord)
+        continue;
+
+      data::Clock::time_point birthTimePoint;
+
+      horseRecord->Immutable([&birthTimePoint](
+        const data::Horse& horse)
+      {
+        birthTimePoint = horse.dateOfBirth();
+      });
+
+      const bool hasMatured = now >= birthTimePoint + HorseSystem::FoalGrowUpDuration;
+      if (not hasMatured)
+        continue;
+
+      horseRecord->Mutable([](data::Horse& horse)
+      {
+        horse.type() = data::Horse::Type::Adult;
+      });
+
+      GetNetworkHandler().SendFoalGrowUp(
+        characterUid,
+        foalUid);
+    }
+
+    // todo: item expiration
+  }
+}
+
+} // namespace server

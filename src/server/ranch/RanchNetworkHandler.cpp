@@ -783,14 +783,8 @@ bool RanchNetworkHandler::LeaveRanch(data::Uid characterUid)
     return false;
 
   RemoveClientFromRanch(*ranchClientId, _clients.at(*ranchClientId));
+  SendRanchLeave(*ranchClientId);
 
-  const protocol::AcCmdCRLeaveRanchOK response{};
-  _commandServer.QueueCommand<protocol::AcCmdCRLeaveRanchOK>(
-    *ranchClientId,
-    [response]()
-    {
-      return response;
-    });
   return true;
 }
 
@@ -1275,7 +1269,6 @@ bool RanchNetworkHandler::HandleEnterRanch(
 
   if (command.characterUid == command.rancherUid)
   {
-    RefreshMaturingFoals(command.characterUid, clientContext);
     GetServerInstance().GetHorseSystem().RepairLineages(command.characterUid);
     GetServerInstance().GetHorseSystem().ApplyDailyCareTick(command.characterUid);
   }
@@ -1605,12 +1598,18 @@ bool RanchNetworkHandler::HandleEnterRanch(
   return false;
 }
 
-void RanchNetworkHandler::HandleRanchLeave(ClientId clientId)
+void RanchNetworkHandler::HandleRanchLeave(
+  const ClientId clientId)
 {
   auto& clientContext = GetClientContext(clientId);
 
   RemoveClientFromRanch(clientId, clientContext);
+  SendRanchLeave();
+}
 
+void RanchNetworkHandler::SendRanchLeave(
+  const ClientId clientId) noexcept
+{
   protocol::AcCmdCRLeaveRanchOK response{};
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
@@ -1620,8 +1619,31 @@ void RanchNetworkHandler::HandleRanchLeave(ClientId clientId)
     });
 }
 
+void RanchNetworkHandler::BroadcastRanchLeave(
+  const ClientId clientId) noexcept
+{
+  const auto& clientContext = GetClientContext(clientId);
+  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+
+  protocol::AcCmdCRLeaveRanchNotify notify{
+    .characterId = clientContext.characterUid};
+
+  for (const ClientId& ranchClientId : ranchInstance.clients)
+  {
+    if (ranchClientId == clientId)
+      continue;
+
+    _commandServer.QueueCommand<decltype(notify)>(
+      ranchClientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+}
+
 void RanchNetworkHandler::RemoveClientFromRanch(
-  ClientId clientId,
+  const ClientId clientId,
   ClientContext& clientContext)
 {
   const auto ranchIter = _ranches.find(clientContext.visitingRancherUid);
@@ -1639,21 +1661,7 @@ void RanchNetworkHandler::RemoveClientFromRanch(
   ranchInstance.tracker.RemoveCharacter(clientContext.characterUid);
   ranchInstance.clients.erase(clientId);
 
-  protocol::AcCmdCRLeaveRanchNotify notify{
-    .characterId = clientContext.characterUid};
-
-  for (const ClientId& ranchClientId : ranchInstance.clients)
-  {
-    if (ranchClientId == clientId)
-      continue;
-
-    _commandServer.QueueCommand<decltype(notify)>(
-      ranchClientId,
-      [notify]()
-      {
-        return notify;
-      });
-  }
+  BroadcastRanchLeave(clientId);
 
   _characterRanchLeaveEvent.Fire(clientContext.characterUid, clientContext.visitingRancherUid);
   clientContext.visitingRancherUid = data::InvalidUid;
@@ -1844,14 +1852,14 @@ void RanchNetworkHandler::HandleEnterBreedingMarket(
             horse.lineage());
 
           // Keep track of whether this horse is a registered stallion
-          isRegistered = GetServerInstance().GetRanchDirector().GetBreedingMarket().IsRegistered(horse.uid());
+          isRegistered = GetServerInstance().GetBreedingMarket().IsRegistered(horse.uid());
         });
 
         if (not isRegistered)
           continue;
 
         // Get stallion data and populate the expiresAt field
-        const auto& stallionData = GetServerInstance().GetRanchDirector().GetBreedingMarket().GetStallionData(protocolHorse.uid);
+        const auto& stallionData = GetServerInstance().GetBreedingMarket().GetStallionData(protocolHorse.uid);
         if (not stallionData.has_value())
           // Some fatal error occurred, this horse is a stallion but no stallion data
           throw std::runtime_error("Horse is a registered stallion but no stallion data");
@@ -1910,7 +1918,7 @@ void RanchNetworkHandler::HandleSearchStallion(
     command.order);
 
   // todo: cache this
-  const auto result = GetServerInstance().GetRanchDirector().GetBreedingMarket().CollectMarketSnapshot(
+  const auto result = GetServerInstance().GetBreedingMarket().CollectMarketSnapshot(
     snapshotOrder,
     snapshotFilter);
 
@@ -1992,7 +2000,7 @@ void RanchNetworkHandler::HandleRegisterStallion(
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
       clientContext.characterUid);
 
-  const bool isStallionRegistered = GetServerInstance().GetRanchDirector().GetBreedingMarket().HandleRegisterStallion(
+  const bool isStallionRegistered = GetServerInstance().GetBreedingMarket().HandleRegisterStallion(
     clientContext.characterUid,
     command.horseUid,
     command.breedingFee);
@@ -2037,7 +2045,7 @@ void RanchNetworkHandler::HandleUnregisterStallion(
 {
   const auto& clientContext = GetClientContext(clientId);
 
-  const bool isStallionUnregistered = GetServerInstance().GetRanchDirector().GetBreedingMarket().HandleUnregisterStallion(
+  const bool isStallionUnregistered = GetServerInstance().GetBreedingMarket().HandleUnregisterStallion(
     clientContext.characterUid,
     command.horseUid);
 
@@ -2068,7 +2076,7 @@ void RanchNetworkHandler::HandleUnregisterStallionEstimateInfo(
   const ClientId clientId,
   const protocol::AcCmdCRUnregisterStallionEstimateInfo& command)
 {
-  const auto estimate = GetServerInstance().GetRanchDirector().GetBreedingMarket().CalculateUnregisterEarnings(
+  const auto estimate = GetServerInstance().GetBreedingMarket().CalculateUnregisterEarnings(
     command.horseUid);
 
   [[unlikely]] if (not estimate)
@@ -2108,7 +2116,7 @@ void RanchNetworkHandler::HandleCheckStallionCharge(
     horseBreeds = horse.breedingCount();
   });
 
-  const auto gradeFeeRange = GetServerInstance().GetRanchDirector().GetBreedingMarket().GetGradeFeeRange(horseGrade);
+  const auto gradeFeeRange = GetServerInstance().GetBreedingMarket().GetGradeFeeRange(horseGrade);
 
   [[unlikely]] if (not gradeFeeRange)
   {
@@ -2179,7 +2187,7 @@ bool RanchNetworkHandler::HandleTryBreeding(
   clientContext.tryBreedingDeferAttempts = 0;
 
   // The stallion must be registered in the breeding market.
-  const auto stallionData = GetServerInstance().GetRanchDirector().GetBreedingMarket().GetStallionData(
+  const auto stallionData = GetServerInstance().GetBreedingMarket().GetStallionData(
     command.stallionUid);
   if (not stallionData)
   {
@@ -2293,8 +2301,8 @@ bool RanchNetworkHandler::HandleTryBreeding(
       response.carrots = character.carrots();
     });
 
-    clientContext.maturingFoals.emplace(
-      foalUid, data::Clock::now() + HorseSystem::FoalGrowUpDuration);
+    // clientContext.maturingFoals.emplace(
+    //   foalUid, data::Clock::now() + HorseSystem::FoalGrowUpDuration);
 
     ApplyBreedingAttemptUpdates();
 
@@ -2611,7 +2619,7 @@ void RanchNetworkHandler::HandleBreedingWishlist(
       protocol::BuildProtocolHorseAppearance(favouritedStallion.appearance, horse.appearance);
 
       // Check if this horse is a stallion, else we are done with this horse
-      const auto& stallionDataResult = GetServerInstance().GetRanchDirector().GetBreedingMarket().GetStallionData(horse.uid());
+      const auto& stallionDataResult = GetServerInstance().GetBreedingMarket().GetStallionData(horse.uid());
       if (not stallionDataResult.has_value())
         return;
 

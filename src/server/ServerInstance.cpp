@@ -320,7 +320,7 @@ LobbyDirector& ServerInstance::GetLobbyDirector()
   return _lobbyDirector;
 }
 
-RanchNetworkHandler& ServerInstance::GetRanchDirector()
+RanchDirector& ServerInstance::GetRanchDirector()
 {
   return _ranchDirector;
 }

@@ -143,14 +143,6 @@ public:
   [[nodiscard]] CharacterRanchLeaveEvent& GetCharacterRanchLeaveEvent() noexcept;
 
 private:
-  struct CharacterInstance
-  {
-    //! Collection of foals which are to mature.
-    std::vector<data::Uid> foals;
-    //! Collection of items which are to expire.
-    std::vector<data::Uid> items;
-  };
-
   struct ClientContext
   {
     //! User name.
@@ -213,25 +205,17 @@ private:
   void HandleRanchLeave(
     ClientId clientId);
 
+  //! Responds with `AcCmdCRLeaveRanchOK`.
+  //! @param clientId Client ID.
+  void SendRanchLeave(ClientId clientId) noexcept;
+
+  //! Broadcasts `AcCmdCRLeaveRanchNotify` to announce the
+  //! client is disconnecting from the ranch.
+  void BroadcastRanchLeave(ClientId clientId) noexcept;
+
   void RemoveClientFromRanch(
     ClientId clientId,
     ClientContext& clientContext);
-
-  //! Rebuilds the client's set of maturing foals, promoting any that already
-  //! reached the grow-up duration to adults in the data store. Called on ranch
-  //! entry so foals matured while away are adults before the snapshot is sent.
-  //! @param characterUid UID of the owning character.
-  //! @param clientContext Context of the owning client to refresh.
-  void RefreshMaturingFoals(data::Uid characterUid, ClientContext& clientContext);
-
-  //! Promotes matured foals for every character currently standing on their
-  //! own ranch, announcing the grow-up to that ranch. Only the tracked
-  //! maturing foals are inspected.
-  void RunFoalMaturityCheck();
-
-  //! Queues the next foal maturity check on the scheduler, re-scheduling
-  //! itself so the sweep runs on a fixed interval.
-  void ScheduleFoalMaturityCheck() noexcept;
 
   //! Announces that a foal grew up to an adult to the owning client and the
   //! visitors of its ranch.
