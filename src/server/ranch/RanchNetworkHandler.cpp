@@ -113,50 +113,58 @@ RanchNetworkHandler::RanchNetworkHandler(ServerInstance& serverInstance)
         const network::ClientId clientId,
         const protocol::AcCmdCRMountFamilyTree& command)
       {
-        HandleMountFamilyTree(clientId, command);
+        return HandleMountFamilyTree(clientId, command);
+      },
+      [this](
+        const network::ClientId clientId)
+      {
+        const protocol::AcCmdCRMountFamilyTreeCancel cancel{};
+        _commandServer.QueueCommand<decltype(cancel)>(
+          clientId,
+          [cancel]()
+          {
+            return cancel;
+          });
       },
       MaxMountFamilyTreeDeferAttempts)
-  , _enterRanchDeferrer(
+    , _enterRanchDeferrer(
       [this](
         const network::ClientId clientId,
         const protocol::AcCmdCREnterRanch& command)
       {
-        const bool deferAgain = HandleEnterRanch(clientId, command);
-        auto& clientContext = GetClientContext(clientId, false);
-
-        if (not deferAgain)
-        {
-          clientContext.enterRanchDeferAttempts = 0;
-          return;
-        }
-
-        if (++clientContext.enterRanchDeferAttempts >= MaxEnterRanchDeferAttempts)
-        {
-          clientContext.enterRanchDeferAttempts = 0;
-
-          spdlog::warn(
-            "Ranch entry for client {} gave up after {} deferred attempts; horse records unavailable",
-            clientId,
-            MaxEnterRanchDeferAttempts);
-
-          protocol::RanchCommandEnterRanchCancel cancel{};
-          _commandServer.QueueCommand<decltype(cancel)>(
-            clientId,
-            [cancel]()
-            {
-              return cancel;
-            });
-          return;
-        }
-        _enterRanchDeferrer.Defer(clientId, command);
+        return HandleEnterRanch(clientId, command);
+      },
+      [this](
+        const network::ClientId clientId)
+      {
+        const protocol::AcCmdCREnterRanchCancel cancel{};
+        _commandServer.QueueCommand<decltype(cancel)>(
+          clientId,
+          [cancel]()
+          {
+            return cancel;
+          });
       },
       MaxEnterRanchDeferAttempts)
-  , _tryBreedingDeferrer(
+    , _tryBreedingDeferrer(
       [this](
         const network::ClientId clientId,
         const protocol::AcCmdCRTryBreeding& command)
       {
         return HandleTryBreeding(clientId, command);
+      },
+      [this](
+        const network::ClientId clientId)
+      {
+        const protocol::RanchCommandTryBreedingCancel cancel{
+          .resultCode = protocol::RanchCommandTryBreedingCancel::GenericError};
+
+        _commandServer.QueueCommand<decltype(cancel)>(
+          clientId,
+          [cancel]()
+          {
+            return cancel;
+          });
       },
       MaxTryBreedingDeferAttempts)
 {
@@ -1244,7 +1252,7 @@ bool RanchNetworkHandler::HandleEnterRanch(
     || isRanchLocked
     || isRanchFull)
   {
-    protocol::RanchCommandEnterRanchCancel response{};
+    protocol::AcCmdCREnterRanchCancel response{};
     _commandServer.QueueCommand<decltype(response)>(
       clientId,
       [response]()
@@ -1252,7 +1260,7 @@ bool RanchNetworkHandler::HandleEnterRanch(
         return response;
       });
 
-    return false;
+    return true;
   }
 
   clientContext.characterUid = command.characterUid;
@@ -1380,28 +1388,6 @@ bool RanchNetworkHandler::HandleEnterRanch(
 
   // The character that is currently entering the ranch.
   protocol::RanchCharacter characterEnteringRanch;
-
-  // Disabled in favour of manual mob control `AcCmdRCMobAddMob`
-  constexpr bool PopulateRanchHorses = false;
-  if (PopulateRanchHorses)
-  {
-    // Add the ranch horses.
-    for (auto [horseUid, horseOid] : ranchInstance.tracker.GetHorses())
-    {
-      auto& ranchHorse = response.horses.emplace_back();
-      ranchHorse.horseOid = horseOid;
-
-      auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
-      if (not horseRecord)
-        throw std::runtime_error(
-          std::format("Ranch horse [{}] not available", horseUid));
-
-      horseRecord->Immutable([&ranchHorse](const data::Horse& horse)
-      {
-        protocol::BuildProtocolHorse(ranchHorse.horse, horse);
-      });
-    }
-  }
 
   // Add the ranch characters.
   for (const auto& [characterUid, trackedCharacter] : ranchInstance.tracker.GetCharacters())
@@ -1538,8 +1524,9 @@ bool RanchNetworkHandler::HandleEnterRanch(
   for (auto [horseUid, horseOid] : ranchInstance.tracker.GetHorses())
   {
     const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
+    // If the horse record is not available return.
     if (not horseRecord)
-      return true;
+      return false;
 
     auto& notify = idleMountNotifies.emplace_back();
     notify.horse.horseOid = horseOid;
@@ -1570,7 +1557,7 @@ bool RanchNetworkHandler::HandleEnterRanch(
   }
 
   // Notify to all other players of the entering player.
-  protocol::RanchCommandEnterRanchNotify ranchJoinNotification{
+  protocol::AcCmdCREnterRanchNotify ranchJoinNotification{
     .character = characterEnteringRanch};
 
   // Iterate over all the clients connected
@@ -1588,7 +1575,7 @@ bool RanchNetworkHandler::HandleEnterRanch(
 
   _characterRanchEnterEvent.Fire(clientContext.characterUid, command.rancherUid);
 
-  return false;
+  return true;
 }
 
 void RanchNetworkHandler::HandleRanchLeave(
@@ -2150,7 +2137,7 @@ bool RanchNetworkHandler::HandleTryBreeding(
   // Hard cancel (resultCode 0, i.e. not the consolation path) for validation failures,
   // so the client doesn't hang.
   using CancelReason = protocol::RanchCommandTryBreedingCancel::CancelReason;
-  const auto sendBreedingCancel = [this, clientId](const CancelReason reason)
+  const auto SendBreedingCancel = [this, clientId](const CancelReason reason)
   {
     const protocol::RanchCommandTryBreedingCancel cancel{.resultCode = reason};
     _commandServer.QueueCommand<protocol::RanchCommandTryBreedingCancel>(
@@ -2163,7 +2150,7 @@ bool RanchNetworkHandler::HandleTryBreeding(
   {
     spdlog::warn("TryBreeding: mare {} or stallion {} not found",
       command.mareUid, command.stallionUid);
-    sendBreedingCancel(CancelReason::GenericError);
+    SendBreedingCancel(CancelReason::GenericError);
     return true;
   }
 
@@ -2179,8 +2166,8 @@ bool RanchNetworkHandler::HandleTryBreeding(
   {
     spdlog::warn("TryBreeding: stallion {} is not registered in the breeding market",
       command.stallionUid);
-    sendBreedingCancel(CancelReason::StallionNotFound);
-    return false;
+    SendBreedingCancel(CancelReason::StallionNotFound);
+    return true;
   }
 
   // Charge the breeding fee.
@@ -2208,7 +2195,7 @@ bool RanchNetworkHandler::HandleTryBreeding(
   {
     spdlog::warn("TryBreeding: character {} has insufficient horse slots",
       clientContext.characterUid, stallionData->breedingCharge);
-    sendBreedingCancel(CancelReason::InsufficientHorseSlots);
+    SendBreedingCancel(CancelReason::InsufficientHorseSlots);
     return true;
   }
 
@@ -2216,7 +2203,7 @@ bool RanchNetworkHandler::HandleTryBreeding(
   {
     spdlog::warn("TryBreeding: character {} cannot afford breeding fee {}",
       clientContext.characterUid, stallionData->breedingCharge);
-    sendBreedingCancel(CancelReason::InsufficientBalance);
+    SendBreedingCancel(CancelReason::InsufficientBalance);
     return true;
   }
 

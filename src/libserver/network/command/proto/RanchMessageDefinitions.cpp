@@ -220,29 +220,29 @@ void AcCmdCREnterRanchOK::Read(
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandEnterRanchCancel::Write(
-  const RanchCommandEnterRanchCancel&,
+void AcCmdCREnterRanchCancel::Write(
+  const AcCmdCREnterRanchCancel&,
   SinkStream&)
 {
   // Empty.
 }
 
-void RanchCommandEnterRanchCancel::Read(
-  RanchCommandEnterRanchCancel&,
+void AcCmdCREnterRanchCancel::Read(
+  AcCmdCREnterRanchCancel&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented.");
 }
 
-void RanchCommandEnterRanchNotify::Write(
-  const RanchCommandEnterRanchNotify& command,
+void AcCmdCREnterRanchNotify::Write(
+  const AcCmdCREnterRanchNotify& command,
   SinkStream& stream)
 {
   stream.Write(command.character);
 }
 
-void RanchCommandEnterRanchNotify::Read(
-  RanchCommandEnterRanchNotify&,
+void AcCmdCREnterRanchNotify::Read(
+  AcCmdCREnterRanchNotify&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented.");

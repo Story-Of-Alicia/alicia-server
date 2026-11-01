@@ -33,11 +33,19 @@ template <typename C>
 class CommandDeferrer
 {
 public:
+  //! Command handler taking the client ID and the command.
+  //! Returns `true` if the handler completed, `false` if the handler did not complete
+  //! and the execution should be deferred.
   using Handler = std::function<bool(network::ClientId, const C&)>;
+  using Callback = std::function<void(network::ClientId)>;
 
   //! Default constructor.
-  explicit CommandDeferrer(Handler handler, const size_t maxTryCount = 1) noexcept
+  explicit CommandDeferrer(
+    Handler handler,
+    Callback callback,
+    const size_t maxTryCount = 1) noexcept
     : _handler(handler)
+    , _callback(callback)
     , _maxTryCount(maxTryCount)
   {
     _command = _commands.cend();
@@ -70,7 +78,10 @@ public:
       ++_command->tryCount;
 
       if (completed || _command->tryCount > _maxTryCount)
+      {
         _command = _commands.erase(_command);
+        _callback(_command->clientId);
+      }
       else
         _command = _command++;
     }
@@ -97,6 +108,7 @@ private:
   };
 
   Handler _handler;
+  Callback _callback;
   std::list<CommandContext> _commands;
   decltype(_commands)::const_iterator _command;
   size_t _maxTryCount = 1;
