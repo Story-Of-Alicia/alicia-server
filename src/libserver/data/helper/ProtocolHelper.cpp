@@ -184,17 +184,17 @@ void BuildProtocolHorseParts(
   // Helper function to map adult TIDs to foal-safe color TIDs
   // TODO: This is causing a UI mismatch on the horse appearance info window.
   //       Figure out a way to render foals' mane and tail and display UI correctly without crashing the client.
-  auto MapToFoalColorTid = [](const data::Tid adultTid) -> uint8_t
-  {
-    // Foals can only display colors 1-5
-    // TIDs 1-5 map directly
-    if (adultTid >= 1 && adultTid <= 5)
-      return static_cast<uint8_t>(adultTid);
-
-    // TIDs 6+ map to their color equivalent (cycles every 5)
-    // Pattern: 6->1, 7->2, 8->3, 9->4, 10->5, 11->1, 12->2, etc.
-    return static_cast<uint8_t>(((adultTid - 1) % 5) + 1);
-  };
+  // auto MapToFoalColorTid = [](const data::Tid adultTid) -> uint8_t
+  // {
+  //   // Foals can only display colors 1-5
+  //   // TIDs 1-5 map directly
+  //   if (adultTid >= 1 && adultTid <= 5)
+  //     return static_cast<uint8_t>(adultTid);
+  //
+  //   // TIDs 6+ map to their color equivalent (cycles every 5)
+  //   // Pattern: 6->1, 7->2, 8->3, 9->4, 10->5, 11->1, 12->2, etc.
+  //   return static_cast<uint8_t>(((adultTid - 1) % 5) + 1);
+  // };
 
   protocolHorseParts = {
     .skinId = static_cast<uint8_t>(parts.skinTid()),

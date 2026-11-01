@@ -406,7 +406,7 @@ RanchNetworkHandler::RanchNetworkHandler(ServerInstance& serverInstance)
         .characterUid = command.characterUid};
 
       const auto& clientContext = GetClientContext(clientId);
-      for (const ClientId& ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
+      for (const ClientId& ranchClientId : GetRanchInstance(clientContext.visitingRancherUid).clients)
       {
         _commandServer.QueueCommand<decltype(notify)>(
           ranchClientId,
@@ -675,7 +675,7 @@ void RanchNetworkHandler::ReturnHorseToNature(
     return;
 
   // Remove horse from ranch tracker
-  auto& ranchInstance = _ranches[characterUid];
+  auto& ranchInstance = GetRanchInstance(characterUid);
   const auto horseOid = ranchInstance.tracker.GetHorseOid(horseUid);
   ranchInstance.tracker.RemoveHorse(horseUid);
   if (horseOid != tracker::InvalidEntityOid)
@@ -743,7 +743,7 @@ void RanchNetworkHandler::HandleClientDisconnected(ClientId clientId)
   const auto& clientContext = GetClientContext(clientId, false);
   if (clientContext.isAuthenticated)
   {
-    HandleRanchLeave(clientId);
+    RemoveClientFromRanch(clientId);
 
     _characterDisconnectEvent.Fire(clientContext.characterUid);
   }
@@ -764,32 +764,8 @@ void RanchNetworkHandler::DisconnectCharacter(data::Uid characterUid)
   }
 }
 
-bool RanchNetworkHandler::LeaveRanch(data::Uid characterUid)
-{
-  std::optional<ClientId> ranchClientId;
-
-  for (const auto& [clientId, clientContext] : _clients)
-  {
-    if (clientContext.characterUid == characterUid
-      && clientContext.isAuthenticated
-      && clientContext.visitingRancherUid != data::InvalidUid)
-    {
-      ranchClientId = clientId;
-      break;
-    }
-  }
-
-  if (not ranchClientId)
-    return false;
-
-  RemoveClientFromRanch(*ranchClientId, _clients.at(*ranchClientId));
-  SendRanchLeave(*ranchClientId);
-
-  return true;
-}
-
 void RanchNetworkHandler::BroadcastSetIntroductionNotify(
-  uint32_t characterUid,
+  const data::Uid characterUid,
   const std::string& introduction)
 {
   const auto& clientContext = GetClientContextByCharacterUid(characterUid);
@@ -798,7 +774,7 @@ void RanchNetworkHandler::BroadcastSetIntroductionNotify(
     .characterUid = characterUid,
     .introduction = introduction};
 
-  for (const ClientId& ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
+  for (const ClientId& ranchClientId : GetRanchInstance(clientContext.visitingRancherUid).clients)
   {
     // Prevent broadcast to self.
     if (ranchClientId == clientContext.characterUid)
@@ -827,7 +803,7 @@ void RanchNetworkHandler::BroadcastUpdateMountInfoNotify(
     protocol::BuildProtocolHorse(notify.horse, horse);
   });
 
-  for (const ClientId& ranchClientId : _ranches[rancherUid].clients)
+  for (const ClientId& ranchClientId : GetRanchInstance(rancherUid).clients)
   {
     const auto& ranchClientContext = GetClientContext(ranchClientId);
 
@@ -860,7 +836,12 @@ void RanchNetworkHandler::SendCharacterSummon(
   try
   {
      const auto targetClientId = GetClientIdByCharacterUid(characterUid);
-     _commandServer.QueueCommand<protocol::AcCmdRCRequestUser>(targetClientId, [notify](){ return notify; });
+     _commandServer.QueueCommand<protocol::AcCmdRCRequestUser>(
+       targetClientId,
+       [notify]()
+       {
+         return notify;
+       });
   }
   catch (const std::exception&)
   {
@@ -920,20 +901,22 @@ void RanchNetworkHandler::SendFoalGrowUp(
       return growUp;
     });
 
+  const auto& ranchInstance = GetRanchInstance(characterUid);
+
   protocol::AcCmdRCAddIdleMountInfoNotify addNotify{};
-  addNotify.horse.horseOid = _ranches[characterUid].tracker.GetHorseOid(horseUid);
+  addNotify.horse.horseOid = ranchInstance.tracker.GetHorseOid(horseUid);
   horseRecord->Immutable([&addNotify](const data::Horse& horse)
   {
     protocol::BuildProtocolHorse(addNotify.horse.horse, horse);
   });
 
-  const auto& clientContext = GetClientContext(clientId);
-  if (clientContext.visitingRancherUid == characterUid)
+  if (const auto& clientContext = GetClientContext(clientId);
+    clientContext.visitingRancherUid == characterUid)
   {
     // The owner is on their own ranch; broadcast the new idle mount to everyone there.
-    for (const ClientId& ranchClientId : _ranches[characterUid].clients)
+    for (const ClientId& ranchClientId : ranchInstance.clients)
     {
-      _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+      _commandServer.QueueCommand<decltype(addNotify)>(
         ranchClientId,
         [addNotify]()
         {
@@ -943,7 +926,7 @@ void RanchNetworkHandler::SendFoalGrowUp(
   }
   else
   {
-    _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+    _commandServer.QueueCommand<decltype(addNotify)>(
       clientId,
       [addNotify]()
       {
@@ -965,15 +948,13 @@ void RanchNetworkHandler::SendFoalGrowUp(
 void RanchNetworkHandler::BroadcastChangeAgeNotify(
   const data::Uid characterUid,
   const data::Uid rancherUid,
-  protocol::AcCmdCRChangeAge::Age age
-)
+  const protocol::AcCmdCRChangeAge::Age age)
 {
   protocol::AcCmdRCChangeAgeNotify notify{
     .characterUid = characterUid,
-    .age = age
-  };
+    .age = age};
 
-  for (const ClientId& ranchClientId : _ranches[rancherUid].clients)
+  for (const ClientId& ranchClientId : GetRanchInstance(rancherUid).clients)
   {
     const auto& ranchClientContext = GetClientContext(ranchClientId);
 
@@ -993,15 +974,13 @@ void RanchNetworkHandler::BroadcastChangeAgeNotify(
 void RanchNetworkHandler::BroadcastHideAgeNotify(
   const data::Uid characterUid,
   const data::Uid rancherUid,
-  protocol::AcCmdCRHideAge::Option option
-)
+  const protocol::AcCmdCRHideAge::Option option)
 {
   protocol::AcCmdRCHideAgeNotify notify{
     .characterUid = characterUid,
-    .option = option
-  };
+    .option = option};
 
-  for (const ClientId& ranchClientId : _ranches[rancherUid].clients)
+  for (const ClientId& ranchClientId : GetRanchInstance(rancherUid).clients)
   {
     const auto& ranchClientContext = GetClientContext(ranchClientId);
 
@@ -1140,7 +1119,7 @@ void RanchNetworkHandler::AddRanchHorse(
   const data::Uid rancherUid,
   const data::Uid horseUid)
 {
-  auto& ranchInstance = _ranches[rancherUid];
+  auto& ranchInstance = GetRanchInstance(rancherUid);
   ranchInstance.tracker.AddHorse(horseUid);
 }
 
@@ -1210,10 +1189,21 @@ RanchNetworkHandler::ClientContext& RanchNetworkHandler::GetClientContextByChara
   throw std::runtime_error("Character not associated with any client");
 }
 
+RanchNetworkHandler::RanchInstance& RanchNetworkHandler::GetRanchInstance(
+  const data::Uid characterUid)
+{
+  const auto ranchInstanceIter = _ranches.find(characterUid);
+  if (ranchInstanceIter == _ranches.cend())
+    throw std::runtime_error("Ranch instance does not exist");
+
+  return ranchInstanceIter->second;
+}
+
 bool RanchNetworkHandler::HandleEnterRanch(
-  ClientId clientId,
+  const ClientId clientId,
   const protocol::AcCmdCREnterRanch& command)
 {
+  // Get the unauthorized client context as we have to perform the authentication.
   auto& clientContext = GetClientContext(clientId, false);
 
   const auto rancherRecord = GetServerInstance().GetDataDirector().GetCharacterCache().Get(
@@ -1242,7 +1232,8 @@ bool RanchNetworkHandler::HandleEnterRanch(
       });
   }
 
-  auto& ranchInstance = _ranches[command.rancherUid];
+  // Get or create new instance of the ranch.
+  auto& ranchInstance = GetRanchInstance(command.rancherUid);
 
   const bool isRanchFull = ranchInstance.clients.size() > MaxRanchCharacterCount;
 
@@ -1540,20 +1531,19 @@ bool RanchNetworkHandler::HandleEnterRanch(
 
   // Build the idle-mount notifies for every ranch horse
   std::vector<protocol::AcCmdRCAddIdleMountInfoNotify> idleMountNotifies;
+
   for (auto [horseUid, horseOid] : ranchInstance.tracker.GetHorses())
   {
     const auto horseRecord = GetServerInstance().GetDataDirector().GetHorseCache().Get(horseUid);
     if (not horseRecord)
       return true;
 
-    protocol::AcCmdRCAddIdleMountInfoNotify notify{};
+    auto& notify = idleMountNotifies.emplace_back();
     notify.horse.horseOid = horseOid;
     horseRecord->Immutable([&notify](const data::Horse& horse)
     {
       protocol::BuildProtocolHorse(notify.horse.horse, horse);
     });
-
-    idleMountNotifies.emplace_back(std::move(notify));
   }
 
   // Todo: Roll the code for the connecting client.
@@ -1568,7 +1558,7 @@ bool RanchNetworkHandler::HandleEnterRanch(
   // Send all the ranch horses with AddIdleMountInfoNotify to the entering player.
   for (const auto& notify : idleMountNotifies)
   {
-    _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+    _commandServer.QueueCommand<decltype(notify)>(
       clientId,
       [notify]()
       {
@@ -1601,10 +1591,8 @@ bool RanchNetworkHandler::HandleEnterRanch(
 void RanchNetworkHandler::HandleRanchLeave(
   const ClientId clientId)
 {
-  auto& clientContext = GetClientContext(clientId);
-
-  RemoveClientFromRanch(clientId, clientContext);
-  SendRanchLeave();
+  SendRanchLeave(clientId);
+  RemoveClientFromRanch(clientId);
 }
 
 void RanchNetworkHandler::SendRanchLeave(
@@ -1623,7 +1611,7 @@ void RanchNetworkHandler::BroadcastRanchLeave(
   const ClientId clientId) noexcept
 {
   const auto& clientContext = GetClientContext(clientId);
-  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  const auto& ranchInstance = GetRanchInstance(clientContext.visitingRancherUid);
 
   protocol::AcCmdCRLeaveRanchNotify notify{
     .characterId = clientContext.characterUid};
@@ -1643,9 +1631,10 @@ void RanchNetworkHandler::BroadcastRanchLeave(
 }
 
 void RanchNetworkHandler::RemoveClientFromRanch(
-  const ClientId clientId,
-  ClientContext& clientContext)
+  const ClientId clientId)
 {
+  auto& clientContext = GetClientContext(clientId);
+
   const auto ranchIter = _ranches.find(clientContext.visitingRancherUid);
   if (ranchIter == _ranches.cend())
   {
@@ -1659,12 +1648,15 @@ void RanchNetworkHandler::RemoveClientFromRanch(
   auto& ranchInstance = ranchIter->second;
 
   ranchInstance.tracker.RemoveCharacter(clientContext.characterUid);
-  ranchInstance.clients.erase(clientId);
+  const bool removed = ranchInstance.clients.erase(clientId) > 0;
 
-  BroadcastRanchLeave(clientId);
+  if (removed)
+  {
+    BroadcastRanchLeave(clientId);
 
-  _characterRanchLeaveEvent.Fire(clientContext.characterUid, clientContext.visitingRancherUid);
-  clientContext.visitingRancherUid = data::InvalidUid;
+    _characterRanchLeaveEvent.Fire(clientContext.characterUid, clientContext.visitingRancherUid);
+    clientContext.visitingRancherUid = data::InvalidUid;
+  }
 }
 
 void RanchNetworkHandler::HandleChat(
@@ -1678,7 +1670,7 @@ void RanchNetworkHandler::HandleChat(
   const auto rancherRecord = GetServerInstance().GetDataDirector().GetCharacter(
     clientContext.visitingRancherUid);
 
-  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  const auto& ranchInstance = GetRanchInstance(clientContext.visitingRancherUid);
 
   std::string characterName;
   characterRecord.Immutable([&characterName](const data::Character& character)
@@ -1770,7 +1762,7 @@ void RanchNetworkHandler::HandleSnapshot(
   const protocol::AcCmdCRRanchSnapshot& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  const auto& ranchInstance = GetRanchInstance(clientContext.visitingRancherUid);
 
   protocol::RanchCommandRanchSnapshotNotify notify{
     .ranchIndex = ranchInstance.tracker.GetCharacter(
@@ -2453,13 +2445,15 @@ data::Uid RanchNetworkHandler::CreateBredFoal(
     response.emblemId = static_cast<uint16_t>(foal.emblemUid());
   });
 
+  auto& ranchInstance = GetRanchInstance(clientContext.characterUid);
+
   // Register the freshly bred foal with the ranch and spawn it for everyone
   // present (the owner included, since it isn't on their ranch view yet).
   AddRanchHorse(clientContext.characterUid, foalUid);
 
   protocol::AcCmdRCAddIdleMountInfoNotify addNotify{};
   addNotify.horse.horseOid =
-    _ranches[clientContext.characterUid].tracker.GetHorseOid(foalUid);
+    ranchInstance.tracker.GetHorseOid(foalUid);
   foalRecord.Immutable([&addNotify](const data::Horse& horse)
   {
     protocol::BuildProtocolHorse(addNotify.horse.horse, horse);
@@ -2467,9 +2461,9 @@ data::Uid RanchNetworkHandler::CreateBredFoal(
 
   if (clientContext.visitingRancherUid == clientContext.characterUid)
   {
-    for (const ClientId& ranchClientId : _ranches[clientContext.characterUid].clients)
+    for (const ClientId& ranchClientId : ranchInstance.clients)
     {
-      _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+      _commandServer.QueueCommand<decltype(addNotify)>(
         ranchClientId,
         [addNotify]()
         {
@@ -2479,7 +2473,7 @@ data::Uid RanchNetworkHandler::CreateBredFoal(
   }
   else
   {
-    _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+    _commandServer.QueueCommand<decltype(addNotify)>(
       clientId,
       [addNotify]()
       {
@@ -2832,7 +2826,7 @@ void RanchNetworkHandler::HandleUpdateBusyState(
   const protocol::RanchCommandUpdateBusyState& command)
 {
   const auto& clientContext = GetClientContext(clientId);
-  auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  auto& ranchInstance = GetRanchInstance(clientContext.visitingRancherUid);
   auto& ranchCharacter = ranchInstance.tracker.GetCharacter(clientContext.characterUid);
 
   const protocol::RanchCommandUpdateBusyStateNotify response {
@@ -2973,7 +2967,7 @@ void RanchNetworkHandler::HandleUpdateMountNickname(
       return response;
     });
 
-  for (const ClientId& ranchClientId : _ranches[clientContext.visitingRancherUid].clients)
+  for (const ClientId& ranchClientId : GetRanchInstance(clientContext.visitingRancherUid).clients)
   {
     // Prevent broadcast to self.
     if (ranchClientId == clientId)
@@ -3841,7 +3835,7 @@ void RanchNetworkHandler::HandleUpdatePet(
     }
   }
 
-  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  const auto& ranchInstance = GetRanchInstance(clientContext.visitingRancherUid);
   for (const ClientId ranchClientId : ranchInstance.clients)
   {
     _commandServer.QueueCommand<decltype(response)>(ranchClientId, [response]()
@@ -3972,7 +3966,7 @@ void RanchNetworkHandler::HandleIncubateEgg(
     .egg = response.egg,
   };
 
-  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  const auto& ranchInstance = GetRanchInstance(clientContext.visitingRancherUid);
   // Broadcast the egg incubation to all ranch clients.
   for (ClientId ranchClient : ranchInstance.clients)
   {
@@ -4010,7 +4004,7 @@ void RanchNetworkHandler::HandleBoostIncubateEgg(
         throw std::runtime_error("Item not found");
 
       // Populate response with item metadata
-      itemRecord->Immutable([this, &response](const data::Item& item)
+      itemRecord->Immutable([&response](const data::Item& item)
       {
         response.item = {
           .uid = item.uid(),
@@ -4241,7 +4235,7 @@ void RanchNetworkHandler::HandleRequestPetBirth(
       return response;
     });
 
-  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  const auto& ranchInstance = GetRanchInstance(clientContext.visitingRancherUid);
   // Broadcast the egg hatching to all ranch clients.
   for (ClientId ranchClient : ranchInstance.clients)
   {
@@ -4272,7 +4266,7 @@ void RanchNetworkHandler::HandlePetBornResult(
 
   // broadcast to all the ranch clients.
   const auto& clientContext = GetClientContext(clientId);
-  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  const auto& ranchInstance = GetRanchInstance(clientContext.visitingRancherUid);
   for (ClientId ranchClient : ranchInstance.clients)
   {
     // Prevent broadcasting to self.
@@ -4321,8 +4315,8 @@ void RanchNetworkHandler::BroadcastEquipmentUpdate(ClientId clientId)
   });
 
   // Broadcast to all the ranch clients.
-  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
-  for (ClientId ranchClientId : ranchInstance.clients)
+  const auto& ranchInstance = GetRanchInstance(clientContext.visitingRancherUid);
+  for (const ClientId ranchClientId : ranchInstance.clients)
   {
     // Prevent broadcasting to self.
     if (ranchClientId == clientId)
@@ -4623,9 +4617,10 @@ void RanchNetworkHandler::SendMountNotifyAdd(
   const data::Uid horseUid)
 {
   const auto& clientContext = GetClientContext(clientId);
+  const auto& ranchInstance = GetRanchInstance(clientContext.characterUid);
 
   protocol::AcCmdRCAddIdleMountInfoNotify mountAddNotify{};
-  mountAddNotify.horse.horseOid = _ranches[clientContext.characterUid].tracker.GetHorseOid(
+  mountAddNotify.horse.horseOid = ranchInstance.tracker.GetHorseOid(
     horseUid);
 
   const auto mountRecord = _serverInstance.GetDataDirector().GetHorse(
@@ -4639,9 +4634,9 @@ void RanchNetworkHandler::SendMountNotifyAdd(
   // If client is on their own ranch, just broadcast the horse.
   if (clientContext.visitingRancherUid == clientContext.characterUid)
   {
-    for (const ClientId& ranchClientId : _ranches[clientContext.characterUid].clients)
+    for (const ClientId& ranchClientId : ranchInstance.clients)
     {
-      _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+      _commandServer.QueueCommand<decltype(mountAddNotify)>(
         ranchClientId,
         [mountAddNotify]()
         {
@@ -4656,7 +4651,7 @@ void RanchNetworkHandler::SendMountNotifyAdd(
   //       the grown up foal is added to that ranch.
   //       The only way to remove the horse is to add it and promptly kill it.
 
-  _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+  _commandServer.QueueCommand<decltype(mountAddNotify)>(
     clientId,
     [mountAddNotify]()
     {
@@ -5032,7 +5027,7 @@ void RanchNetworkHandler::HandleHousingBuild(
   };
 
   // Broadcast to all the ranch clients.
-  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  const auto& ranchInstance = GetRanchInstance(clientContext.visitingRancherUid);
   for (ClientId ranchClientId : ranchInstance.clients)
   {
     // Prevent broadcasting to self.
@@ -5228,7 +5223,7 @@ void RanchNetworkHandler::HandleHousingRepair(
   };
 
   // Broadcast to all the ranch clients.
-  const auto& ranchInstance = _ranches[clientContext.visitingRancherUid];
+  const auto& ranchInstance = GetRanchInstance(clientContext.visitingRancherUid);
   for (ClientId ranchClientId : ranchInstance.clients)
   {
     // Prevent broadcasting to self.
@@ -6827,10 +6822,10 @@ void RanchNetworkHandler::HandleBuyOwnItem(
     AddRanchHorse(clientContext.characterUid, horseUid);
 
     protocol::AcCmdRCAddIdleMountInfoNotify notify{};
-    notify.horse.horseOid = _ranches[clientContext.characterUid].tracker.GetHorseOid(horseUid);
+    notify.horse.horseOid = GetRanchInstance(clientContext.characterUid).tracker.GetHorseOid(horseUid);
     notify.horse.horse = std::move(protocolHorse);
 
-    _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+    _commandServer.QueueCommand<decltype(notify)>(
       clientId, [notify]()
       {
         return notify;

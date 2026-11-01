@@ -20,7 +20,6 @@
 #include "server/lobby/LobbyNetworkHandler.hpp"
 
 #include "server/ServerInstance.hpp"
-#include "server/ranch/RanchNetworkHandler.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
 
@@ -1287,9 +1286,6 @@ void LobbyNetworkHandler::HandleMakeRoom(
   const auto roomOtp = _serverInstance.GetOtpSystem().GrantCode(
     identityHash);
 
-  const bool leftRanch = _serverInstance.GetRanchDirector().GetNetworkHandler().LeaveRanch(
-    clientContext.characterUid);
-
   const auto lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
   protocol::AcCmdCLMakeRoomOK response{
     .roomUid = createdRoomUid,
@@ -1299,7 +1295,7 @@ void LobbyNetworkHandler::HandleMakeRoom(
     .unk2 = command.unk4};
 
   SendRoomEntryResponse(
-    leftRanch,
+    false,
     [this, clientId, response]()
     {
       _commandServer.QueueCommand<decltype(response)>(
@@ -1441,9 +1437,6 @@ void LobbyNetworkHandler::HandleEnterRoom(
   const auto roomOtp = _serverInstance.GetOtpSystem().GrantCode(
     identityHash);
 
-  const bool leftRanch = _serverInstance.GetRanchDirector().GetNetworkHandler().LeaveRanch(
-    clientContext.characterUid);
-
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
 
   protocol::AcCmdCLEnterRoomOK response{
@@ -1454,7 +1447,7 @@ void LobbyNetworkHandler::HandleEnterRoom(
     .member6 = 1};
 
   SendRoomEntryResponse(
-    leftRanch,
+    false,
     [this, clientId, response]()
     {
       _commandServer.QueueCommand<decltype(response)>(

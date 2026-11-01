@@ -67,8 +67,6 @@ public:
   //!
   void DisconnectCharacter(data::Uid characterUid);
 
-  [[nodiscard]] bool LeaveRanch(data::Uid characterUid);
-
   //!
   void BroadcastSetIntroductionNotify(
     uint32_t characterUid,
@@ -181,17 +179,27 @@ private:
   //! @param clientId Id of the client.
   //! @param requireAuthentication Require the client to be authorized.
   //! @returns Client context.
+  //! @throws std::runtime_error if the client did not exist.
+  //! @throws std::runtime_error if the client was not authorized and `requireAuthentication` was set to true.
   [[nodiscard]] ClientContext& GetClientContext(ClientId clientId, bool requireAuthentication = true);
 
   //! Get the client ID by the character's unique ID.
   //! @param characterUid UID of the character.
   //! @returns Client ID.
+  //! @throws std::runtime_error if the character was not associated to any client.
   [[nodiscard]] ClientId GetClientIdByCharacterUid(data::Uid characterUid);
 
   //! Get the client context by the character's unique ID.
   //! @param characterUid UID of the character.
   //! @returns Client context.
+  //! @throws std::runtime_error if the character was not associated to any client.
   [[nodiscard]] ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
+
+  //! Get the ranch instance for character.
+  //! @param characterUid UID of the character.
+  //! @returns Ranch instance.
+  //! @throws std::runtime_error if the ranch did not exist.
+  [[nodiscard]] RanchInstance& GetRanchInstance(data::Uid characterUid);
 
   //! Handles the ranch enter command.
   //! @param clientId ID of the client
@@ -214,8 +222,7 @@ private:
   void BroadcastRanchLeave(ClientId clientId) noexcept;
 
   void RemoveClientFromRanch(
-    ClientId clientId,
-    ClientContext& clientContext);
+    ClientId clientId);
 
   //! Announces that a foal grew up to an adult to the owning client and the
   //! visitors of its ranch.
@@ -640,7 +647,7 @@ private:
 
   //!
   std::unordered_map<ClientId, ClientContext> _clients;
-  //!
+  //! Ranch instances mapped by the UID of the rancher.
   std::unordered_map<data::Uid, RanchInstance> _ranches;
 
   //! A command deferrer for the `AcCmdCRMountFamilyTree` command.
