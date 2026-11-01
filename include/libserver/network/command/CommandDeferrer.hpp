@@ -48,7 +48,7 @@ public:
     , _callback(callback)
     , _maxTryCount(maxTryCount)
   {
-    _command = _commands.cend();
+    _command = _commands.end();
   }
 
   //! Default destructor
@@ -68,8 +68,10 @@ public:
 
     // If at the end of the commands list
     // loop back to the beginning.
-    if (_command == _commands.cend())
-      _command = _commands.cbegin();
+    if (_command == _commands.end())
+    {
+      _command = _commands.begin();
+    }
 
     try
     {
@@ -83,7 +85,9 @@ public:
         _callback(_command->clientId);
       }
       else
+      {
         _command = _command++;
+      }
     }
     catch (const std::exception& x)
     {
@@ -110,7 +114,7 @@ private:
   Handler _handler;
   Callback _callback;
   std::list<CommandContext> _commands;
-  decltype(_commands)::const_iterator _command;
+  decltype(_commands)::iterator _command;
   size_t _maxTryCount = 1;
 };
 
