@@ -358,7 +358,7 @@ void HorseRegistry::BuildRandomHorse(
   std::uniform_int_distribution<size_t> coatRandomDist(
     0, _possibleCoats.size() - 1);
 
-  const Coat& coat = _coats[_possibleCoats[coatRandomDist(server::util::GetRandomEngine())]];
+  const Coat& coat = _coats.at(_possibleCoats[coatRandomDist(server::util::GetRandomEngine())]);
   parts.skinTid = coat.tid;
 
   // Pick a random face the coat may wear.
@@ -370,16 +370,16 @@ void HorseRegistry::BuildRandomHorse(
     std::uniform_int_distribution<size_t> maneRandomDist(
       0, _possibleManes.size() - 1);
 
-    const Mane& mane = _manes[_possibleManes[maneRandomDist(server::util::GetRandomEngine())]];
+    const Mane& mane = _manes.at(_possibleManes[maneRandomDist(server::util::GetRandomEngine())]);
     parts.maneTid = mane.tid;
   }
 
   {
     // Pick a random tail.
     std::uniform_int_distribution<size_t> tailRandomDist(
-      0, _possibleFaces.size() - 1);
+      0, _possibleTails.size() - 1);
 
-    const Tail& tail = _tails[_possibleFaces[tailRandomDist(server::util::GetRandomEngine())]];
+    const Tail& tail = _tails.at(_possibleTails[tailRandomDist(server::util::GetRandomEngine())]);
     parts.tailTid = tail.tid;
   }
 
