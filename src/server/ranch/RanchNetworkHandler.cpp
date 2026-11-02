@@ -1244,7 +1244,7 @@ bool RanchNetworkHandler::HandleEnterRanch(
   }
 
   // Get or create new instance of the ranch.
-  auto& ranchInstance = GetRanchInstance(command.rancherUid);
+  auto& ranchInstance = _ranches[command.rancherUid];
 
   const bool isRanchFull = ranchInstance.clients.size() > MaxRanchCharacterCount;
 
@@ -1624,18 +1624,8 @@ void RanchNetworkHandler::RemoveClientFromRanch(
   const ClientId clientId)
 {
   auto& clientContext = GetClientContext(clientId);
-
-  const auto ranchIter = _ranches.find(clientContext.visitingRancherUid);
-  if (ranchIter == _ranches.cend())
-  {
-    spdlog::warn(
-      "Client {} tried to leave a ranch of {} which is not instanced",
-      clientId,
-      clientContext.visitingRancherUid);
-    return;
-  }
-
-  auto& ranchInstance = ranchIter->second;
+  auto& ranchInstance = GetRanchInstance(
+    clientContext.visitingRancherUid);
 
   ranchInstance.tracker.RemoveCharacter(clientContext.characterUid);
   const bool removed = ranchInstance.clients.erase(clientId) > 0;
@@ -1646,6 +1636,11 @@ void RanchNetworkHandler::RemoveClientFromRanch(
 
     _characterRanchLeaveEvent.Fire(clientContext.characterUid, clientContext.visitingRancherUid);
     clientContext.visitingRancherUid = data::InvalidUid;
+  }
+
+  if (ranchInstance.clients.empty())
+  {
+    _ranches.erase(clientContext.visitingRancherUid);
   }
 }
 

@@ -638,17 +638,15 @@ private:
   //!
   CommandServer _commandServer;
 
-  //!
+  //! Client contexts mapped by the ID of the network client.
   std::unordered_map<ClientId, ClientContext> _clients;
   //! Ranch instances mapped by the UID of the rancher.
   std::unordered_map<data::Uid, RanchInstance> _ranches;
 
   //! A command deferrer for the `AcCmdCRMountFamilyTree` command.
   CommandDeferrer<protocol::AcCmdCRMountFamilyTree> _mountFamilyTreeDeferrer;
-
   //! A command deferrer for the `AcCmdCREnterRanch` command.
   CommandDeferrer<protocol::AcCmdCREnterRanch> _enterRanchDeferrer;
-
   //! A command deferrer for the `AcCmdCRTryBreeding` command.
   CommandDeferrer<protocol::AcCmdCRTryBreeding> _tryBreedingDeferrer;
 

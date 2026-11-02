@@ -325,7 +325,7 @@ void LobbyNetworkHandler::Terminate()
 }
 
 void LobbyNetworkHandler::AcceptLogin(
-  ClientId clientId,
+  const ClientId clientId,
   const bool sendToCharacterCreator)
 {
   try
@@ -345,9 +345,9 @@ void LobbyNetworkHandler::AcceptLogin(
       SendLoginOK(clientId);
     }
   }
-  catch (const std::exception&)
+  catch (const std::exception& x)
   {
-    // We really don't care if the user disconnected.
+    spdlog::error("Exception while accepting login for client {}: {}", clientId, x.what());
   }
 }
 
@@ -789,9 +789,10 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
     // the items that have expired since they were offline.
     expiredItems = _serverInstance.GetItemSystem()
       .CollectAndEraseExpiredItems(character);
-
-    _serverInstance.GetHorseSystem().ApplyDailyCareTick(character.uid());
   });
+
+  // todo: move this up to item collection
+  _serverInstance.GetHorseSystem().ApplyDailyCareTick(userCharacterUid);
 
   protocol::LobbyCommandLoginOK response{
     .lobbyTime = util::TimePointToFileTime(util::Clock::now()),

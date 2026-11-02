@@ -372,7 +372,7 @@ std::vector<data::Item> ItemSystem::CollectAndEraseExpiredItems(
     }
   };
 
-  const auto eraseFromInventoryOrEquipment = [&character](const data::Uid itemUid)
+  const auto EraseFromInventoryOrEquipment = [&character](const data::Uid itemUid)
   {
     const auto toEraseFromInventory = std::ranges::remove(character.inventory(), itemUid);
     const auto toEraseFromEquipment = std::ranges::remove(character.characterEquipment(), itemUid);
@@ -397,7 +397,7 @@ std::vector<data::Item> ItemSystem::CollectAndEraseExpiredItems(
 
   for (const auto& expiredItem : expiredItems)
   {
-    eraseFromInventoryOrEquipment(expiredItem.uid());
+    EraseFromInventoryOrEquipment(expiredItem.uid());
     _serverInstance.GetDataDirector().GetItemCache().Delete(
       expiredItem.uid());
   }

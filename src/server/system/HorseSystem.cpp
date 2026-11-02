@@ -111,6 +111,7 @@ uint32_t HorseSystem::RepairLineages(const data::Uid characterUid)
 
 namespace
 {
+
 constexpr uint32_t MinSlightlyFullPlenitude = 710;
 
 int64_t CareDayIndex(const data::Clock::time_point time)
@@ -165,7 +166,6 @@ void HorseSystem::ApplyDailyCareTick(const data::Uid characterUid)
         MaxDirtiness,
         horse.mountCondition.tailDirtiness() + ticks * DailyDirtinessIncrease);
 
-      // Daily fatigue reset and stamina floor (not scaled by ticks passed).
       horse.fatigue() = 0;
       horse.mountCondition.stamina() = std::max<uint32_t>(
         horse.mountCondition.stamina(), DailyStaminaFloor);
