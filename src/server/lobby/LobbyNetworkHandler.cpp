@@ -2367,10 +2367,10 @@ void LobbyNetworkHandler::HandleUpdateSystemContent(
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
 
-  bool hasPermission = false;
+  bool hasPermission = _serverInstance.GetSettings().general.testMode;
   characterRecord.Immutable([&hasPermission](const data::Character& character)
   {
-    hasPermission = character.role() != data::Character::Role::User;
+    hasPermission = hasPermission || character.role() != data::Character::Role::User;
   });
 
   if (not hasPermission)
@@ -2680,23 +2680,17 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
       groupUid = character.dailyQuestGroupUid();
     });
 
-  // Default all unk slots to 2 (not defined in enum, but used as a default/inactive state).
-  for (auto& q : response.unk)
-    q.status = static_cast<protocol::Quest::Status>(2);
-
-  // Only populate quest data if the character has an assigned daily quest group.
+  // No daily quest group assigned yet
   if (groupUid == data::InvalidUid)
-  {
-    _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
     return;
-  }
 
   const auto groupRecord = _serverInstance.GetDataDirector().GetDailyQuestGroup(groupUid);
   if (not groupRecord)
-  {
-    _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
     return;
-  }
+
+  // Default all unk slots to 2 (not defined in enum, but used as a default/inactive state).
+  for (auto& q : response.unk)
+    q.status = static_cast<protocol::Quest::Status>(2);
 
   // Collect both Repeatable quest TIDs (TID 100 and 101) sorted ascending.
   std::vector<uint16_t> repeatableTids;
@@ -2707,13 +2701,16 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
   }
   std::sort(repeatableTids.begin(), repeatableTids.end());
 
-  bool hasQuests = false;
   int completedCount = 0;
   bool carrotsClaimed = false;
+  bool rewardClaimed = false;
 
-  groupRecord.Immutable([&](const data::DailyQuestGroup& group)
+  groupRecord.Mutable([&](data::DailyQuestGroup& group)
   {
+    QuestSystem::EnsureDailyQuestGroupFresh(group);
+
     carrotsClaimed = group.carrotsClaimed();
+    rewardClaimed = group.rewardClaimed();
 
     const auto rewardId   = static_cast<uint8_t>(group.rewardId());
     const auto rewardType = static_cast<uint8_t>(group.rewardType());
@@ -2724,8 +2721,6 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
     {
       if (quests[i].questId == 0)
         continue;
-
-      hasQuests = true;
 
       const auto questId  = quests[i].questId;
       const auto progress = quests[i].progress;
@@ -2749,17 +2744,19 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
     }
   });
 
+  if (not carrotsClaimed)
+    return;
+
   // unk[0] = TID 100 (intro/activate) InProgress if carrots not yet claimed, ReadyToClaim if they have been.
   if (repeatableTids.size() >= 1)
     response.unk[0] = protocol::Quest{repeatableTids[0], 0,
       carrotsClaimed ? protocol::Quest::Status::ReadyToClaim : protocol::Quest::Status::InProgress,
       0, 0, 0};
 
-  // unk[1] = TID 101 (collect reward) only shown when quests are present;
-  // InProgress if not all done, ReadyToClaim if the quest rewards have been claimed (not indicated in the save data yet)
-  if (hasQuests && repeatableTids.size() >= 2)
+  // unk[1] = TID 101 (collect reward); InProgress if reward not yet claimed, ReadyToClaim if it has been.
+  if (repeatableTids.size() >= 2)
     response.unk[1] = protocol::Quest{repeatableTids[1], 0,
-      protocol::Quest::Status::InProgress,
+      rewardClaimed ? protocol::Quest::Status::ReadyToClaim : protocol::Quest::Status::InProgress,
       0, 0, 0};
 
   _commandServer.QueueCommand<decltype(response)>(clientId, [response]() { return response; });
@@ -2788,6 +2785,12 @@ void LobbyNetworkHandler::HandleRequestQuestList(
   const auto& clientContext = GetClientContext(clientId);
   auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
     clientContext.characterUid);
+
+  _serverInstance.GetGameEventBus().Fire({
+    .userAchvEvent = registry::UserAchvEvent::NPCDialogLevel,
+    .function = registry::Function::True,
+    .origin = GameEvent::Origin::Ranch,
+    .characterUid = clientContext.characterUid});
 
   protocol::AcCmdCLRequestQuestListOK response{};
 

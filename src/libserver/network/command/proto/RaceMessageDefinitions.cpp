@@ -1677,6 +1677,55 @@ void AcCmdGameRaceItemGet::Read(
     .Read(command.itemType);
 }
 
+void AcCmdGameQuestItemSpawn::Write(
+  const AcCmdGameQuestItemSpawn& command,
+  SinkStream& stream)
+{
+  stream.Write(command.itemId)
+    .Write(command.questItemId)
+    .Write(command.itemType);
+
+  for (const float& axis : command.position)
+  {
+    stream.Write(axis);
+  }
+
+  for (const float& axis : command.orientation)
+  {
+    stream.Write(axis);
+  }
+
+  stream.Write(command.sizeLevel)
+    .Write(command.removeDelay);
+}
+
+void AcCmdGameQuestItemSpawn::Read(
+  AcCmdGameQuestItemSpawn&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdGameQuestItemGet::Write(
+  const AcCmdGameQuestItemGet& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterOid)
+    .Write(command.itemId)
+    .Write(command.questItemId)
+    .Write(command.itemType);
+}
+
+void AcCmdGameQuestItemGet::Read(
+  AcCmdGameQuestItemGet& command,
+  SourceStream& stream)
+{
+  stream.Read(command.characterOid)
+    .Read(command.itemId)
+    .Read(command.questItemId)
+    .Read(command.itemType);
+}
+
 // Magic Targeting Commands Implementation
 void AcCmdCRStartMagicTarget::Read(
   AcCmdCRStartMagicTarget& command,

@@ -17,8 +17,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
+#include "server/event/GameEvent.hpp"
 #include "server/race/MagicSystem.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
+#include "server/system/GameEventSystem.hpp"
 #include "server/system/PotentialSystem.hpp"
 
 #include "server/ServerInstance.hpp"
@@ -69,6 +71,12 @@ RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& message)
     {
       HandleStartRace(clientId, message);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRAchievementUpdateProperty>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleAchievementUpdateProperty(clientId, message);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdUserRaceTimer>(
@@ -208,6 +216,12 @@ RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& message)
     {
       HandleUserRaceItemGet(clientId, message);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdGameQuestItemGet>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleGameQuestItemGet(clientId, message);
     });
 
   // Magic Targeting Commands for Bolt System
@@ -400,37 +414,48 @@ void RaceNetworkHandler::SendRanchBonusNotify(
 }
 
 void RaceNetworkHandler::SendDailyQuestNotificationToCharacter(
-  uint32_t characterUid,
-  uint16_t questId,
+  const data::Uid characterUid,
+  const uint16_t questId,
   const protocol::ObjectiveProgress& objectiveProgress,
-  uint32_t carrotsReward,
-  protocol::QuestRewardType rewardType,
-  uint32_t unk2,
-  uint32_t mountExp)
+  const uint32_t carrotsReward,
+  const protocol::QuestRewardType rewardType,
+  const uint32_t mountExp)
 {
+  const auto clientId = FindClientIdByCharacterUid(characterUid);
+  if (not clientId)
+    return;
+
   const protocol::AcCmdRCUpdateDailyQuestNotify updateNotify{
-    .characterUid = characterUid,
+    .characterUid = static_cast<uint32_t>(characterUid),
     .questId = questId,
     .objectiveProgress = objectiveProgress,
     .carrotsReward = carrotsReward,
     .rewardType = rewardType,
-    .unk2 = unk2,
+    .unk2 = 0,
     .mountExp = mountExp};
 
-  try
-  {
-    const ClientId clientId = GetClientIdByCharacterUid(characterUid);
-    _commandServer.QueueCommand<protocol::AcCmdRCUpdateDailyQuestNotify>(
-      clientId,
-      [updateNotify]()
-      {
-        return updateNotify;
-      });
-  }
-  catch (const std::exception&)
-  {
-    // Ignore
-  }
+  _commandServer.QueueCommand<protocol::AcCmdRCUpdateDailyQuestNotify>(
+    *clientId,
+    [updateNotify]()
+    {
+      return updateNotify;
+    });
+}
+
+void RaceNetworkHandler::SendQuestNotificationToCharacter(
+  const data::Uid characterUid,
+  const protocol::AcCmdRCUpdateQuestNotify& updateNotify)
+{
+  const auto clientId = FindClientIdByCharacterUid(characterUid);
+  if (not clientId)
+    return;
+
+  _commandServer.QueueCommand<protocol::AcCmdRCUpdateQuestNotify>(
+    *clientId,
+    [updateNotify]()
+    {
+      return updateNotify;
+    });
 }
 
 void RaceNetworkHandler::HandleClientConnected(ClientId clientId)
@@ -1094,6 +1119,43 @@ void RaceNetworkHandler::HandleChangeTeam(
     clientContext.characterUid);
 }
 
+void RaceNetworkHandler::HandleAchievementUpdateProperty(
+  const ClientId clientId,
+  const protocol::AcCmdCRAchievementUpdateProperty& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  spdlog::debug(
+    "Character {} reported achievement property {} = '{}'",
+    clientContext.characterUid,
+    static_cast<uint16_t>(command.achievementEvent),
+    command.achievementValue);
+
+  const auto userAchvEvent =
+    static_cast<registry::UserAchvEvent>(command.achievementEvent);
+
+  auto gameMode = registry::GameModeFlag::None;
+  {
+    std::scoped_lock lock(_raceInstancesMutex);
+    try
+    {
+      const auto& parameters = GetRaceInstance(clientContext, false).GetParameters();
+      gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode);
+    }
+    catch (const std::exception&)
+    {
+      // No live race instance for this client.
+    }
+  }
+
+  GetServerInstance().GetGameEventSystem().ReportAchievement(
+    clientContext.characterUid,
+    GameEvent::Origin::Race,
+    userAchvEvent,
+    command.achievementValue,
+    gameMode);
+}
+
 void RaceNetworkHandler::HandleLeaveRoom(ClientId clientId)
 {
   protocol::AcCmdCRLeaveRoomOK response{};
@@ -1413,6 +1475,8 @@ void RaceNetworkHandler::HandleStartRace(
         }
       }
     });
+
+  raceInstance.AssignQuestItemsToRacers();
 
   _serverInstance.GetRoomSystem().GetRoom(
     roomUid,
@@ -2011,6 +2075,7 @@ void RaceNetworkHandler::HandleRequestSpur(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
+  const auto& parameters = raceInstance.GetParameters();
 
   auto& racer = raceInstance.GetTracker().GetRacer(
     clientContext.characterUid);
@@ -2029,6 +2094,13 @@ void RaceNetworkHandler::HandleRequestSpur(
     throw std::runtime_error("Client is dead ass cheating (or is really desynced)");
 
   racer.starPointValue -= gameModeTemplate.spurConsumeStarPoints;
+
+  GetServerInstance().GetGameEventBus().Fire({
+    .userAchvEvent = registry::UserAchvEvent::SpurUsed,
+    .function = registry::Function::True,
+    .origin = GameEvent::Origin::Race,
+    .characterUid = clientContext.characterUid,
+    .gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode)});
 
   protocol::AcCmdCRRequestSpurOK response{
     .characterOid = command.characterOid,
@@ -2065,6 +2137,7 @@ void RaceNetworkHandler::HandleHurdleClearResult(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
+  const auto& parameters = raceInstance.GetParameters();
 
   auto& racer = raceInstance.GetTracker().GetRacer(
     clientContext.characterUid);
@@ -2122,6 +2195,14 @@ void RaceNetworkHandler::HandleHurdleClearResult(
 
       // Update boost gauge
       starPointResponse.starPointValue = racer.starPointValue;
+
+      GetServerInstance().GetGameEventBus().Fire({
+        .userAchvEvent = registry::UserAchvEvent::PerfectJumpCount,
+        .function = registry::Function::PerfectJump,
+        .origin = GameEvent::Origin::Race,
+        .characterUid = clientContext.characterUid,
+        .gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode)});
+
       break;
     }
     case protocol::AcCmdCRHurdleClearResult::HurdleClearType::Good:
@@ -2968,6 +3049,34 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
   if (eventItemOid != tracker::InvalidEntityOid)
   {
     auto& eventItem = raceInstance.GetTracker().GetEventItem(clientContext.characterUid, eventItemOid);
+
+    if (eventItem.qTemId.has_value())
+    {
+      const auto qTemId = *eventItem.qTemId;
+      const auto itemType = eventItem.itemType;
+
+      raceInstance.GetTracker().RemoveEventItem(clientContext.characterUid, command.itemDeckId);
+      racer.trackedDecks.erase(command.itemDeckId);
+
+      const protocol::AcCmdGameQuestItemGet questItemGet{
+        .characterOid = command.characterOid,
+        .itemId = command.itemDeckId,
+        .questItemId = qTemId,
+        .itemType = itemType};
+      this->Broadcast(raceInstance, questItemGet);
+
+      const auto& parameters = raceInstance.GetParameters();
+      GetServerInstance().GetGameEventBus().Fire({
+        .userAchvEvent = registry::UserAchvEvent::CollectDropItem,
+        .function = registry::Function::CollectDropItem,
+        .origin = GameEvent::Origin::Race,
+        .characterUid = clientContext.characterUid,
+        .gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode),
+        .value = qTemId});
+
+      return;
+    }
+
     const auto eggInfo = _serverInstance.GetPetRegistry().GetEggInfoByDeckId(eventItem.itemType);
     auto itemUid = data::InvalidUid;
     const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
@@ -3496,7 +3605,22 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
     }
 
     if (magicSlotInfo->basicType == race::MagicType::FireBall)
+    {
       GrantOnePlusOneMagicItem(raceInstance, command.attackerOid);
+
+      auto& racers = raceInstance.GetTracker().GetRacers();
+      const auto attackerIter = race::MagicSystem::FindRacerByOid(racers, command.attackerOid);
+      if (attackerIter != racers.end())
+      {
+        const auto& parameters = raceInstance.GetParameters();
+        GetServerInstance().GetGameEventBus().Fire({
+          .userAchvEvent = registry::UserAchvEvent::FireballAttack,
+          .function = registry::Function::FireballAttack,
+          .origin = GameEvent::Origin::Race,
+          .characterUid = attackerIter->first,
+          .gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode)});
+      }
+    }
   }
   if (magicSlotInfo->basicType == race::MagicType::Summon)
     targetRacer.pendingMagicTarget.reset();
@@ -3846,12 +3970,12 @@ void RaceNetworkHandler::HandleRequestUser(
   if (not invokerRecord)
     return;
 
-  bool isAdmin = false;
+  bool isAdmin = _serverInstance.GetSettings().general.testMode;
   std::string invokerCharacterName{};
   invokerRecord.Immutable([&isAdmin, &invokerCharacterName](const data::Character& character)
     {
 
-      isAdmin = character.role() != data::Character::Role::User;
+      isAdmin = isAdmin || character.role() != data::Character::Role::User;
       invokerCharacterName = character.name();
     });
   const auto& userName = clientContext.userName;
@@ -4391,6 +4515,14 @@ void RaceNetworkHandler::HandleMissionEvent(
       // Mission completed, record into character's missions
       saveMissionRecord(clientContext.characterUid, parameters.missionId);
 
+      GetServerInstance().GetGameEventBus().Fire({
+        .userAchvEvent = registry::UserAchvEvent::RaceCompleted,
+        .function = registry::Function::ClearMission,
+        .origin = GameEvent::Origin::Race,
+        .characterUid = clientContext.characterUid,
+        .gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode),
+        .value = parameters.missionId});
+
       break;
     }
     case MissionEvent::EVENT_SCRIPT:
@@ -4447,6 +4579,67 @@ void RaceNetworkHandler::HandleRestartRace(
   [[maybe_unused]] const auto& clientContext = GetClientContext(clientId);
 
   HandleStartRace(clientId, protocol::AcCmdCRStartRace{});
+}
+
+void RaceNetworkHandler::HandleGameQuestItemGet(
+  const ClientId clientId,
+  const protocol::AcCmdGameQuestItemGet& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  std::scoped_lock lock(_raceInstancesMutex);
+
+  auto& raceInstance = GetRaceInstance(clientContext);
+  auto& racer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
+
+  const auto requestedItemId = static_cast<tracker::Oid>(command.itemId);
+
+  const auto itemOid = raceInstance.GetTracker().FindEventItem(
+    clientContext.characterUid,
+    requestedItemId);
+
+  if (itemOid == tracker::InvalidEntityOid)
+  {
+    spdlog::warn(
+      "RaceNetworkHandler::HandleGameQuestItemGet: character {} picked up untracked "
+      "quest item {}",
+      clientContext.characterUid,
+      requestedItemId);
+    return;
+  }
+
+  auto& item = raceInstance.GetTracker().GetEventItem(clientContext.characterUid, itemOid);
+  if (not item.qTemId.has_value())
+  {
+    spdlog::warn(
+      "RaceNetworkHandler::HandleGameQuestItemGet: character {} picked up event item {} "
+      "that isn't a quest item",
+      clientContext.characterUid,
+      requestedItemId);
+    return;
+  }
+
+  const auto qTemId = *item.qTemId;
+  const auto itemType = item.itemType;
+
+  raceInstance.GetTracker().RemoveEventItem(clientContext.characterUid, requestedItemId);
+  racer.trackedDecks.erase(requestedItemId);
+
+  const protocol::AcCmdGameQuestItemGet questItemGet{
+    .characterOid = command.characterOid,
+    .itemId = requestedItemId,
+    .questItemId = qTemId,
+    .itemType = itemType};
+  this->Broadcast(raceInstance, questItemGet);
+
+  const auto& parameters = raceInstance.GetParameters();
+  GetServerInstance().GetGameEventBus().Fire({
+    .userAchvEvent = registry::UserAchvEvent::CollectDropItem,
+    .function = registry::Function::CollectDropItem,
+    .origin = GameEvent::Origin::Race,
+    .characterUid = clientContext.characterUid,
+    .gameMode = GameEventSystem::ToGameModeFlag(parameters.gameMode, parameters.teamMode),
+    .value = qTemId});
 }
 
 } // namespace server

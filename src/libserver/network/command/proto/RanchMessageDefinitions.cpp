@@ -2890,26 +2890,6 @@ void AcCmdCRUpdateMountInfoOK::Read(
   throw std::runtime_error("Not implemented");
 }
 
-void AcCmdRCUpdateDailyQuestNotify::Write(
-  const AcCmdRCUpdateDailyQuestNotify& command,
-  SinkStream& stream)
-{
-  stream.Write(command.characterUid);
-  stream.Write(command.questId);
-  stream.Write(command.objectiveProgress);
-  stream.Write(command.carrotsReward);
-  stream.Write(command.rewardType);
-  stream.Write(command.unk2);
-  stream.Write(command.mountExp);
-}
-
-void AcCmdRCUpdateDailyQuestNotify::Read(
-  AcCmdRCUpdateDailyQuestNotify&,
-  SourceStream&)
-{
-  throw std::runtime_error("Not implemented.");
-}
-
 void AcCmdCRRequestDailyQuestReward::Write(
   const AcCmdCRRequestDailyQuestReward&,
   SinkStream&)
@@ -3051,18 +3031,21 @@ void AcCmdCRRequestQuestRewardOK::Write(
 {
   stream.Write(command.questTid);
   stream.Write(command.carrotsRewarded);
-  stream.Write(static_cast<uint8_t>(command.rewards.items.size()));
+  assert(command.rewards.items.size() <= 5);
+  const auto rewardItemCount = std::min(command.rewards.items.size(), size_t{5});
 
-  for (auto& reward : command.rewards.items)
+  stream.Write(static_cast<uint8_t>(rewardItemCount));
+  for (std::size_t idx = 0; idx < rewardItemCount; ++idx)
   {
-    stream.Write(reward);
+    stream.Write(command.rewards.items[idx]);
   }
+  assert(command.npcEffects.size() <= 10);
+  const auto npcEffectCount = std::min(command.npcEffects.size(), size_t{10});
 
-  stream.Write(static_cast<uint8_t>(command.npcEffects.size()));
-
-  for (auto& member : command.npcEffects)
+  stream.Write(static_cast<uint8_t>(npcEffectCount));
+  for (std::size_t idx = 0; idx < npcEffectCount; ++idx)
   {
-    stream.Write(member);
+    stream.Write(command.npcEffects[idx]);
   }
 }
 

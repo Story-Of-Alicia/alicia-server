@@ -89,6 +89,7 @@ data::Uid ItemSystem::AddItem(
         itemTid,
         count,
         character.name());
+      return data::InvalidUid;
     }
 
     auto createdItemUid = data::InvalidUid;
@@ -138,6 +139,7 @@ data::Uid ItemSystem::AddItem(
         itemTid,
         duration.count(),
         character.name());
+      return data::InvalidUid;
     }
 
     auto createdItemUid = data::InvalidUid;

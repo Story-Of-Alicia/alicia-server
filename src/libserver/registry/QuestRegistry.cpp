@@ -61,26 +61,16 @@ void ReadQuest(Quest& quest, const YAML::Node& yaml)
   quest.type = static_cast<Quest::Type>(yaml["groupType"].as<uint32_t>(0));
   quest.difficult = yaml["difficult"].as<decltype(Quest::difficult)>(0);
   quest.level = yaml["level"].as<decltype(Quest::level)>(0);
-  quest.gameModeFlag = static_cast<Quest::GameModeFlag>(yaml["gameModeFlag"].as<uint32_t>(0));
+  quest.gameModeFlag = static_cast<GameModeFlag>(yaml["gameModeFlag"].as<uint32_t>(0));
   quest.startNpcId = yaml["startNpcId"].as<decltype(Quest::startNpcId)>(0);
   quest.endNpcId = yaml["endNpcId"].as<decltype(Quest::endNpcId)>(0);
   quest.successType = yaml["successType"].as<decltype(Quest::successType)>(0);
   quest.successValue = yaml["successValue"].as<decltype(Quest::successValue)>(0);
 
-  const auto functionStr = yaml["function"].as<std::string>("");
-  if      (functionStr == "TRUE")                        quest.function = Quest::Function::True;
-  else if (functionStr == "RunMap")                      quest.function = Quest::Function::RunMap;
-  else if (functionStr == "TeamWin")                     quest.function = Quest::Function::TeamWin;
-  else if (functionStr == "PerfectJump")                 quest.function = Quest::Function::PerfectJump;
-  else if (functionStr == "FireballAttack")              quest.function = Quest::Function::FireballAttack;
-  else if (functionStr == "CollectDropItem")             quest.function = Quest::Function::CollectDropItem;
-  else if (functionStr == "GlidingDistanceValue")        quest.function = Quest::Function::GlidingDistanceValue;
-  else if (functionStr == "ClearMission")                quest.function = Quest::Function::ClearMission;
-  else if (functionStr == "PrizeWinnerForLowLevel")      quest.function = Quest::Function::PrizeWinnerForLowLevel;
-  else if (functionStr == "PrizeWinnerInMapForLowLevel") quest.function = Quest::Function::PrizeWinnerInMapForLowLevel;
-  else                                                   quest.function = Quest::Function::Unknown;
+  quest.function = ParseFunction(yaml["function"].as<std::string>(""));
 
   quest.functionValue = yaml["functionValue"].as<decltype(Quest::functionValue)>(0);
+  quest.userAchvEvent = yaml["userAchvEvent"].as<decltype(Quest::userAchvEvent)>(0);
   quest.rewardId = yaml["rewardId"].as<decltype(Quest::rewardId)>(0);
   quest.rewardExp = yaml["rewardExp"].as<decltype(Quest::rewardExp)>(0);
   quest.rewardGameMoney = yaml["rewardGameMoney"].as<decltype(Quest::rewardGameMoney)>(0);
@@ -109,6 +99,12 @@ void ReadQuestRewardPoint(QuestRewardPoint& entry, const YAML::Node& yaml)
   }
 }
 
+void ReadNpcDress(NpcDress& entry, const YAML::Node& yaml)
+{
+  entry.npcId = yaml["npcId"].as<decltype(NpcDress::npcId)>(0);
+  entry.dress = yaml["dress"].as<decltype(NpcDress::dress)>(0);
+}
+
 } // anonymous namespace
 
 void QuestRegistry::Clear()
@@ -116,6 +112,7 @@ void QuestRegistry::Clear()
   _quests.clear();
   _rewards.clear();
   _rewardPoints.clear();
+  _npcDress.clear();
 }
 
 void QuestRegistry::ReadConfig(const std::filesystem::path& configPath)
@@ -160,11 +157,34 @@ void QuestRegistry::ReadConfig(const std::filesystem::path& configPath)
     }
   }
 
+  if (const auto npcDressSection = questsSection["npcDress"])
+  {
+    for (const auto& keyNode : npcDressSection)
+    {
+      const auto key = keyNode["key"].as<uint32_t>(0);
+      if (key == 0)
+        continue;
+
+      auto& entries = _npcDress[key];
+      if (const auto entriesNode = keyNode["entries"])
+      {
+        for (const auto& entryNode : entriesNode)
+        {
+          NpcDress entry{};
+          ReadNpcDress(entry, entryNode);
+          entries.push_back(entry);
+        }
+      }
+    }
+  }
+
   spdlog::info(
-    "Quest registry loaded {} quests, {} rewards and {} reward point entries",
+    "Quest registry loaded {} quests, {} rewards, {} reward point entries"
+    " and {} NPC dress keys",
     _quests.size(),
     _rewards.size(),
-    _rewardPoints.size());
+    _rewardPoints.size(),
+    _npcDress.size());
 }
 
 std::optional<Quest> QuestRegistry::GetQuest(uint32_t tid) const
@@ -198,6 +218,14 @@ std::optional<QuestRewardPoint> QuestRegistry::GetQuestRewardPoint(uint32_t poin
   const auto iter = _rewardPoints.find(point);
   if (iter == _rewardPoints.cend())
     return std::nullopt;
+  return iter->second;
+}
+
+std::vector<NpcDress> QuestRegistry::GetNpcDress(uint32_t key) const
+{
+  const auto iter = _npcDress.find(key);
+  if (iter == _npcDress.cend())
+    return {};
   return iter->second;
 }
 

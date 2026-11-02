@@ -210,8 +210,8 @@ void AcCmdCRAchievementUpdateProperty::Read(
   AcCmdCRAchievementUpdateProperty& command,
   SourceStream& stream)
 {
-  stream.Read(command.propertyKey)
-    .Read(command.propertyValue);
+  stream.Read(command.achievementEvent)
+    .Read(command.achievementValue);
 }
 
 void AcCmdCRUpdateRanchLevelNotify::Write(
@@ -228,6 +228,26 @@ void AcCmdCRUpdateRanchLevelNotify::Read(
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCUpdateDailyQuestNotify::Write(
+  const AcCmdRCUpdateDailyQuestNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.characterUid);
+  stream.Write(command.questId);
+  stream.Write(command.objectiveProgress);
+  stream.Write(command.carrotsReward);
+  stream.Write(command.rewardType);
+  stream.Write(command.unk2);
+  stream.Write(command.mountExp);
+}
+
+void AcCmdRCUpdateDailyQuestNotify::Read(
+  AcCmdRCUpdateDailyQuestNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented.");
 }
 
 } // namespace server::protocol
