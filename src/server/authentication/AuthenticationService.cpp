@@ -79,15 +79,19 @@ void AuthenticationService::Terminate() noexcept
 
 void AuthenticationService::Tick() noexcept
 {
-  if (_queue.empty())
-    return;
-
   if (not _backend)
     return;
 
-  std::scoped_lock lock(_queueMutex);
+  Authentication request;
+  {
+    std::scoped_lock lock(_queueMutex);
 
-  const Authentication& request = _queue.front();
+    if (_queue.empty())
+      return;
+
+    request = _queue.front();
+  }
+
   const auto result = _backend->Authenticate(request.userName, request.userToken);
 
   if (not result)
@@ -97,12 +101,15 @@ void AuthenticationService::Tick() noexcept
     std::scoped_lock verdictsLock(_verdictsMutex);
     _verdicts.emplace_back(Verdict{
       .userName = request.userName,
-      .isAuthenticated = result.value_or(false)});
+      .isAuthenticated = *result});
+
+    _hasVerdicts.store(true, std::memory_order::relaxed);
   }
 
-  _hasVerdicts.store(true, std::memory_order::release);
-
-  _queue.pop();
+  {
+    std::scoped_lock lock(_queueMutex);
+    _queue.pop();
+  }
 }
 
 void AuthenticationService::QueueAuthentication(
@@ -117,7 +124,7 @@ void AuthenticationService::QueueAuthentication(
 
 bool AuthenticationService::HasAuthenticationVerdicts() noexcept
 {
-  return _hasVerdicts.load(std::memory_order::acquire);
+  return _hasVerdicts.load(std::memory_order::relaxed);
 }
 
 std::vector<AuthenticationService::Verdict>
@@ -131,7 +138,7 @@ AuthenticationService::PollAuthenticationVerdicts() noexcept
   const auto results = _verdicts;
 
   _verdicts.clear();
-  _hasVerdicts.store(false, std::memory_order::release);
+  _hasVerdicts.store(false, std::memory_order::relaxed);
 
   return results;
 }
