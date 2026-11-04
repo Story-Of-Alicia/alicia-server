@@ -15111,7 +15111,7 @@ collection:
     category: 1
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     goodsType: 2
     priceRanges:
@@ -15127,7 +15127,7 @@ collection:
     category: 1
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     goodsType: 2
     priceRanges:
