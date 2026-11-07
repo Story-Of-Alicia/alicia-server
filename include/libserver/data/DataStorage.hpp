@@ -218,6 +218,45 @@ public:
     return std::nullopt;
   }
 
+  //! Forcefully retrieves a datum, blocking until it is loaded.
+  //! This performs the retrieval synchronously and returns the
+  //! record once it is available.
+  //! @param key Key of the datum.
+  //! @returns The requested record. The record is unavailable if the datum does not exist.
+  Record<Data> ForceGet(const Key& key)
+  {
+    std::unique_lock lock(_entriesMutex);
+    auto [recordIter, created] = _entries.try_emplace(key);
+    auto& record = recordIter->second;
+
+    if (not record.available.load(std::memory_order::relaxed))
+    {
+      const bool retrieved = _dataSourceRetrieveListener(key, record.value);
+      if (retrieved)
+      {
+        record.available.store(true, std::memory_order::relaxed);
+        record.retrieveFailureCount.store(0, std::memory_order::relaxed);
+      }
+      else
+      {
+        if (record.retrieveFailureCount.fetch_add(1, std::memory_order::relaxed) == 0)
+        {
+          record.firstRetrieveFailure.store(
+            std::chrono::steady_clock::now(), std::memory_order::relaxed);
+        }
+
+        lock.unlock();
+        return Record<Data>{};
+      }
+    }
+
+    lock.unlock();
+    return Record(&record.value, &record.mutex, [this, key]()
+    {
+      RequestStore(key);
+    });
+  }
+
   std::optional<std::vector<Record<Data>>> Get(const KeySpan keys)
   {
     bool isComplete = true;
