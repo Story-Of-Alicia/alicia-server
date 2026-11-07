@@ -32,7 +32,7 @@ namespace
 // todo: configure me
 constexpr float RegistrationFee = 0.50f;
 constexpr float EarningTaxes = 0.20f;
-constexpr size_t MaxStallionsPerCharacter = 3;
+constexpr size_t MaxStallionsPerCharacter = 5;
 
 constexpr auto MarketDuration = std::chrono::hours(24);
 
@@ -47,48 +47,41 @@ void BreedingMarket::Initialize()
 {
   auto stallionUids = _serverInstance.GetDataDirector().ListRegisteredStallions();
 
-  auto iterator = stallionUids.begin();
-  while (not stallionUids.empty())
+  for (const auto stallionUid : stallionUids)
   {
-    if (iterator == stallionUids.end())
-    {
-      iterator = stallionUids.begin();
-    }
-
-    const auto stallionUid = *iterator;
-    const auto stallionRecord = _serverInstance.GetDataDirector().GetStallionCache().Get(
+    const auto stallionRecord = _serverInstance.GetDataDirector().GetStallionCache().ForceGet(
       stallionUid);
 
     if (not stallionRecord)
     {
-      ++iterator;
+      spdlog::warn(
+        "Could not load breeding market entry for stallion '{}'", stallionUid);
       continue;
     }
 
     auto horseUid = data::InvalidUid;
     auto ownerUid = data::InvalidUid;
-    stallionRecord->Immutable([&horseUid, &ownerUid](const data::Stallion& stallion)
+    stallionRecord.Immutable([&horseUid, &ownerUid](const data::Stallion& stallion)
     {
       horseUid = stallion.horseUid();
       ownerUid = stallion.ownerUid();
     });
 
-    // Preload horse and character records
-    const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().Get(
-      horseUid);
-    const auto characterRecord = _serverInstance.GetDataDirector().GetCharacterCache().Get(
-      ownerUid);
+    // Force load the associated horse and owner records
+    const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().ForceGet(horseUid);
+    const auto characterRecord = _serverInstance.GetDataDirector().GetCharacterCache().ForceGet(ownerUid);
     if (not horseRecord || not characterRecord)
     {
-      ++iterator;
+      // Attempted to force load a horse or owner record that does not exist, delete stallion
+      // Note: keep horse record as it may be used for family tree and lineage calculations
+      _serverInstance.GetDataDirector().GetDataSource().DeleteStallion(stallionUid);
       continue;
     }
-
-    iterator = stallionUids.erase(iterator);
 
     _horseRegistrations.try_emplace(horseUid, Registration{
       .stallionUid = stallionUid});
   }
+  spdlog::info("Loaded {} stallions onto the breeding market", _horseRegistrations.size());
 
   ScheduleExpirationCheck();
 }

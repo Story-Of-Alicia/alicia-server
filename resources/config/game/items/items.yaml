@@ -12485,6 +12485,10 @@ collection:
     priceRanges:
     - range: 1
       price: 14000
+    - range: 10
+      price: 140000
+    - range: 30
+      price: 420000
 - tid: 46020
   type: 1
   level: 1
@@ -12549,6 +12553,10 @@ collection:
     priceRanges:
     - range: 1
       price: 7000
+    - range: 10
+      price: 70000
+    - range: 30
+      price: 210000
 - tid: 45004
   type: 2
   level: 1
@@ -14911,7 +14919,7 @@ collection:
     category: 2
     subcategory: 2
   shopInfo:
-    isPurchasable: false
+    isPurchasable: true
     moneyType: 0
     goodsType: 1
     priceRanges:
@@ -14938,7 +14946,7 @@ collection:
     category: 2
     subcategory: 3
   shopInfo:
-    isPurchasable: false
+    isPurchasable: true
     moneyType: 0
     goodsType: 1
     priceRanges:
@@ -14952,7 +14960,7 @@ collection:
     grade: 0
     agility: 0
     ambition: 0
-    courage: 9
+    courage: 10
     endurance: 0
     rush: 0
 - tid: 20129
@@ -14965,7 +14973,7 @@ collection:
     category: 2
     subcategory: 4
   shopInfo:
-    isPurchasable: false
+    isPurchasable: true
     moneyType: 0
     goodsType: 1
     priceRanges:
@@ -14981,7 +14989,7 @@ collection:
     ambition: 0
     courage: 0
     endurance: 0
-    rush: 7
+    rush: 10
 - tid: 20130
   type: 1
   level: 1
@@ -14992,7 +15000,7 @@ collection:
     category: 2
     subcategory: 5
   shopInfo:
-    isPurchasable: false
+    isPurchasable: true
     moneyType: 0
     goodsType: 1
     priceRanges:
@@ -15007,7 +15015,7 @@ collection:
     agility: 0
     ambition: 0
     courage: 0
-    endurance: 10
+    endurance: 7
     rush: 0
 - tid: 99186
   type: 0
@@ -15103,7 +15111,7 @@ collection:
     category: 1
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     goodsType: 2
     priceRanges:
@@ -15119,7 +15127,7 @@ collection:
     category: 1
     subcategory: 5
   shopInfo:
-    isPurchasable: true
+    isPurchasable: false
     moneyType: 0
     goodsType: 2
     priceRanges:

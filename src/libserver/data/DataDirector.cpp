@@ -1790,9 +1790,10 @@ void DataDirector::ScheduleCharacterLoad(
             rewardUids.end()));
         if (not rewardRecords)
         {
-          userDataContext.debugMessage = std::format(
-            "Reward records not available");
-          return;
+          
+          //userDataContext.debugMessage = std::format(
+          //  "Reward records not available");
+          //return;
         }
       }
     }

@@ -159,6 +159,13 @@ coats:
     tier: 3
     inheritanceRate: 5.0
     allowedColorGroups: 0
+  - tid: 21
+    name: 'Spotted Blue Roan'
+    faceType: 0
+    minGrade: 8
+    tier: 3
+    inheritanceRate: 7.0
+    allowedColorGroups: 1
 
 faces:
   - tid: 1
