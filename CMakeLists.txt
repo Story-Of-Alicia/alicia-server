@@ -55,7 +55,7 @@ add_library(alicia-libserver STATIC
         src/libserver/data/DataRepair.cpp
         src/libserver/data/helper/ProtocolHelper.cpp
         src/libserver/data/file/FileDataSource.cpp
-        #src/libserver/data/pq/PqDataSource.cpp
+        src/libserver/data/pq/PqDataSource.cpp
         src/libserver/network/Server.cpp
         src/libserver/network/chatter/proto/ChatterMessageDefinitions.cpp
         src/libserver/network/chatter/ChatterProtocol.cpp
@@ -96,7 +96,8 @@ target_link_libraries(alicia-libserver PUBLIC
         nlohmann_json::nlohmann_json
         yaml-cpp::yaml-cpp
         zlibstatic
-        tinyxml2)
+        tinyxml2
+        libpqxx::pqxx)
 
 # alicia-server target
 add_executable(alicia-server
@@ -140,8 +141,7 @@ target_include_directories(alicia-server
 target_link_libraries(alicia-server PRIVATE
         project-properties
         platform-properties
-        alicia-libserver
-        libpqxx::pqxx)
+        alicia-libserver)
 target_include_directories(alicia-server PUBLIC
         "${PROJECT_BINARY_DIR}/generated")
 
