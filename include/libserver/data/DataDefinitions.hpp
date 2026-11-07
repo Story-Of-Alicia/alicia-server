@@ -328,7 +328,7 @@ struct Character
   dao::Field<std::vector<Uid>> characterEquipment{};
   
   dao::Field<std::vector<Uid>> horses{};
-  dao::Field<uint8_t> horseSlotCount{0u};
+  dao::Field<uint32_t> horseSlotCount{0u};
 
   dao::Field<std::set<Uid>> breedingWishlist{};
 
@@ -573,9 +573,9 @@ struct DailyQuestGroup
 {
   dao::Field<Uid> uid{InvalidUid};
   //! Reward entry ID shared by all 3 quests, references quests.rewards in quests.yaml.
-  dao::Field<uint8_t> rewardId{};
+  dao::Field<uint32_t> rewardId{};
   //! Reward type shared by all 3 quests: 1 = carrots, 2 = exp.
-  dao::Field<uint8_t> rewardType{};
+  dao::Field<uint32_t> rewardType{};
   //! Accumulated quest reward points. References QuestRewardPoint thresholds in quests.yaml.
   dao::Field<uint32_t> rewardPoints{};
   //! Whether the daily quest carrot reward has been claimed today.
