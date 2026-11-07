@@ -47,11 +47,19 @@ void BreedingMarket::Initialize()
 {
   auto stallionUids = _serverInstance.GetDataDirector().ListRegisteredStallions();
 
+  const size_t MaxLoopAttempts = 2;
+  size_t currentAttempt = 0;
+  
   auto iterator = stallionUids.begin();
   while (not stallionUids.empty())
   {
     if (iterator == stallionUids.end())
     {
+      if (++currentAttempt > MaxLoopAttempts)
+      {
+        break;
+      }
+      
       iterator = stallionUids.begin();
     }
 
