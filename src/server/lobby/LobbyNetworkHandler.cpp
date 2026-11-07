@@ -37,8 +37,14 @@ namespace server
 namespace
 {
 
+//! Mission id of the prologue, as defined in the client's `Mission` table.
+constexpr uint16_t PrologueMissionId = 24;
+//! The progress id the client reads as "mission cleared".
+constexpr uint32_t MissionClearedProgressId = 2;
+
 //! A random device for random number generation.
 std::random_device rd;
+
 constexpr auto RanchLeaveSettleDelay = std::chrono::milliseconds(150);
 
 } // anon namespace
@@ -319,7 +325,7 @@ void LobbyNetworkHandler::Terminate()
 }
 
 void LobbyNetworkHandler::AcceptLogin(
-  ClientId clientId,
+  const ClientId clientId,
   const bool sendToCharacterCreator)
 {
   try
@@ -339,9 +345,9 @@ void LobbyNetworkHandler::AcceptLogin(
       SendLoginOK(clientId);
     }
   }
-  catch (const std::exception&)
+  catch (const std::exception& x)
   {
-    // We really don't care if the user disconnected.
+    spdlog::error("Exception while accepting login for client {}: {}", clientId, x.what());
   }
 }
 
@@ -654,7 +660,7 @@ void LobbyNetworkHandler::HandleNetworkTick()
 
     clientsToDisconnect.emplace_back(clientId);
 
-    _serverInstance.GetRanchDirector().Disconnect(
+    _serverInstance.GetRanchDirector().DisconnectCharacter(
       clientContext.characterUid);
     _serverInstance.GetRaceDirector().DisconnectCharacter(
       clientContext.characterUid);
@@ -745,16 +751,6 @@ void LobbyNetworkHandler::HandleLogin(
     });
 }
 
-namespace
-{
-
-//! Mission id of the prologue, as defined in the client's `Mission` table.
-constexpr uint16_t PrologueMissionId = 24;
-//! The progress id the client reads as "mission cleared".
-constexpr uint32_t MissionClearedProgressId = 2;
-
-} // anonymous namespace
-
 void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
 {
   auto& clientContext = GetClientContext(clientId);
@@ -777,10 +773,6 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
 
   clientContext.characterUid = userCharacterUid;
 
-  // Apply the things that should happen to the character while they were offline.
-  _serverInstance.GetHorseSystem().PromoteMaturedFoals(userCharacterUid);
-  _serverInstance.GetHorseSystem().ApplyDailyCareTick(userCharacterUid);
-
   // Collection of items expired while the character aws offline.
   std::vector<data::Item> expiredItems;
 
@@ -791,13 +783,16 @@ void LobbyNetworkHandler::SendLoginOK(ClientId clientId)
   if (not characterRecord)
     throw std::runtime_error("Character record unavailable");
 
-  // Collect the expired items so we can inform the user about
-  // the items that have expired since they were offline.
   characterRecord.Mutable([this, &expiredItems](data::Character& character)
   {
+    // Collect the expired items so we can inform the user about
+    // the items that have expired since they were offline.
     expiredItems = _serverInstance.GetItemSystem()
       .CollectAndEraseExpiredItems(character);
   });
+
+  // todo: move this up to item collection
+  _serverInstance.GetHorseSystem().ApplyDailyCareTick(userCharacterUid);
 
   protocol::LobbyCommandLoginOK response{
     .lobbyTime = util::TimePointToFileTime(util::Clock::now()),
@@ -1153,8 +1148,8 @@ void LobbyNetworkHandler::HandleHeartbeat(
 }
 
 void LobbyNetworkHandler::SendRoomEntryResponse(
-  bool leftRanch,
-  Scheduler::Task sendResponse)
+  const bool leftRanch,
+  const Scheduler::Task& sendResponse)
 {
   if (leftRanch)
   {
@@ -1292,9 +1287,6 @@ void LobbyNetworkHandler::HandleMakeRoom(
   const auto roomOtp = _serverInstance.GetOtpSystem().GrantCode(
     identityHash);
 
-  const bool leftRanch = _serverInstance.GetRanchDirector().LeaveRanch(
-    clientContext.characterUid);
-
   const auto lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
   protocol::AcCmdCLMakeRoomOK response{
     .roomUid = createdRoomUid,
@@ -1304,7 +1296,7 @@ void LobbyNetworkHandler::HandleMakeRoom(
     .unk2 = command.unk4};
 
   SendRoomEntryResponse(
-    leftRanch,
+    false,
     [this, clientId, response]()
     {
       _commandServer.QueueCommand<decltype(response)>(
@@ -1446,9 +1438,6 @@ void LobbyNetworkHandler::HandleEnterRoom(
   const auto roomOtp = _serverInstance.GetOtpSystem().GrantCode(
     identityHash);
 
-  const bool leftRanch = _serverInstance.GetRanchDirector().LeaveRanch(
-    clientContext.characterUid);
-
   const auto& lobbyConfig = _serverInstance.GetLobbyDirector().GetConfig();
 
   protocol::AcCmdCLEnterRoomOK response{
@@ -1459,7 +1448,7 @@ void LobbyNetworkHandler::HandleEnterRoom(
     .member6 = 1};
 
   SendRoomEntryResponse(
-    leftRanch,
+    false,
     [this, clientId, response]()
     {
       _commandServer.QueueCommand<decltype(response)>(
@@ -2287,7 +2276,8 @@ void LobbyNetworkHandler::HandleSetIntroduction(
     });
 
   _serverInstance.GetRanchDirector().BroadcastSetIntroductionNotify(
-    clientContext.characterUid, command.introduction);
+    clientContext.characterUid,
+    command.introduction);
 }
 
 void LobbyNetworkHandler::HandleGetMessengerInfo(
