@@ -1445,7 +1445,8 @@ void DataDirector::ScheduleUserLoad(
       ScheduleUserLoad(userDataContext, userName);
     });
 
-    const auto& userRecord = _userStorage.GetOrCreate([this, userName]() -> std::pair<std::string, data::User>
+    const auto& userRecord = _userStorage.GetOrCreate(
+      [this, userName]() -> std::pair<std::string, data::User>
     {
       data::User user;
       try
