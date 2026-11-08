@@ -17,6 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  **/
 
+#include <cassert>
+
 #include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 
 namespace server::protocol
@@ -225,6 +227,27 @@ void AcCmdCRUpdateRanchLevelNotify::Write(
 
 void AcCmdCRUpdateRanchLevelNotify::Read(
   AcCmdCRUpdateRanchLevelNotify&,
+  SourceStream&)
+{
+  throw std::runtime_error("Not implemented");
+}
+
+void AcCmdRCUpdateMountAppearanceNotify::Write(
+  const AcCmdRCUpdateMountAppearanceNotify& command,
+  SinkStream& stream)
+{
+  stream.Write(command.unk0);
+
+  constexpr size_t MaxHorseUpdateValues = 10;
+  assert(command.horseUpdateValues.size() <= MaxHorseUpdateValues);
+  stream.Write(static_cast<uint8_t>(command.horseUpdateValues.size()));
+  for (const auto& val : command.horseUpdateValues)
+    stream.Write(val.horseUid)
+      .Write(val.bitset);
+}
+
+void AcCmdRCUpdateMountAppearanceNotify::Read(
+  AcCmdRCUpdateMountAppearanceNotify&,
   SourceStream&)
 {
   throw std::runtime_error("Not implemented");
