@@ -22,6 +22,7 @@
 
 #include "libserver/network/command/CommandProtocol.hpp"
 #include "libserver/network/command/proto/CommonStructureDefinitions.hpp"
+#include <libserver/data/DataDefinitions.hpp>
 #include <libserver/util/Stream.hpp>
 
 #include <string>
