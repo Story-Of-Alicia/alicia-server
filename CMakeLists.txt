@@ -145,17 +145,6 @@ target_link_libraries(alicia-server PRIVATE
 target_include_directories(alicia-server PUBLIC
         "${PROJECT_BINARY_DIR}/generated")
 
-# alicia-migrate target
-# Copies a file data source into a postgres data source.
-add_executable(alicia-migrate
-        src/tools/Migrate.cpp)
-target_include_directories(alicia-migrate
-        PRIVATE include/)
-target_link_libraries(alicia-migrate PRIVATE
-        project-properties
-        platform-properties
-        alicia-libserver)
-
 if (BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
