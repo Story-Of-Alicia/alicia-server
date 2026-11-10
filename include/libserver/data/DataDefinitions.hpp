@@ -564,7 +564,7 @@ struct Egg
 struct DailyQuestEntry
 {
   //! Template ID of the quest.
-  uint16_t questId{};
+  uint32_t questId{};
   //! Current progress toward the quest's successValue.
   uint32_t progress{};
 };

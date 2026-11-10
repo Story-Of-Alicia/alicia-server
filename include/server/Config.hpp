@@ -167,7 +167,9 @@ public:
 
     struct Postgres
     {
-
+      std::string connectionUri;
+      //! Count of connections in the connection pool.
+      std::size_t connectionCount{4};
     } postgres{};
   } data{};
 

@@ -21,6 +21,7 @@
 
 #include "libserver/data/DataRepair.hpp"
 #include "libserver/data/file/FileDataSource.hpp"
+#include "libserver/data/pq/PqDataSource.hpp"
 #include "libserver/util/Deferred.hpp"
 
 #include <spdlog/spdlog.h>
@@ -28,24 +29,24 @@
 namespace server
 {
 
-DataDirector::DataDirector(const std::filesystem::path& basePath)
+DataDirector::DataDirector()
   : _userStorage(
       [&](const auto& key, auto& user)
       {
-        try
+        const auto userExists = _primaryDataSource->RetrieveUser(key, user);
+        if (not userExists)
         {
-          _primaryDataSource->RetrieveUser(key, user);
-          return true;
-        }
-        catch (const std::exception& x)
-        {
-          spdlog::error(
-            "Exception retrieving user '{}' from the primary data source: {}",
-            key,
-            x.what());
+          spdlog::error("Error retrieving user '{}' from the primary data source", key);
+          return false;
         }
 
-        return false;
+        if (not *userExists)
+        {
+          spdlog::error("User '{}' does not exist in the primary data source", key);
+          return false;
+        }
+
+        return true;
       },
       [&](const auto& key, auto& user)
       {
@@ -736,15 +737,44 @@ DataDirector::DataDirector(const std::filesystem::path& basePath)
         return false;
       })
 {
-  _primaryDataSource = std::make_unique<FileDataSource>();
-  if (auto* fileDataSource = dynamic_cast<FileDataSource*>(_primaryDataSource.get()))
-  {
-    fileDataSource->Initialize(basePath);
-  }
 }
 
 DataDirector::~DataDirector()
 {
+}
+
+void DataDirector::EstablishDataSource(
+  const Config::Data& config,
+  const std::filesystem::path& resourceDirectory)
+{
+  switch (config.source)
+  {
+    case Config::Data::Source::File:
+    {
+      // An absolute base path replaces the resource directory.
+      const auto basePath = resourceDirectory / config.file.basePath;
+
+      auto fileDataSource = std::make_unique<FileDataSource>();
+      fileDataSource->Initialize(basePath);
+      _primaryDataSource = std::move(fileDataSource);
+
+      spdlog::info("Using the file data source at '{}'", basePath.string());
+      break;
+    }
+    case Config::Data::Source::Postgres:
+    {
+      auto pqDataSource = std::make_unique<PqDataSource>();
+      pqDataSource->Establish(
+        config.postgres.connectionUri,
+        config.postgres.connectionCount);
+      _primaryDataSource = std::move(pqDataSource);
+
+      spdlog::info(
+        "Using the postgres data source with {} connections",
+        config.postgres.connectionCount);
+      break;
+    }
+  }
 }
 
 void DataDirector::Initialize()
@@ -1445,20 +1475,25 @@ void DataDirector::ScheduleUserLoad(
       ScheduleUserLoad(userDataContext, userName);
     });
 
-    const auto& userRecord = _userStorage.GetOrCreate(
-      [this, userName]() -> std::pair<std::string, data::User>
+    data::User user;
+    const auto userExists = _primaryDataSource->RetrieveUser(userName, user);
+    if (not userExists)
     {
-      data::User user;
-      try
-      {
-        _primaryDataSource->RetrieveUser(userName, user);
-      }
-      catch (const std::exception&)
-      {
-        user.name = userName;
-        _primaryDataSource->CreateUser(user);
-      }
+      // The load is retried until the timeout is reached.
+      userDataContext.debugMessage = std::format(
+        "User could not be retrieved from the primary data source");
+      return;
+    }
 
+    if (not *userExists)
+    {
+      user.name = userName;
+      _primaryDataSource->CreateUser(user);
+    }
+
+    const auto& userRecord = _userStorage.GetOrCreate(
+      [&user]() -> std::pair<std::string, data::User>
+    {
       return std::pair{user.name(), std::move(user)};
     });
 

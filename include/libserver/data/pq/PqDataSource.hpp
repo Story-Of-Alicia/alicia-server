@@ -25,6 +25,13 @@
 
 #include <pqxx/pqxx>
 
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <string>
+#include <vector>
+
 namespace server
 {
 
@@ -32,15 +39,17 @@ class PqDataSource
   : public DataSource
 {
 public:
-  //! Establishes the connection to the data source.
-  void Establish(const std::string& url);
+  //! Establishes the connection pool to the data source.
+  //! @param url Connection URL of the data source.
+  //! @param connectionCount Count of connections in the pool.
+  void Establish(const std::string& url, std::size_t connectionCount = 4);
   //! Returns whether the connection is fine.
   //! @returns `true` if the connection is fine, `false` otherwise.
   bool IsConnectionFine();
 
   ~PqDataSource() override;
   void CreateUser(data::User& user) override;
-  void RetrieveUser(const std::string_view& name, data::User& user) override;
+  std::optional<bool> RetrieveUser(const std::string_view& name, data::User& user) override;
   void StoreUser(const std::string_view& name, const data::User& user) override;
   bool IsUserNameUnique(const std::string_view& name) override;
   void CreateInfraction(data::Infraction& infraction) override;
@@ -53,6 +62,7 @@ public:
   void DeleteCharacter(data::Uid uid) override;
   data::Uid RetrieveCharacterUidByName(const std::string_view& name) override;
   bool IsCharacterNameUnique(const std::string_view& name) override;
+  bool ClaimCharacterName(data::Uid uid, const std::string_view& name) override;
   void CreateHorse(data::Horse& horse) override;
   void RetrieveHorse(data::Uid uid, data::Horse& horse) override;
   void StoreHorse(data::Uid uid, const data::Horse& horse) override;
@@ -109,7 +119,43 @@ public:
   void DeleteReward(data::Uid claimUid) override;
 
 private:
-  std::unique_ptr<pqxx::connection> _connection;
+  //! A connection leased from the pool, returned to the pool on destruction.
+  class ConnectionLease
+  {
+  public:
+    ConnectionLease(
+      PqDataSource& dataSource,
+      std::unique_ptr<pqxx::connection> connection);
+    ~ConnectionLease();
+
+    ConnectionLease(const ConnectionLease&) = delete;
+    ConnectionLease& operator=(const ConnectionLease&) = delete;
+    ConnectionLease(ConnectionLease&&) = delete;
+    ConnectionLease& operator=(ConnectionLease&&) = delete;
+
+    pqxx::connection& operator*() const;
+
+  private:
+    PqDataSource& _dataSource;
+    std::unique_ptr<pqxx::connection> _connection;
+  };
+
+  //! Leases a connection from the pool, waiting until one is idle.
+  //! A broken connection is re-established before it is leased.
+  //! @returns The leased connection.
+  ConnectionLease AcquireConnection();
+  //! Returns the connection to the pool.
+  //! @param connection Connection to return, may be null if it could not be re-established.
+  void ReleaseConnection(std::unique_ptr<pqxx::connection> connection);
+
+  //! Connection URL of the data source.
+  std::string _url;
+  //! A mutex guarding the idle connections.
+  std::mutex _poolMutex;
+  //! A condition notified when a connection is returned to the pool.
+  std::condition_variable _poolCondition;
+  //! Idle connections of the pool.
+  std::vector<std::unique_ptr<pqxx::connection>> _idleConnections;
 };
 
 } // namespace server
