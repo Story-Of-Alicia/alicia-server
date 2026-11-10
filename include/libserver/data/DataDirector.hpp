@@ -53,9 +53,17 @@ public:
   using RewardStorage = DataStorage<data::Uid, data::Reward>;
 
   //! Default constructor.
-  explicit DataDirector(const std::filesystem::path& basePath);
+  DataDirector();
   //! Default destructor.
   ~DataDirector();
+
+  //! Establishes the primary data source selected by the config.
+  //! Must be called before the director is used.
+  //! @param config Data config.
+  //! @param resourceDirectory Directory the relative file data source path is resolved against.
+  void EstablishDataSource(
+    const Config::Data& config,
+    const std::filesystem::path& resourceDirectory);
 
   //! Initializes the director.
   void Initialize();

@@ -1616,6 +1616,35 @@ void LobbyNetworkHandler::HandleCreateNickname(
       return;
     }
 
+    // Create the new character.
+    userCharacter = _serverInstance.GetDataDirector().CreateCharacter();
+    if (not userCharacter)
+    {
+      throw std::runtime_error(
+        std::format("Failed to create character for user '{}'", clientContext.userName));
+    }
+
+    auto createdCharacterUid = data::InvalidUid;
+    userCharacter->Immutable([&createdCharacterUid](const data::Character& character)
+    {
+      createdCharacterUid = character.uid();
+    });
+
+    // Claim the name, the uniqueness check above might have raced with another claim.
+    const bool isNameClaimed = _serverInstance.GetDataDirector().GetDataSource().ClaimCharacterName(
+      createdCharacterUid,
+      command.nickname);
+
+    if (not isNameClaimed)
+    {
+      _serverInstance.GetDataDirector().GetCharacterCache().Delete(createdCharacterUid);
+
+      SendCreateNicknameCancel(
+        clientId,
+        protocol::AcCmdCLCreateNicknameCancel::Reason::DuplicateCharacterName);
+      return;
+    }
+
     // Create a new mount for the character.
     const auto mountRecord  = _serverInstance.GetDataDirector().CreateHorse();
     if (not mountRecord)
@@ -1633,14 +1662,6 @@ void LobbyNetworkHandler::HandleCreateNickname(
         registry::HorseRegistry::BuildDefaultHorse(horse, requestedHorseTid);
         mountUid = horse.uid();
       });
-
-    // Create the new character.
-    userCharacter = _serverInstance.GetDataDirector().CreateCharacter();
-    if (not userCharacter)
-    {
-      throw std::runtime_error(
-        std::format("Failed to create character for user '{}'", clientContext.userName));
-    }
 
     userCharacter->Mutable(
       [&userCharacterUid,
@@ -2737,10 +2758,11 @@ void LobbyNetworkHandler::HandleRequestDailyQuestList(
       if (isDone)
         ++completedCount;
 
-      response.dailyQuests[i] = protocol::DailyQuest{questId, progress, rewardType, rewardId};
+      response.dailyQuests[i] = protocol::DailyQuest{
+        static_cast<uint16_t>(questId), progress, rewardType, rewardId};
       // Daily quests go into unk[2..4] (slots 0 and 1 are the two Repeatable quests).
       response.unk[i + 2] = protocol::Quest{
-        /*tid=*/questId,
+        /*tid=*/static_cast<uint16_t>(questId),
         /*member0=*/0,
         isDone ? protocol::Quest::Status::ReadyToClaim : protocol::Quest::Status::InProgress,
         /*progress=*/progress,

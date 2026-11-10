@@ -19,14 +19,19 @@
 
 #include "libserver/data/pq/PqDataSource.hpp"
 
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <format>
+#include <map>
 #include <set>
+#include <span>
 #include <stdexcept>
 #include <string_view>
 #include <type_traits>
 #include <vector>
+
+#include <spdlog/spdlog.h>
 
 namespace server
 {
@@ -34,15 +39,39 @@ namespace server
 namespace
 {
 
-pqxx::connection& RequireConnection(
-  const std::unique_ptr<pqxx::connection>& connection)
-{
-  if (not connection or not connection->is_open())
-  {
-    throw std::runtime_error("Connection to data source is not available");
-  }
+//! A transaction reading a consistent snapshot of multiple tables.
+using SnapshotTransaction = pqxx::transaction<
+  pqxx::isolation_level::repeatable_read,
+  pqxx::write_policy::read_only>;
 
-  return *connection;
+//! A column of a record table.
+struct Column
+{
+  //! Name of the column.
+  std::string_view name;
+  //! Table referenced by the column, if the column is a foreign key.
+  std::string_view referencedTable{};
+  //! Key column of the referenced table.
+  std::string_view referencedKey{"uid"};
+  //! Whether the referenced record must be owned by the record of the column.
+  bool isOwned{false};
+};
+
+//! Returns the field of the column in the row.
+//! The column name is quoted, as libpq folds unquoted column names to lower case.
+pqxx::field FieldOf(
+  const pqxx::row& row,
+  const std::string_view column)
+{
+  return row[std::format("\"{}\"", column)];
+}
+
+data::Clock::time_point ToTimePoint(
+  const int64_t seconds)
+{
+  return data::Clock::time_point(
+    std::chrono::duration_cast<data::Clock::duration>(
+      std::chrono::seconds(seconds)));
 }
 
 template <typename T>
@@ -55,7 +84,7 @@ auto WriteField(
   }
   else if constexpr (std::is_same_v<T, data::Clock::time_point>)
   {
-    return std::chrono::duration_cast<std::chrono::seconds>(
+    return std::chrono::ceil<std::chrono::seconds>(
       value.time_since_epoch())
       .count();
   }
@@ -69,6 +98,8 @@ auto WriteField(
   }
 }
 
+//! Reads the column to the field, a null value is read as the zero value of the field.
+//! Null values are present in the foreign key columns, where they stand for an invalid UID.
 template <typename T>
 void ReadField(
   const pqxx::row& row,
@@ -77,133 +108,868 @@ void ReadField(
 {
   if constexpr (std::is_enum_v<T>)
   {
-    field = static_cast<T>(row[column].as<std::underlying_type_t<T>>());
+    using Underlying = std::underlying_type_t<T>;
+    field = static_cast<T>(FieldOf(row, column).as<Underlying>(Underlying{}));
   }
   else if constexpr (std::is_same_v<T, data::Clock::time_point>)
   {
-    field = data::Clock::time_point(
-      std::chrono::duration_cast<data::Clock::duration>(
-        std::chrono::seconds(row[column].as<int64_t>())));
+    field = ToTimePoint(FieldOf(row, column).as<int64_t>(int64_t{}));
   }
   else if constexpr (std::is_same_v<T, std::chrono::seconds>)
   {
-    field = std::chrono::seconds(
-      row[column].as<int64_t>());
+    field = std::chrono::seconds(FieldOf(row, column).as<int64_t>(int64_t{}));
   }
   else
   {
-    field = row[column].as<T>();
+    field = FieldOf(row, column).as<T>(T{});
   }
 }
 
 std::string QualifiedTable(
-  const pqxx::work& query,
+  const pqxx::transaction_base& query,
   const std::string_view table)
 {
   return query.quote_name("data") + "." + query.quote_name(table);
 }
 
-template <typename Key>
-void WriteUidList(
-  pqxx::work& query,
-  const std::string_view table,
-  const std::string_view ownerColumn,
-  const Key& ownerKey,
-  const std::vector<data::Uid>& values)
+//! Produces the expression binding the parameter to the column.
+//! A reference to a record which does not exist, including the invalid UID, is bound as null
+//! so that a dangling reference never fails the store of the whole record.
+//! @param keyIndex Index of the key parameter of the record, required by the owned columns.
+std::string ParameterExpression(
+  const pqxx::transaction_base& query,
+  const Column& column,
+  const std::size_t index,
+  const std::optional<std::size_t> keyIndex)
 {
-  const auto tableName = QualifiedTable(query, table);
-  const auto ownerName = query.quote_name(ownerColumn);
-  query.exec(
-    std::format("delete from {} where {} = $1", tableName, ownerName),
-    pqxx::params(ownerKey));
-  const auto insertSql = std::format(
-    "insert into {} ({}, \"position\", \"valueUid\") values ($1, $2, $3)",
-    tableName,
-    ownerName);
-  int64_t position = 0;
-  for (const auto value : values)
+  if (column.referencedTable.empty())
   {
-    query.exec(insertSql, pqxx::params(ownerKey, position, value));
-    ++position;
+    return std::format("${}", index);
   }
+
+  std::string ownerCondition;
+  if (column.isOwned)
+  {
+    if (not keyIndex)
+    {
+      throw std::logic_error("Owned column requires the key of the record");
+    }
+
+    // A reference to a record owned by another owner is bound as null too.
+    ownerCondition = std::format(" and \"ownerUid\" = ${}", *keyIndex);
+  }
+
+  return std::format(
+    "(select {0} from {1} where {0} = ${2}{3})",
+    query.quote_name(column.referencedKey),
+    QualifiedTable(query, column.referencedTable),
+    index,
+    ownerCondition);
 }
 
+//! Assigns the record without an owner to the owner, the ownership of a record is permanent.
 template <typename Key>
-std::vector<data::Uid> ReadUidList(
-  pqxx::work& query,
+void ClaimOwnership(
+  pqxx::transaction_base& query,
   const std::string_view table,
-  const std::string_view ownerColumn,
-  const Key& ownerKey)
+  const Key& ownerKey,
+  const data::Uid uid)
+{
+  query.exec(
+    std::format(
+      "update {} "
+      "set \"ownerUid\" = $1 "
+      "where \"uid\" = $2 and \"ownerUid\" is null",
+      QualifiedTable(query, table)),
+    pqxx::params(ownerKey, uid));
+}
+
+//! Produces a list of columns with the column prepended.
+std::vector<Column> PrependColumn(
+  const Column& column,
+  const std::span<const Column> columns)
+{
+  std::vector<Column> result;
+  result.reserve(columns.size() + 1);
+  result.emplace_back(column);
+  result.insert(result.end(), columns.begin(), columns.end());
+  return result;
+}
+
+//! Produces an insert statement of the columns returning the key column.
+//! The columns are bound to the parameters in order.
+std::string InsertSql(
+  const pqxx::transaction_base& query,
+  const std::string_view table,
+  const std::span<const Column> columns,
+  const std::string_view keyColumn)
+{
+  std::string columnList;
+  std::string valueList;
+  for (std::size_t index = 0; index < columns.size(); ++index)
+  {
+    if (index > 0)
+    {
+      columnList += ", ";
+      valueList += ", ";
+    }
+    columnList += query.quote_name(columns[index].name);
+    valueList += ParameterExpression(query, columns[index], index + 1, std::nullopt);
+  }
+
+  return std::format(
+    "insert into {} ({}) values ({}) returning {}",
+    QualifiedTable(query, table),
+    columnList,
+    valueList,
+    query.quote_name(keyColumn));
+}
+
+//! Produces an update statement of the columns.
+//! The columns are bound to the parameters in order, the key is bound to the last parameter.
+std::string UpdateSql(
+  const pqxx::transaction_base& query,
+  const std::string_view table,
+  const std::span<const Column> columns,
+  const std::string_view keyColumn)
+{
+  const auto keyIndex = columns.size() + 1;
+
+  std::string assignmentList;
+  for (std::size_t index = 0; index < columns.size(); ++index)
+  {
+    if (index > 0)
+    {
+      assignmentList += ", ";
+    }
+    assignmentList += std::format(
+      "{} = {}",
+      query.quote_name(columns[index].name),
+      ParameterExpression(query, columns[index], index + 1, keyIndex));
+  }
+
+  return std::format(
+    "update {} set {} where {} = ${}",
+    QualifiedTable(query, table),
+    assignmentList,
+    query.quote_name(keyColumn),
+    keyIndex);
+}
+
+//! Inserts the record and returns its generated UID.
+data::Uid InsertRecord(
+  pqxx::transaction_base& query,
+  const std::string_view table,
+  const std::span<const Column> columns,
+  const std::string_view keyColumn,
+  const pqxx::params& params)
+{
+  return query.exec(InsertSql(query, table, columns, keyColumn), params)
+    .one_row()[0]
+    .as<data::Uid>();
+}
+
+//! Updates the record by its key.
+template <typename Key>
+void UpdateRecord(
+  pqxx::transaction_base& query,
+  const std::string_view table,
+  const std::span<const Column> columns,
+  const std::string_view keyColumn,
+  const Key& key,
+  pqxx::params params)
+{
+  params.append(key);
+  query.exec(UpdateSql(query, table, columns, keyColumn), params);
+}
+
+//! Selects the record by its key.
+//! @throws std::runtime_error if the record does not exist.
+template <typename Key>
+pqxx::row SelectRecord(
+  pqxx::transaction_base& query,
+  const std::string_view table,
+  const std::string_view keyColumn,
+  const Key& key)
 {
   const auto result = query.exec(
     std::format(
-      "select \"valueUid\" from {} where {} = $1 order by \"position\"",
+      "select * from {} where {} = $1",
+      QualifiedTable(query, table),
+      query.quote_name(keyColumn)),
+    pqxx::params(key));
+  if (result.empty())
+  {
+    throw std::runtime_error(std::format("Record of '{}' does not exist", table));
+  }
+
+  return result.one_row();
+}
+
+//! Deletes the records by their key.
+template <typename Key>
+void DeleteRecord(
+  pqxx::transaction_base& query,
+  const std::string_view table,
+  const std::string_view keyColumn,
+  const Key& key)
+{
+  query.exec(
+    std::format(
+      "delete from {} where {} = $1",
+      QualifiedTable(query, table),
+      query.quote_name(keyColumn)),
+    pqxx::params(key));
+}
+
+//! Returns the SQL type of the owner key.
+//! The parameters selected by `insert ... select` are not typed by the target columns.
+template <typename Key>
+constexpr std::string_view OwnerKeyType()
+{
+  if constexpr (std::is_integral_v<Key>)
+  {
+    return "\"data\".\"uint32\"";
+  }
+  else
+  {
+    return "text";
+  }
+}
+
+//! Whether the list owns the referenced records.
+enum class Ownership
+{
+  //! The referenced records are not owned by the list owner.
+  None,
+  //! The referenced records are permanently owned by the list owner.
+  //! A record without an owner is assigned to the list owner,
+  //! a record owned by another owner can not be held by the list.
+  Permanent,
+};
+
+//! Writes the references held by the record, the order of the references is not kept.
+//! References to records which do not exist, or which are owned by another owner, are skipped
+//! so that an invalid reference never fails the store of the whole record.
+template <typename Key, typename Values>
+void WriteUids(
+  pqxx::transaction_base& query,
+  const std::string_view table,
+  const std::string_view ownerColumn,
+  const Key& ownerKey,
+  const std::string_view valueColumn,
+  const std::string_view referencedTable,
+  const Values& values,
+  const Ownership ownership = Ownership::None)
+{
+  DeleteRecord(query, table, ownerColumn, ownerKey);
+
+  const bool isOwning = ownership == Ownership::Permanent;
+  // A reference held more than once is stored once.
+  const auto insertSql = std::format(
+    "insert into {} ({}, {}) "
+    "select $1::{}, \"uid\" "
+    "from {} "
+    "where \"uid\" = $2{} "
+    "on conflict do nothing",
+    QualifiedTable(query, table),
+    query.quote_name(ownerColumn),
+    query.quote_name(valueColumn),
+    OwnerKeyType<Key>(),
+    QualifiedTable(query, referencedTable),
+    isOwning ? " and \"ownerUid\" = $1" : "");
+
+  for (const auto value : values)
+  {
+    if (isOwning)
+    {
+      ClaimOwnership(query, referencedTable, ownerKey, value);
+    }
+
+    const auto result = query.exec(insertSql, pqxx::params(ownerKey, value));
+    if (result.affected_rows() == 0)
+    {
+      spdlog::warn(
+        "Skipped the reference to '{}' {} held by '{}' of {}, "
+        "the record does not exist, is owned by another owner or is held more than once",
+        referencedTable,
+        value,
+        table,
+        ownerKey);
+    }
+  }
+}
+
+//! Writes the ordered list of references held by the record.
+//! References to records which do not exist are skipped.
+template <typename Key>
+void WriteUidList(
+  pqxx::transaction_base& query,
+  const std::string_view table,
+  const std::string_view ownerColumn,
+  const Key& ownerKey,
+  const std::string_view valueColumn,
+  const std::string_view referencedTable,
+  const std::vector<data::Uid>& values)
+{
+  DeleteRecord(query, table, ownerColumn, ownerKey);
+
+  const auto insertSql = std::format(
+    "insert into {} ({}, \"position\", {}) "
+    "select $1::{}, $2::\"data\".\"uint32\", \"uid\" "
+    "from {} "
+    "where \"uid\" = $3",
+    QualifiedTable(query, table),
+    query.quote_name(ownerColumn),
+    query.quote_name(valueColumn),
+    OwnerKeyType<Key>(),
+    QualifiedTable(query, referencedTable));
+
+  for (uint32_t position = 0; position < values.size(); ++position)
+  {
+    const auto value = values[position];
+    const auto result = query.exec(insertSql, pqxx::params(ownerKey, position, value));
+    if (result.affected_rows() == 0)
+    {
+      spdlog::warn(
+        "Skipped the reference to '{}' {} held by '{}' of {}, the record does not exist",
+        referencedTable,
+        value,
+        table,
+        ownerKey);
+    }
+  }
+}
+
+//! Reads the ordered list of references held by the record.
+template <typename Key>
+std::vector<data::Uid> ReadUidList(
+  pqxx::transaction_base& query,
+  const std::string_view table,
+  const std::string_view ownerColumn,
+  const Key& ownerKey,
+  const std::string_view valueColumn)
+{
+  const auto result = query.exec(
+    std::format(
+      "select {} from {} where {} = $1 order by \"position\"",
+      query.quote_name(valueColumn),
       QualifiedTable(query, table),
       query.quote_name(ownerColumn)),
     pqxx::params(ownerKey));
+
   std::vector<data::Uid> values;
   values.reserve(result.size());
   for (const auto& row : result)
   {
-    values.emplace_back(row["valueUid"].as<data::Uid>());
+    values.emplace_back(row[0].as<data::Uid>());
   }
   return values;
 }
 
-template <typename Key>
-void WriteUidSet(
-  pqxx::work& query,
+//! Reads the references held by the record, ordered by their UID.
+template <typename Values, typename Key>
+Values ReadUids(
+  pqxx::transaction_base& query,
   const std::string_view table,
   const std::string_view ownerColumn,
   const Key& ownerKey,
-  const std::set<data::Uid>& values)
-{
-  const auto tableName = QualifiedTable(query, table);
-  const auto ownerName = query.quote_name(ownerColumn);
-  query.exec(
-    std::format("delete from {} where {} = $1", tableName, ownerName),
-    pqxx::params(ownerKey));
-  const auto insertSql = std::format(
-    "insert into {} ({}, \"valueUid\") values ($1, $2)",
-    tableName,
-    ownerName);
-  for (const auto value : values)
-  {
-    query.exec(insertSql, pqxx::params(ownerKey, value));
-  }
-}
-
-template <typename Key>
-std::set<data::Uid> ReadUidSet(
-  pqxx::work& query,
-  const std::string_view table,
-  const std::string_view ownerColumn,
-  const Key& ownerKey)
+  const std::string_view valueColumn)
 {
   const auto result = query.exec(
     std::format(
-      "select \"valueUid\" from {} where {} = $1 order by \"valueUid\"",
+      "select {0} from {1} where {2} = $1 order by {0}",
+      query.quote_name(valueColumn),
       QualifiedTable(query, table),
       query.quote_name(ownerColumn)),
     pqxx::params(ownerKey));
-  std::set<data::Uid> values;
+
+  Values values;
   for (const auto& row : result)
   {
-    values.emplace(row["valueUid"].as<data::Uid>());
+    values.insert(values.end(), row[0].as<data::Uid>());
   }
   return values;
 }
 
-void WriteCharacterSkills(
-  pqxx::work& query,
+//! Verifies the position of a row read from an ordered child table.
+void VerifyPosition(
+  const pqxx::row& row,
+  const std::size_t expectedPosition)
+{
+  if (FieldOf(row, "position").as<uint32_t>() != expectedPosition)
+  {
+    throw std::runtime_error("Child record has an invalid position");
+  }
+}
+
+constexpr auto UserColumns = std::to_array<Column>({
+  {"token"},
+  {"characterUid", "character"},
+  {"lastSeenOnline"}});
+
+pqxx::params UserParams(
+  const data::User& user)
+{
+  return pqxx::params(
+    WriteField(user.token()),
+    WriteField(user.characterUid()),
+    WriteField(user.lastSeenOnline()));
+}
+
+constexpr auto InfractionColumns = std::to_array<Column>({
+  {"description"},
+  {"punishment"},
+  {"duration"},
+  {"createdAt"}});
+
+pqxx::params InfractionParams(
+  const data::Infraction& infraction)
+{
+  return pqxx::params(
+    WriteField(infraction.description()),
+    WriteField(infraction.punishment()),
+    WriteField(infraction.duration()),
+    WriteField(infraction.createdAt()));
+}
+
+//! Columns of the character without the name, which is assigned only by `ClaimCharacterName`.
+constexpr auto CharacterColumns = std::to_array<Column>({
+  {"introduction"},
+  {"level"},
+  {"experience"},
+  {"carrots"},
+  {"cash"},
+  {"role"},
+  {"staffRank"},
+  {"partsModelId"},
+  {"partsMouthId"},
+  {"partsFaceId"},
+  {"appearanceVoiceId"},
+  {"appearanceHeadSize"},
+  {"appearanceHeight"},
+  {"appearanceThighVolume"},
+  {"appearanceLegVolume"},
+  {"appearanceEmblemId"},
+  {"guildUid", "guild"},
+  {"horseSlotCount"},
+  {.name = "mountUid", .referencedTable = "horse", .isOwned = true},
+  {"petUid", "pet"},
+  {"ranchExperience"},
+  {"totalRaces"},
+  {"isRanchLocked"},
+  {"isIntroCompleted"},
+  {"settingsUid", "settings"},
+  {"dailyQuestGroupUid", "dailyQuestGroup"},
+  {"mailboxHasNewMail"}});
+
+pqxx::params CharacterParams(
+  const data::Character& character)
+{
+  return pqxx::params(
+    WriteField(character.introduction()),
+    WriteField(character.level()),
+    WriteField(character.experience()),
+    WriteField(character.carrots()),
+    WriteField(character.cash()),
+    WriteField(character.role()),
+    WriteField(character.staffRank()),
+    WriteField(character.parts.modelId()),
+    WriteField(character.parts.mouthId()),
+    WriteField(character.parts.faceId()),
+    WriteField(character.appearance.voiceId()),
+    WriteField(character.appearance.headSize()),
+    WriteField(character.appearance.height()),
+    WriteField(character.appearance.thighVolume()),
+    WriteField(character.appearance.legVolume()),
+    WriteField(character.appearance.emblemId()),
+    WriteField(character.guildUid()),
+    WriteField(character.horseSlotCount()),
+    WriteField(character.mountUid()),
+    WriteField(character.petUid()),
+    WriteField(character.ranchManagement.ranchExperience()),
+    WriteField(character.ranchManagement.totalRaces()),
+    WriteField(character.isRanchLocked()),
+    WriteField(character.isIntroCompleted()),
+    WriteField(character.settingsUid()),
+    WriteField(character.dailyQuestGroupUid()),
+    WriteField(character.mailbox.hasNewMail()));
+}
+
+constexpr auto HorseColumns = std::to_array<Column>({
+  {"tid"},
+  {"name"},
+  {"partsSkinTid"},
+  {"partsFaceTid"},
+  {"partsManeTid"},
+  {"partsTailTid"},
+  {"appearanceScale"},
+  {"appearanceLegLength"},
+  {"appearanceLegVolume"},
+  {"appearanceBodyLength"},
+  {"appearanceBodyVolume"},
+  {"statsAgility"},
+  {"statsCourage"},
+  {"statsRush"},
+  {"statsEndurance"},
+  {"statsAmbition"},
+  {"masterySpurMagicCount"},
+  {"masteryJumpCount"},
+  {"masterySlidingTime"},
+  {"masteryGlidingDistance"},
+  {"rating"},
+  {"clazz"},
+  {"clazzProgress"},
+  {"grade"},
+  {"growthPoints"},
+  {"breedingCount"},
+  {"breedingCombo"},
+  {"type"},
+  {"dateOfBirth"},
+  {"tendency"},
+  {"spirit"},
+  {"potentialType"},
+  {"potentialLevel"},
+  {"potentialValue"},
+  {"luckState"},
+  {"fatigue"},
+  {"emblemUid"},
+  {"mountConditionStamina"},
+  {"mountConditionCharm"},
+  {"mountConditionFriendliness"},
+  {"mountConditionInjury"},
+  {"mountConditionPlenitude"},
+  {"mountConditionBodyDirtiness"},
+  {"mountConditionManeDirtiness"},
+  {"mountConditionTailDirtiness"},
+  {"mountConditionBodyPolish"},
+  {"mountConditionManePolish"},
+  {"mountConditionTailPolish"},
+  {"mountConditionAttachment"},
+  {"mountConditionBoredom"},
+  {"mountConditionLastDailyCareTick"},
+  {"mountConditionStopAmendsPoint"},
+  {"mountInfoBoostsInARow"},
+  {"mountInfoWinsSpeedSingle"},
+  {"mountInfoWinsSpeedTeam"},
+  {"mountInfoWinsMagicSingle"},
+  {"mountInfoWinsMagicTeam"},
+  {"mountInfoTotalDistance"},
+  {"mountInfoTopSpeed"},
+  {"mountInfoLongestGlideDistance"},
+  {"mountInfoParticipated"},
+  {"mountInfoCumulativePrize"},
+  {"mountInfoBiggestPrize"},
+  {"ancestorsFather", "horse"},
+  {"ancestorsMother", "horse"},
+  {"lineage"}});
+
+pqxx::params HorseParams(
+  const data::Horse& horse)
+{
+  return pqxx::params(
+    WriteField(horse.tid()),
+    WriteField(horse.name()),
+    WriteField(horse.parts.skinTid()),
+    WriteField(horse.parts.faceTid()),
+    WriteField(horse.parts.maneTid()),
+    WriteField(horse.parts.tailTid()),
+    WriteField(horse.appearance.scale()),
+    WriteField(horse.appearance.legLength()),
+    WriteField(horse.appearance.legVolume()),
+    WriteField(horse.appearance.bodyLength()),
+    WriteField(horse.appearance.bodyVolume()),
+    WriteField(horse.stats.agility()),
+    WriteField(horse.stats.courage()),
+    WriteField(horse.stats.rush()),
+    WriteField(horse.stats.endurance()),
+    WriteField(horse.stats.ambition()),
+    WriteField(horse.mastery.spurMagicCount()),
+    WriteField(horse.mastery.jumpCount()),
+    WriteField(horse.mastery.slidingTime()),
+    WriteField(horse.mastery.glidingDistance()),
+    WriteField(horse.rating()),
+    WriteField(horse.clazz()),
+    WriteField(horse.clazzProgress()),
+    WriteField(horse.grade()),
+    WriteField(horse.growthPoints()),
+    WriteField(horse.breedingCount()),
+    WriteField(horse.breedingCombo()),
+    WriteField(horse.type()),
+    WriteField(horse.dateOfBirth()),
+    WriteField(horse.tendency()),
+    WriteField(horse.spirit()),
+    WriteField(horse.potential.type()),
+    WriteField(horse.potential.level()),
+    WriteField(horse.potential.value()),
+    WriteField(horse.luckState()),
+    WriteField(horse.fatigue()),
+    WriteField(horse.emblemUid()),
+    WriteField(horse.mountCondition.stamina()),
+    WriteField(horse.mountCondition.charm()),
+    WriteField(horse.mountCondition.friendliness()),
+    WriteField(horse.mountCondition.injury()),
+    WriteField(horse.mountCondition.plenitude()),
+    WriteField(horse.mountCondition.bodyDirtiness()),
+    WriteField(horse.mountCondition.maneDirtiness()),
+    WriteField(horse.mountCondition.tailDirtiness()),
+    WriteField(horse.mountCondition.bodyPolish()),
+    WriteField(horse.mountCondition.manePolish()),
+    WriteField(horse.mountCondition.tailPolish()),
+    WriteField(horse.mountCondition.attachment()),
+    WriteField(horse.mountCondition.boredom()),
+    WriteField(horse.mountCondition.lastDailyCareTick()),
+    WriteField(horse.mountCondition.stopAmendsPoint()),
+    WriteField(horse.mountInfo.boostsInARow()),
+    WriteField(horse.mountInfo.winsSpeedSingle()),
+    WriteField(horse.mountInfo.winsSpeedTeam()),
+    WriteField(horse.mountInfo.winsMagicSingle()),
+    WriteField(horse.mountInfo.winsMagicTeam()),
+    WriteField(horse.mountInfo.totalDistance()),
+    WriteField(horse.mountInfo.topSpeed()),
+    WriteField(horse.mountInfo.longestGlideDistance()),
+    WriteField(horse.mountInfo.participated()),
+    WriteField(horse.mountInfo.cumulativePrize()),
+    WriteField(horse.mountInfo.biggestPrize()),
+    WriteField(horse.ancestors.father),
+    WriteField(horse.ancestors.mother),
+    WriteField(horse.lineage()));
+}
+
+constexpr auto ItemColumns = std::to_array<Column>({
+  {"tid"},
+  {"count"},
+  {"duration"},
+  {"createdAt"}});
+
+pqxx::params ItemParams(
+  const data::Item& item)
+{
+  return pqxx::params(
+    WriteField(item.tid()),
+    WriteField(item.count()),
+    WriteField(item.duration()),
+    WriteField(item.createdAt()));
+}
+
+constexpr auto StorageItemColumns = std::to_array<Column>({
+  {"sender"},
+  {"message"},
+  {"carrots"},
+  {"checked"},
+  {"createdAt"},
+  {"duration"},
+  {"goodsSq"},
+  {"priceId"}});
+
+pqxx::params StorageItemParams(
+  const data::StorageItem& storageItem)
+{
+  return pqxx::params(
+    WriteField(storageItem.sender()),
+    WriteField(storageItem.message()),
+    WriteField(storageItem.carrots()),
+    WriteField(storageItem.checked()),
+    WriteField(storageItem.createdAt()),
+    WriteField(storageItem.duration()),
+    WriteField(storageItem.goodsSq()),
+    WriteField(storageItem.priceId()));
+}
+
+constexpr auto EggColumns = std::to_array<Column>({
+  {"itemUid", "item"},
+  {"itemTid"},
+  {"incubatedAt"},
+  {"incubatorSlot"},
+  {"boostsUsed"}});
+
+pqxx::params EggParams(
+  const data::Egg& egg)
+{
+  return pqxx::params(
+    WriteField(egg.itemUid()),
+    WriteField(egg.itemTid()),
+    WriteField(egg.incubatedAt()),
+    WriteField(egg.incubatorSlot()),
+    WriteField(egg.boostsUsed()));
+}
+
+constexpr auto PetColumns = std::to_array<Column>({
+  {"itemUid", "item"},
+  {"petId"},
+  {"name"},
+  {"birthDate"}});
+
+pqxx::params PetParams(
+  const data::Pet& pet)
+{
+  return pqxx::params(
+    WriteField(pet.itemUid()),
+    WriteField(pet.petId()),
+    WriteField(pet.name()),
+    WriteField(pet.birthDate()));
+}
+
+constexpr auto HousingColumns = std::to_array<Column>({
+  {"housingId"},
+  {"expiresAt"},
+  {"durability"}});
+
+pqxx::params HousingParams(
+  const data::Housing& housing)
+{
+  return pqxx::params(
+    WriteField(housing.housingId()),
+    WriteField(housing.expiresAt()),
+    WriteField(housing.durability()));
+}
+
+constexpr auto GuildColumns = std::to_array<Column>({
+  {"name"},
+  {"description"},
+  {"owner", "character"},
+  {"rank"},
+  {"totalWins"},
+  {"totalLosses"},
+  {"seasonalWins"},
+  {"seasonalLosses"}});
+
+pqxx::params GuildParams(
+  const data::Guild& guild)
+{
+  return pqxx::params(
+    WriteField(guild.name()),
+    WriteField(guild.description()),
+    WriteField(guild.owner()),
+    WriteField(guild.rank()),
+    WriteField(guild.totalWins()),
+    WriteField(guild.totalLosses()),
+    WriteField(guild.seasonalWins()),
+    WriteField(guild.seasonalLosses()));
+}
+
+constexpr auto SettingsColumns = std::to_array<Column>({
+  {"hasKeyboardBindings"},
+  {"hasMacros"},
+  {"hasGamepadBindings"},
+  {"age"},
+  {"hideAge"}});
+
+pqxx::params SettingsParams(
+  const data::Settings& settings)
+{
+  return pqxx::params(
+    settings.keyboardBindings().has_value(),
+    settings.macros().has_value(),
+    settings.gamepadBindings().has_value(),
+    WriteField(settings.age()),
+    WriteField(settings.hideAge()));
+}
+
+constexpr auto DailyQuestGroupColumns = std::to_array<Column>({
+  {"rewardId"},
+  {"rewardType"},
+  {"rewardPoints"},
+  {"carrotsClaimed"}});
+
+pqxx::params DailyQuestGroupParams(
+  const data::DailyQuestGroup& group)
+{
+  return pqxx::params(
+    WriteField(group.rewardId()),
+    WriteField(group.rewardType()),
+    WriteField(group.rewardPoints()),
+    WriteField(group.carrotsClaimed()));
+}
+
+constexpr auto MailColumns = std::to_array<Column>({
+  {"senderUid", "character"},
+  {"recipientUid", "character"},
+  {"isRead"},
+  {"isDeleted"},
+  {"type"},
+  {"claimUid", "reward", "claimUid"},
+  {"createdAt"},
+  {"body"}});
+
+pqxx::params MailParams(
+  const data::Mail& mail)
+{
+  return pqxx::params(
+    WriteField(mail.from()),
+    WriteField(mail.to()),
+    WriteField(mail.isRead()),
+    WriteField(mail.isDeleted()),
+    WriteField(mail.type()),
+    WriteField(mail.claimUid()),
+    WriteField(mail.createdAt()),
+    WriteField(mail.body()));
+}
+
+constexpr auto QuestColumns = std::to_array<Column>({
+  {"questId"},
+  {"isCompleted"},
+  {"progress"}});
+
+pqxx::params QuestParams(
+  const data::Quest& quest)
+{
+  return pqxx::params(
+    WriteField(quest.questId()),
+    WriteField(quest.isCompleted()),
+    WriteField(quest.progress()));
+}
+
+constexpr auto StallionColumns = std::to_array<Column>({
+  {"horseUid", "horse"},
+  {"ownerUid", "character"},
+  {"breedingCharge"},
+  {"timesMated"},
+  {"registeredAt"},
+  {"expiresAt"}});
+
+pqxx::params StallionParams(
+  const data::Stallion& stallion)
+{
+  return pqxx::params(
+    WriteField(stallion.horseUid()),
+    WriteField(stallion.ownerUid()),
+    WriteField(stallion.breedingCharge()),
+    WriteField(stallion.timesMated()),
+    WriteField(stallion.registeredAt()),
+    WriteField(stallion.expiresAt()));
+}
+
+constexpr auto RewardColumns = std::to_array<Column>({
+  {"characterUid", "character"},
+  {"type"},
+  {"carrots"},
+  {"isClaimed"},
+  {"createdAt"},
+  {"claimedAt"}});
+
+pqxx::params RewardParams(
+  const data::Reward& reward)
+{
+  return pqxx::params(
+    WriteField(reward.characterUid()),
+    WriteField(reward.type()),
+    WriteField(reward.carrots()),
+    WriteField(reward.isClaimed()),
+    WriteField(reward.createdAt()),
+    WriteField(reward.claimedAt()));
+}
+
+void WriteCharacterSkillSet(
+  pqxx::transaction_base& query,
   const data::Uid uid,
   const std::string_view mode,
   const data::Character::Skills::Sets& skills)
 {
-  query.exec("insert into \"data\".\"characterSkills\" "
-             "(\"characterUid\", \"mode\", \"activeSetId\", \"set1Slot1\", "
-             "\"set1Slot2\", \"set2Slot1\", \"set2Slot2\") "
-             "values ($1, $2, $3, $4, $5, $6, $7)",
+  query.exec(
+    "insert into \"data\".\"characterSkillSet\" "
+    "(\"characterUid\", \"mode\", \"activeSetId\", \"set1Slot1\", \"set1Slot2\", \"set2Slot1\", \"set2Slot2\") "
+    "values ($1, $2, $3, $4, $5, $6, $7)",
     pqxx::params(
       uid,
       mode,
@@ -215,71 +981,87 @@ void WriteCharacterSkills(
 }
 
 void WriteCharacterRelations(
-  pqxx::work& query,
+  pqxx::transaction_base& query,
   const data::Uid uid,
   const data::Character& character)
 {
-  WriteUidSet(query, "characterContactsPending", "characterUid", uid, character.contacts.pending());
-  WriteUidList(query, "characterGifts", "characterUid", uid, character.gifts());
-  WriteUidList(query, "characterPurchases", "characterUid", uid, character.purchases());
-  WriteUidList(query, "characterInventory", "characterUid", uid, character.inventory());
-  WriteUidList(query, "characterEquipment", "characterUid", uid, character.characterEquipment());
-  WriteUidList(query, "characterHorses", "characterUid", uid, character.horses());
-  WriteUidSet(query, "characterBreedingWishlist", "characterUid", uid, character.breedingWishlist());
-  WriteUidList(query, "characterPets", "characterUid", uid, character.pets());
-  WriteUidList(query, "characterEggs", "characterUid", uid, character.eggs());
-  WriteUidList(query, "characterHousing", "characterUid", uid, character.housing());
-  WriteUidList(query, "characterMailboxInbox", "characterUid", uid, character.mailbox.inbox());
-  WriteUidList(query, "characterMailboxSent", "characterUid", uid, character.mailbox.sent());
-  WriteUidList(query, "characterQuests", "characterUid", uid, character.quests());
+  WriteUids(query, "characterContactPending", "characterUid", uid,
+    "contactUid", "character", character.contacts.pending());
+  WriteUids(query, "characterGift", "characterUid", uid,
+    "storageItemUid", "storageItem", character.gifts());
+  WriteUids(query, "characterPurchase", "characterUid", uid,
+    "storageItemUid", "storageItem", character.purchases());
+  WriteUids(query, "characterInventory", "characterUid", uid,
+    "itemUid", "item", character.inventory(), Ownership::Permanent);
+  WriteUids(query, "characterEquipment", "characterUid", uid,
+    "itemUid", "item", character.characterEquipment(), Ownership::Permanent);
+  WriteUids(query, "characterHorse", "characterUid", uid,
+    "horseUid", "horse", character.horses(), Ownership::Permanent);
+  WriteUids(query, "characterBreedingWishlist", "characterUid", uid,
+    "horseUid", "horse", character.breedingWishlist());
+  WriteUids(query, "characterPet", "characterUid", uid,
+    "petUid", "pet", character.pets());
+  WriteUids(query, "characterEgg", "characterUid", uid,
+    "eggUid", "egg", character.eggs());
+  WriteUids(query, "characterHousing", "characterUid", uid,
+    "housingUid", "housing", character.housing());
+  WriteUidList(query, "characterMailboxInbox", "characterUid", uid,
+    "mailUid", "mail", character.mailbox.inbox());
+  WriteUidList(query, "characterMailboxSent", "characterUid", uid,
+    "mailUid", "mail", character.mailbox.sent());
+  WriteUids(query, "characterQuest", "characterUid", uid,
+    "questUid", "quest", character.quests());
 
-  query.exec("delete from \"data\".\"characterContactGroups\" where "
-             "\"characterUid\" = $1",
-    pqxx::params(uid));
-  for (const auto& [key, group] : character.contacts.groups())
+  // Deleting the groups cascades to their members.
+  DeleteRecord(query, "characterContactGroup", "characterUid", uid);
+  for (const auto& [groupUid, group] : character.contacts.groups())
   {
     query.exec(
-      "insert into \"data\".\"characterContactGroups\" "
-      "(\"characterUid\", \"groupKey\", \"uid\", \"name\", \"createdAt\") "
-      "values ($1, $2, $3, $4, $5)",
+      "insert into \"data\".\"characterContactGroup\" "
+      "(\"characterUid\", \"groupUid\", \"name\", \"createdAt\") "
+      "values ($1, $2, $3, $4)",
       pqxx::params(
         uid,
-        key,
-        group.uid,
+        groupUid,
         group.name,
         WriteField(group.createdAt)));
+
+    // Members which do not exist are skipped.
     for (const auto member : group.members)
     {
       query.exec(
-        "insert into \"data\".\"characterContactGroupMembers\" "
-        "(\"characterUid\", \"groupKey\", \"memberUid\") values ($1, $2, $3)",
+        "insert into \"data\".\"characterContactGroupMember\" "
+        "(\"characterUid\", \"groupUid\", \"memberUid\") "
+        "select $1::\"data\".\"uint32\", $2::\"data\".\"uint32\", \"uid\" "
+        "from \"data\".\"character\" "
+        "where \"uid\" = $3",
         pqxx::params(
           uid,
-          key,
+          groupUid,
           member));
     }
   }
 
-  query.exec(
-    "delete from \"data\".\"characterSkills\" where \"characterUid\" = $1",
-    pqxx::params(uid));
-  WriteCharacterSkills(query, uid, "speed", character.skills.speed());
-  WriteCharacterSkills(query, uid, "magic", character.skills.magic());
+  DeleteRecord(query, "characterSkillSet", "characterUid", uid);
+  WriteCharacterSkillSet(query, uid, "speed", character.skills.speed());
+  WriteCharacterSkillSet(query, uid, "magic", character.skills.magic());
 
-  query.exec(
-    "delete from \"data\".\"characterMissions\" where \"characterUid\" = $1",
-    pqxx::params(uid));
+  // Deleting the missions cascades to their progress.
+  DeleteRecord(query, "characterMission", "characterUid", uid);
   for (const auto& [key, mission] : character.missions())
   {
-    query.exec("insert into \"data\".\"characterMissions\" "
-               "(\"characterUid\", \"missionKey\", \"id\") values ($1, $2, $3)",
+    query.exec(
+      "insert into \"data\".\"characterMission\" "
+      "(\"characterUid\", \"missionKey\", \"id\") "
+      "values ($1, $2, $3)",
       pqxx::params(
         uid,
         key,
         mission.id));
-    int64_t position = 0;
-    for (const auto& progress : mission.progress)
+
+    for (uint32_t position = 0; position < mission.progress.size(); ++position)
     {
+      const auto& progress = mission.progress[position];
       query.exec(
         "insert into \"data\".\"characterMissionProgress\" "
         "(\"characterUid\", \"missionKey\", \"position\", \"id\", \"value\") "
@@ -290,83 +1072,100 @@ void WriteCharacterRelations(
           position,
           progress.id,
           progress.value));
-      ++position;
     }
   }
 }
 
+//! Writes the character, except for its name, and its relations.
+void WriteCharacter(
+  pqxx::transaction_base& query,
+  const data::Uid uid,
+  const data::Character& character)
+{
+  // The mount is claimed first, only a mount owned by the character is stored.
+  ClaimOwnership(query, "horse", uid, character.mountUid());
+  // The name is not stored, it is assigned only by `ClaimCharacterName`
+  // so that a name conflict can never fail the store of the whole character.
+  UpdateRecord(query, "character", CharacterColumns, "uid", uid, CharacterParams(character));
+  WriteCharacterRelations(query, uid, character);
+}
+
 void ReadCharacterRelations(
-  pqxx::work& query,
+  pqxx::transaction_base& query,
   const data::Uid uid,
   data::Character& character)
 {
-  character.contacts.pending =
-    ReadUidSet(query, "characterContactsPending", "characterUid", uid);
-  character.gifts = ReadUidList(query, "characterGifts", "characterUid", uid);
-  character.purchases =
-    ReadUidList(query, "characterPurchases", "characterUid", uid);
-  character.inventory =
-    ReadUidList(query, "characterInventory", "characterUid", uid);
-  character.characterEquipment =
-    ReadUidList(query, "characterEquipment", "characterUid", uid);
-  character.horses = ReadUidList(query, "characterHorses", "characterUid", uid);
-  character.breedingWishlist =
-    ReadUidSet(query, "characterBreedingWishlist", "characterUid", uid);
-  character.pets = ReadUidList(query, "characterPets", "characterUid", uid);
-  character.eggs = ReadUidList(query, "characterEggs", "characterUid", uid);
-  character.housing =
-    ReadUidList(query, "characterHousing", "characterUid", uid);
-  character.mailbox.inbox =
-    ReadUidList(query, "characterMailboxInbox", "characterUid", uid);
-  character.mailbox.sent =
-    ReadUidList(query, "characterMailboxSent", "characterUid", uid);
-  character.quests = ReadUidList(query, "characterQuests", "characterUid", uid);
+  character.contacts.pending = ReadUids<std::set<data::Uid>>(
+    query, "characterContactPending", "characterUid", uid, "contactUid");
+  character.gifts = ReadUids<std::vector<data::Uid>>(
+    query, "characterGift", "characterUid", uid, "storageItemUid");
+  character.purchases = ReadUids<std::vector<data::Uid>>(
+    query, "characterPurchase", "characterUid", uid, "storageItemUid");
+  character.inventory = ReadUids<std::vector<data::Uid>>(
+    query, "characterInventory", "characterUid", uid, "itemUid");
+  character.characterEquipment = ReadUids<std::vector<data::Uid>>(
+    query, "characterEquipment", "characterUid", uid, "itemUid");
+  character.horses = ReadUids<std::vector<data::Uid>>(
+    query, "characterHorse", "characterUid", uid, "horseUid");
+  character.breedingWishlist = ReadUids<std::set<data::Uid>>(
+    query, "characterBreedingWishlist", "characterUid", uid, "horseUid");
+  character.pets = ReadUids<std::vector<data::Uid>>(
+    query, "characterPet", "characterUid", uid, "petUid");
+  character.eggs = ReadUids<std::vector<data::Uid>>(
+    query, "characterEgg", "characterUid", uid, "eggUid");
+  character.housing = ReadUids<std::vector<data::Uid>>(
+    query, "characterHousing", "characterUid", uid, "housingUid");
+  character.mailbox.inbox = ReadUidList(
+    query, "characterMailboxInbox", "characterUid", uid, "mailUid");
+  character.mailbox.sent = ReadUidList(
+    query, "characterMailboxSent", "characterUid", uid, "mailUid");
+  character.quests = ReadUids<std::vector<data::Uid>>(
+    query, "characterQuest", "characterUid", uid, "questUid");
 
   std::map<data::Uid, data::Character::Contacts::Group> groups;
-  const auto groupResult =
-    query.exec("select \"groupKey\", \"uid\", \"name\", \"createdAt\" "
-               "from \"data\".\"characterContactGroups\" where "
-               "\"characterUid\" = $1 order by \"groupKey\"",
-      pqxx::params(uid));
+  const auto groupResult = query.exec(
+    "select \"groupUid\", \"name\", \"createdAt\" "
+    "from \"data\".\"characterContactGroup\" "
+    "where \"characterUid\" = $1",
+    pqxx::params(uid));
   for (const auto& row : groupResult)
   {
     data::Character::Contacts::Group group;
-    group.uid = row["uid"].as<data::Uid>();
-    group.name = row["name"].as<std::string>();
-    group.createdAt = data::Clock::time_point(
-      std::chrono::duration_cast<data::Clock::duration>(
-        std::chrono::seconds(row["createdAt"].as<int64_t>())));
-    groups.emplace(row["groupKey"].as<data::Uid>(), std::move(group));
+    group.uid = FieldOf(row, "groupUid").as<data::Uid>();
+    group.name = FieldOf(row, "name").as<std::string>();
+    group.createdAt = ToTimePoint(FieldOf(row, "createdAt").as<int64_t>());
+    groups.emplace(group.uid, std::move(group));
   }
+
   const auto memberResult = query.exec(
-    "select \"groupKey\", \"memberUid\" "
-    "from \"data\".\"characterContactGroupMembers\" "
-    "where \"characterUid\" = $1 order by \"groupKey\", \"memberUid\"",
+    "select \"groupUid\", \"memberUid\" "
+    "from \"data\".\"characterContactGroupMember\" "
+    "where \"characterUid\" = $1",
     pqxx::params(uid));
   for (const auto& row : memberResult)
   {
-    groups.at(row["groupKey"].as<data::Uid>())
-      .members.insert(row["memberUid"].as<data::Uid>());
+    groups.at(FieldOf(row, "groupUid").as<data::Uid>())
+      .members.insert(FieldOf(row, "memberUid").as<data::Uid>());
   }
   character.contacts.groups = std::move(groups);
 
   data::Character::Skills::Sets speedSkills;
   data::Character::Skills::Sets magicSkills;
-  const auto skillResult =
-    query.exec("select \"mode\", \"activeSetId\", \"set1Slot1\", "
-               "\"set1Slot2\", \"set2Slot1\", \"set2Slot2\" "
-               "from \"data\".\"characterSkills\" where \"characterUid\" = "
-               "$1 order by \"mode\"",
-      pqxx::params(uid));
-  for (const auto& row : skillResult)
+  const auto skillSetResult = query.exec(
+    "select \"mode\", \"activeSetId\", \"set1Slot1\", \"set1Slot2\", \"set2Slot1\", \"set2Slot2\" "
+    "from \"data\".\"characterSkillSet\" "
+    "where \"characterUid\" = $1",
+    pqxx::params(uid));
+  for (const auto& row : skillSetResult)
   {
     data::Character::Skills::Sets skills;
-    skills.activeSetId = row["activeSetId"].as<uint32_t>();
-    skills.set1.slot1 = row["set1Slot1"].as<uint32_t>();
-    skills.set1.slot2 = row["set1Slot2"].as<uint32_t>();
-    skills.set2.slot1 = row["set2Slot1"].as<uint32_t>();
-    skills.set2.slot2 = row["set2Slot2"].as<uint32_t>();
-    const auto mode = row["mode"].as<std::string>();
+    skills.activeSetId = FieldOf(row, "activeSetId").as<uint32_t>();
+    skills.set1.slot1 = FieldOf(row, "set1Slot1").as<uint32_t>();
+    skills.set1.slot2 = FieldOf(row, "set1Slot2").as<uint32_t>();
+    skills.set2.slot1 = FieldOf(row, "set2Slot1").as<uint32_t>();
+    skills.set2.slot2 = FieldOf(row, "set2Slot2").as<uint32_t>();
+
+    const auto mode = FieldOf(row, "mode").as<std::string>();
     if (mode == "speed")
     {
       speedSkills = skills;
@@ -385,43 +1184,46 @@ void ReadCharacterRelations(
 
   std::map<uint32_t, data::Character::Mission> missions;
   const auto missionResult = query.exec(
-    "select \"missionKey\", \"id\" from \"data\".\"characterMissions\" "
-    "where \"characterUid\" = $1 order by \"missionKey\"",
+    "select \"missionKey\", \"id\" "
+    "from \"data\".\"characterMission\" "
+    "where \"characterUid\" = $1",
     pqxx::params(uid));
   for (const auto& row : missionResult)
   {
     data::Character::Mission mission;
-    mission.id = row["id"].as<uint32_t>();
-    missions.emplace(row["missionKey"].as<uint32_t>(), std::move(mission));
+    mission.id = FieldOf(row, "id").as<uint32_t>();
+    missions.emplace(FieldOf(row, "missionKey").as<uint32_t>(), std::move(mission));
   }
+
   const auto progressResult = query.exec(
-    "select \"missionKey\", \"id\", \"value\" from "
-    "\"data\".\"characterMissionProgress\" "
-    "where \"characterUid\" = $1 order by \"missionKey\", \"position\"",
+    "select \"missionKey\", \"id\", \"value\" "
+    "from \"data\".\"characterMissionProgress\" "
+    "where \"characterUid\" = $1 "
+    "order by \"missionKey\", \"position\"",
     pqxx::params(uid));
   for (const auto& row : progressResult)
   {
-    missions.at(row["missionKey"].as<uint32_t>())
-      .progress.push_back({.id = row["id"].as<uint32_t>(),
-        .value = row["value"].as<uint32_t>()});
+    missions.at(FieldOf(row, "missionKey").as<uint32_t>())
+      .progress.push_back({
+        .id = FieldOf(row, "id").as<uint32_t>(),
+        .value = FieldOf(row, "value").as<uint32_t>()});
   }
   character.missions = std::move(missions);
 }
 
 void WriteStorageItemContents(
-  pqxx::work& query,
+  pqxx::transaction_base& query,
   const data::Uid uid,
   const std::vector<data::StorageItem::Item>& items)
 {
-  query.exec(
-    "delete from \"data\".\"storageItemContents\" where \"storageItemUid\" = $1",
-    pqxx::params(
-      uid));
-  for (std::size_t position = 0; position < items.size(); ++position)
+  DeleteRecord(query, "storageItemContent", "storageItemUid", uid);
+  for (uint32_t position = 0; position < items.size(); ++position)
   {
     const auto& item = items[position];
     query.exec(
-      "insert into \"data\".\"storageItemContents\" (\"storageItemUid\", \"position\", \"tid\", \"count\", \"duration\") values ($1, $2, $3, $4, $5)",
+      "insert into \"data\".\"storageItemContent\" "
+      "(\"storageItemUid\", \"position\", \"tid\", \"count\", \"duration\") "
+      "values ($1, $2, $3, $4, $5)",
       pqxx::params(
         uid,
         position,
@@ -432,48 +1234,52 @@ void WriteStorageItemContents(
 }
 
 std::vector<data::StorageItem::Item> ReadStorageItemContents(
-  pqxx::work& query,
+  pqxx::transaction_base& query,
   const data::Uid uid)
 {
   const auto result = query.exec(
-    "select \"position\", \"tid\", \"count\", \"duration\" from \"data\".\"storageItemContents\" where \"storageItemUid\" = $1 order by \"position\"",
-    pqxx::params(
-      uid));
+    "select \"position\", \"tid\", \"count\", \"duration\" "
+    "from \"data\".\"storageItemContent\" "
+    "where \"storageItemUid\" = $1 "
+    "order by \"position\"",
+    pqxx::params(uid));
+
   std::vector<data::StorageItem::Item> items;
   items.reserve(result.size());
   for (const auto& row : result)
   {
-    if (row["position"].as<std::size_t>() != items.size())
-    {
-      throw std::runtime_error("Storage item contents have an invalid position");
-    }
-
-    items.push_back({.tid = row["tid"].as<data::Tid>(),
-      .count = row["count"].as<uint32_t>(),
-      .duration = std::chrono::seconds(row["duration"].as<int64_t>())});
+    VerifyPosition(row, items.size());
+    items.push_back({
+      .tid = FieldOf(row, "tid").as<data::Tid>(),
+      .count = FieldOf(row, "count").as<uint32_t>(),
+      .duration = std::chrono::seconds(FieldOf(row, "duration").as<int64_t>())});
   }
   return items;
 }
 
-void WriteSettingsKeyboardBindings(
-  pqxx::work& query,
+//! Writes the keyboard or gamepad bindings to their table.
+void WriteSettingsBindings(
+  pqxx::transaction_base& query,
+  const std::string_view table,
   const data::Uid uid,
   const std::optional<std::vector<data::Settings::Option>>& bindings)
 {
-  query.exec(
-    "delete from \"data\".\"settingsKeyboardBindings\" where \"settingsUid\" = $1",
-    pqxx::params(
-      uid));
+  DeleteRecord(query, table, "settingsUid", uid);
   if (not bindings)
   {
     return;
   }
 
-  for (std::size_t position = 0; position < bindings->size(); ++position)
+  const auto insertSql = std::format(
+    "insert into {} "
+    "(\"settingsUid\", \"position\", \"primaryKey\", \"type\", \"secondaryKey\") "
+    "values ($1, $2, $3, $4, $5)",
+    QualifiedTable(query, table));
+  for (uint32_t position = 0; position < bindings->size(); ++position)
   {
     const auto& binding = bindings->at(position);
     query.exec(
-      "insert into \"data\".\"settingsKeyboardBindings\" (\"settingsUid\", \"position\", \"primaryKey\", \"type\", \"secondaryKey\") values ($1, $2, $3, $4, $5)",
+      insertSql,
       pqxx::params(
         uid,
         position,
@@ -483,8 +1289,10 @@ void WriteSettingsKeyboardBindings(
   }
 }
 
-std::optional<std::vector<data::Settings::Option>> ReadSettingsKeyboardBindings(
-  pqxx::work& query,
+//! Reads the keyboard or gamepad bindings from their table.
+std::optional<std::vector<data::Settings::Option>> ReadSettingsBindings(
+  pqxx::transaction_base& query,
+  const std::string_view table,
   const data::Uid uid,
   const bool present)
 {
@@ -494,101 +1302,44 @@ std::optional<std::vector<data::Settings::Option>> ReadSettingsKeyboardBindings(
   }
 
   const auto result = query.exec(
-    "select \"position\", \"primaryKey\", \"type\", \"secondaryKey\" from \"data\".\"settingsKeyboardBindings\" where \"settingsUid\" = $1 order by \"position\"",
-    pqxx::params(
-      uid));
+    std::format(
+      "select \"position\", \"primaryKey\", \"type\", \"secondaryKey\" "
+      "from {} "
+      "where \"settingsUid\" = $1 "
+      "order by \"position\"",
+      QualifiedTable(query, table)),
+    pqxx::params(uid));
+
   std::vector<data::Settings::Option> bindings;
   bindings.reserve(result.size());
   for (const auto& row : result)
   {
-    if (row["position"].as<std::size_t>() != bindings.size())
-    {
-      throw std::runtime_error("Settings bindings have an invalid position");
-    }
-
-    bindings.push_back({.primaryKey = row["primaryKey"].as<uint32_t>(),
-      .type = row["type"].as<uint32_t>(),
-      .secondaryKey = row["secondaryKey"].as<uint32_t>()});
-  }
-  return bindings;
-}
-
-void WriteSettingsGamepadBindings(
-  pqxx::work& query,
-  const data::Uid uid,
-  const std::optional<std::vector<data::Settings::Option>>& bindings)
-{
-  query.exec(
-    "delete from \"data\".\"settingsGamepadBindings\" where \"settingsUid\" = $1",
-    pqxx::params(
-      uid));
-  if (not bindings)
-  {
-    return;
-  }
-
-  for (std::size_t position = 0; position < bindings->size(); ++position)
-  {
-    const auto& binding = bindings->at(position);
-    query.exec(
-      "insert into \"data\".\"settingsGamepadBindings\" (\"settingsUid\", \"position\", \"primaryKey\", \"type\", \"secondaryKey\") values ($1, $2, $3, $4, $5)",
-      pqxx::params(
-        uid,
-        position,
-        binding.primaryKey,
-        binding.type,
-        binding.secondaryKey));
-  }
-}
-
-std::optional<std::vector<data::Settings::Option>> ReadSettingsGamepadBindings(
-  pqxx::work& query,
-  const data::Uid uid,
-  const bool present)
-{
-  if (not present)
-  {
-    return std::nullopt;
-  }
-
-  const auto result = query.exec(
-    "select \"position\", \"primaryKey\", \"type\", \"secondaryKey\" from \"data\".\"settingsGamepadBindings\" where \"settingsUid\" = $1 order by \"position\"",
-    pqxx::params(
-      uid));
-  std::vector<data::Settings::Option> bindings;
-  bindings.reserve(result.size());
-  for (const auto& row : result)
-  {
-    if (row["position"].as<std::size_t>() != bindings.size())
-    {
-      throw std::runtime_error("Settings bindings have an invalid position");
-    }
-
-    bindings.push_back({.primaryKey = row["primaryKey"].as<uint32_t>(),
-      .type = row["type"].as<uint32_t>(),
-      .secondaryKey = row["secondaryKey"].as<uint32_t>()});
+    VerifyPosition(row, bindings.size());
+    bindings.push_back({
+      .primaryKey = FieldOf(row, "primaryKey").as<uint32_t>(),
+      .type = FieldOf(row, "type").as<uint32_t>(),
+      .secondaryKey = FieldOf(row, "secondaryKey").as<uint32_t>()});
   }
   return bindings;
 }
 
 void WriteSettingsMacros(
-  pqxx::work& query,
+  pqxx::transaction_base& query,
   const data::Uid uid,
   const std::optional<std::array<std::string, 8>>& macros)
 {
-  query.exec(
-    "delete from \"data\".\"settingsMacros\" where \"settingsUid\" = $1",
-    pqxx::params(
-      uid));
+  DeleteRecord(query, "settingsMacro", "settingsUid", uid);
   if (not macros)
   {
     return;
   }
 
-  for (std::size_t position = 0; position < macros->size(); ++position)
+  for (uint32_t position = 0; position < macros->size(); ++position)
   {
     query.exec(
-      "insert into \"data\".\"settingsMacros\" (\"settingsUid\", \"position\", \"value\") values ($1, $2, $3)",
+      "insert into \"data\".\"settingsMacro\" "
+      "(\"settingsUid\", \"position\", \"value\") "
+      "values ($1, $2, $3)",
       pqxx::params(
         uid,
         position,
@@ -597,7 +1348,7 @@ void WriteSettingsMacros(
 }
 
 std::optional<std::array<std::string, 8>> ReadSettingsMacros(
-  pqxx::work& query,
+  pqxx::transaction_base& query,
   const data::Uid uid,
   const bool present)
 {
@@ -607,36 +1358,41 @@ std::optional<std::array<std::string, 8>> ReadSettingsMacros(
   }
 
   const auto result = query.exec(
-    "select \"position\", \"value\" from \"data\".\"settingsMacros\" where \"settingsUid\" = $1 order by \"position\"",
-    pqxx::params(
-      uid));
+    "select \"position\", \"value\" "
+    "from \"data\".\"settingsMacro\" "
+    "where \"settingsUid\" = $1 "
+    "order by \"position\"",
+    pqxx::params(uid));
+
   std::array<std::string, 8> macros{};
   if (result.size() != macros.size())
   {
     throw std::runtime_error("Settings macros have an invalid entry count");
   }
 
+  std::size_t position = 0;
   for (const auto& row : result)
   {
-    macros.at(row["position"].as<std::size_t>()) = row["value"].as<std::string>();
+    VerifyPosition(row, position);
+    macros[position] = FieldOf(row, "value").as<std::string>();
+    ++position;
   }
   return macros;
 }
 
 void WriteDailyQuestEntries(
-  pqxx::work& query,
+  pqxx::transaction_base& query,
   const data::Uid uid,
   const std::array<data::DailyQuestEntry, 3>& entries)
 {
-  query.exec(
-    "delete from \"data\".\"dailyQuestEntries\" where \"dailyQuestGroupUid\" = $1",
-    pqxx::params(
-      uid));
-  for (std::size_t position = 0; position < entries.size(); ++position)
+  DeleteRecord(query, "dailyQuestEntry", "dailyQuestGroupUid", uid);
+  for (uint32_t position = 0; position < entries.size(); ++position)
   {
-    const auto& entry = entries.at(position);
+    const auto& entry = entries[position];
     query.exec(
-      "insert into \"data\".\"dailyQuestEntries\" (\"dailyQuestGroupUid\", \"position\", \"questId\", \"progress\") values ($1, $2, $3, $4)",
+      "insert into \"data\".\"dailyQuestEntry\" "
+      "(\"dailyQuestGroupUid\", \"position\", \"questId\", \"progress\") "
+      "values ($1, $2, $3, $4)",
       pqxx::params(
         uid,
         position,
@@ -646,39 +1402,135 @@ void WriteDailyQuestEntries(
 }
 
 std::array<data::DailyQuestEntry, 3> ReadDailyQuestEntries(
-  pqxx::work& query,
+  pqxx::transaction_base& query,
   const data::Uid uid)
 {
   const auto result = query.exec(
-    "select \"position\", \"questId\", \"progress\" from \"data\".\"dailyQuestEntries\" where \"dailyQuestGroupUid\" = $1 order by \"position\"",
-    pqxx::params(
-      uid));
+    "select \"position\", \"questId\", \"progress\" "
+    "from \"data\".\"dailyQuestEntry\" "
+    "where \"dailyQuestGroupUid\" = $1 "
+    "order by \"position\"",
+    pqxx::params(uid));
+
   std::array<data::DailyQuestEntry, 3> entries{};
   if (result.size() != entries.size())
   {
     throw std::runtime_error("Daily quest group has an invalid entry count");
   }
 
+  std::size_t position = 0;
   for (const auto& row : result)
   {
-    entries.at(row["position"].as<std::size_t>()) = {
-      .questId = row["questId"].as<uint16_t>(),
-      .progress = row["progress"].as<uint32_t>()};
+    VerifyPosition(row, position);
+    entries[position] = {
+      .questId = FieldOf(row, "questId").as<uint32_t>(),
+      .progress = FieldOf(row, "progress").as<uint32_t>()};
+    ++position;
   }
   return entries;
 }
 
 } // namespace
 
-void PqDataSource::Establish(
-  const std::string& url)
+PqDataSource::ConnectionLease::ConnectionLease(
+  PqDataSource& dataSource,
+  std::unique_ptr<pqxx::connection> connection)
+  : _dataSource(dataSource)
+  , _connection(std::move(connection))
 {
-  _connection = std::make_unique<pqxx::connection>(url);
+}
+
+PqDataSource::ConnectionLease::~ConnectionLease()
+{
+  _dataSource.ReleaseConnection(std::move(_connection));
+}
+
+pqxx::connection& PqDataSource::ConnectionLease::operator*() const
+{
+  return *_connection;
+}
+
+void PqDataSource::Establish(
+  const std::string& url,
+  const std::size_t connectionCount)
+{
+  if (connectionCount == 0)
+  {
+    throw std::invalid_argument("Connection pool must have at least one connection");
+  }
+
+  std::vector<std::unique_ptr<pqxx::connection>> connections;
+  connections.reserve(connectionCount);
+  for (std::size_t index = 0; index < connectionCount; ++index)
+  {
+    connections.emplace_back(std::make_unique<pqxx::connection>(url));
+  }
+
+  std::scoped_lock lock(_poolMutex);
+  _url = url;
+  _idleConnections = std::move(connections);
 }
 
 bool PqDataSource::IsConnectionFine()
 {
-  return _connection and _connection->is_open();
+  try
+  {
+    const auto connection = AcquireConnection();
+    return (*connection).is_open();
+  }
+  catch (const std::exception&)
+  {
+    return false;
+  }
+}
+
+PqDataSource::ConnectionLease PqDataSource::AcquireConnection()
+{
+  std::unique_ptr<pqxx::connection> connection;
+  std::string url;
+  {
+    std::unique_lock lock(_poolMutex);
+    if (_url.empty())
+    {
+      throw std::runtime_error("Connection to data source is not established");
+    }
+
+    _poolCondition.wait(lock, [this]()
+    {
+      return not _idleConnections.empty();
+    });
+
+    connection = std::move(_idleConnections.back());
+    _idleConnections.pop_back();
+    url = _url;
+  }
+
+  if (not connection or not connection->is_open())
+  {
+    try
+    {
+      connection = std::make_unique<pqxx::connection>(url);
+    }
+    catch (const std::exception&)
+    {
+      // Return the connection to the pool so that the pool does not shrink,
+      // the next lease will attempt to re-establish it again.
+      ReleaseConnection(std::move(connection));
+      throw;
+    }
+  }
+
+  return ConnectionLease(*this, std::move(connection));
+}
+
+void PqDataSource::ReleaseConnection(
+  std::unique_ptr<pqxx::connection> connection)
+{
+  {
+    std::scoped_lock lock(_poolMutex);
+    _idleConnections.emplace_back(std::move(connection));
+  }
+  _poolCondition.notify_one();
 }
 
 PqDataSource::~PqDataSource() = default;
@@ -686,61 +1538,73 @@ PqDataSource::~PqDataSource() = default;
 void PqDataSource::CreateUser(
   data::User& user)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "insert into \"data\".\"users\" (\"name\", \"token\", \"characterUid\", \"lastSeenOnline\") values ($1, $2, $3, $4)",
-    pqxx::params(
-      WriteField(user.name()),
-      WriteField(user.token()),
-      WriteField(user.characterUid()),
-      WriteField(user.lastSeenOnline())));
-  WriteUidList(query, "userInfractions", "userName", user.name(), user.infractions());
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+
+  pqxx::params params(WriteField(user.name()));
+  params.append(UserParams(user));
+  query.exec(InsertSql(query, "user", PrependColumn({"name"}, UserColumns), "name"), params);
+  WriteUids(query, "userInfraction", "userName", user.name(),
+    "infractionUid", "infraction", user.infractions());
   query.commit();
 }
 
-void PqDataSource::RetrieveUser(
+std::optional<bool> PqDataSource::RetrieveUser(
   const std::string_view& name,
   data::User& user)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("set transaction isolation level repeatable read read only");
-  const auto result = query.exec(
-    "select * from \"data\".\"users\" where \"name\" = $1",
-    pqxx::params(name));
-  if (result.empty())
+  try
   {
-    throw std::runtime_error("User does not exist");
+    const auto connection = AcquireConnection();
+    SnapshotTransaction query(*connection);
+
+    const auto result = query.exec(
+      "select * "
+      "from \"data\".\"user\" "
+      "where \"name\" = $1",
+      pqxx::params(name));
+    if (result.empty())
+    {
+      return false;
+    }
+
+    const auto row = result.one_row();
+    ReadField(row, "name", user.name);
+    ReadField(row, "token", user.token);
+    ReadField(row, "characterUid", user.characterUid);
+    ReadField(row, "lastSeenOnline", user.lastSeenOnline);
+    user.infractions = ReadUids<std::vector<data::Uid>>(query, "userInfraction", "userName", name, "infractionUid");
   }
-  const auto row = result.one_row();
-  ReadField(row, "name", user.name);
-  ReadField(row, "token", user.token);
-  ReadField(row, "characterUid", user.characterUid);
-  ReadField(row, "lastSeenOnline", user.lastSeenOnline);
-  user.infractions = ReadUidList(query, "userInfractions", "userName", name);
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception retrieving user '{}' from the postgres data source: {}", name, x.what());
+    return std::nullopt;
+  }
+
+  return true;
 }
 
 void PqDataSource::StoreUser(
   const std::string_view& name,
   const data::User& user)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"users\" set \"token\" = $2, \"characterUid\" = $3, \"lastSeenOnline\" = $4 where \"name\" = $1",
-    pqxx::params(
-      name,
-      WriteField(user.token()),
-      WriteField(user.characterUid()),
-      WriteField(user.lastSeenOnline())));
-  WriteUidList(query, "userInfractions", "userName", name, user.infractions());
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "user", UserColumns, "name", name, UserParams(user));
+  WriteUids(query, "userInfraction", "userName", name,
+    "infractionUid", "infraction", user.infractions());
   query.commit();
 }
 
 bool PqDataSource::IsUserNameUnique(
   const std::string_view& name)
 {
-  pqxx::work query(RequireConnection(_connection));
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
   const auto result = query.exec(
-    "select 1 from \"data\".\"users\" where lower(\"name\") = lower($1)",
+    "select 1 "
+    "from \"data\".\"user\" "
+    "where \"name\" = $1",
     pqxx::params(name));
   return result.empty();
 }
@@ -748,16 +1612,9 @@ bool PqDataSource::IsUserNameUnique(
 void PqDataSource::CreateInfraction(
   data::Infraction& infraction)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"infractions\" (\"description\", \"punishment\", \"duration\", \"createdAt\") "
-    "values ($1, $2, $3, $4) returning \"uid\"",
-    pqxx::params(
-      WriteField(infraction.description()),
-      WriteField(infraction.punishment()),
-      WriteField(infraction.duration()),
-      WriteField(infraction.createdAt())));
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto uid = InsertRecord(query, "infraction", InfractionColumns, "uid", InfractionParams(infraction));
   query.commit();
   infraction.uid = uid;
 }
@@ -766,16 +1623,9 @@ void PqDataSource::RetrieveInfraction(
   const data::Uid uid,
   data::Infraction& infraction)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "select * from \"data\".\"infractions\" where \"uid\" = $1",
-    pqxx::params(uid));
-  if (result.empty())
-  {
-    throw std::runtime_error("Infraction does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
+  const auto row = SelectRecord(query, "infraction", "uid", uid);
   ReadField(row, "uid", infraction.uid);
   ReadField(row, "description", infraction.description);
   ReadField(row, "punishment", infraction.punishment);
@@ -787,78 +1637,31 @@ void PqDataSource::StoreInfraction(
   const data::Uid uid,
   const data::Infraction& infraction)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"infractions\" set \"description\" = $2, \"punishment\" = $3, \"duration\" = $4, \"createdAt\" = $5 "
-    "where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      WriteField(infraction.description()),
-      WriteField(infraction.punishment()),
-      WriteField(infraction.duration()),
-      WriteField(infraction.createdAt())));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "infraction", InfractionColumns, "uid", uid, InfractionParams(infraction));
   query.commit();
 }
 
 void PqDataSource::DeleteInfraction(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("delete from \"data\".\"infractions\" where \"uid\" = $1", pqxx::params(uid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "infraction", "uid", uid);
   query.commit();
 }
 
 void PqDataSource::CreateCharacter(
   data::Character& character)
 {
-  pqxx::work query(RequireConnection(_connection));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
 
-  const auto result = query.exec(
-    "insert into \"data\".\"characters\" ("
-    "\"name\", \"introduction\", \"level\", \"experience\", "
-    "\"carrots\", \"cash\", \"role\", \"staffRank\", "
-    "\"partsModelId\", \"partsMouthId\", \"partsFaceId\", \"appearanceVoiceId\", "
-    "\"appearanceHeadSize\", \"appearanceHeight\", \"appearanceThighVolume\", \"appearanceLegVolume\", "
-    "\"appearanceEmblemId\", \"guildUid\", \"horseSlotCount\", \"mountUid\", "
-    "\"petUid\", \"ranchExperience\", \"totalRaces\", \"isRanchLocked\", "
-    "\"isIntroCompleted\", \"settingsUid\", \"dailyQuestGroupUid\", \"mailboxHasNewMail\") "
-    "values ("
-    "$1, $2, $3, $4, $5, $6, $7, $8, "
-    "$9, $10, $11, $12, $13, $14, $15, $16, "
-    "$17, $18, $19, $20, $21, $22, $23, $24, "
-    "$25, $26, $27, $28) returning \"uid\"",
-    pqxx::params(
-      WriteField(character.name()),
-      WriteField(character.introduction()),
-      WriteField(character.level()),
-      WriteField(character.experience()),
-      WriteField(character.carrots()),
-      WriteField(character.cash()),
-      WriteField(character.role()),
-      WriteField(character.staffRank()),
-      WriteField(character.parts.modelId()),
-      WriteField(character.parts.mouthId()),
-      WriteField(character.parts.faceId()),
-      WriteField(character.appearance.voiceId()),
-      WriteField(character.appearance.headSize()),
-      WriteField(character.appearance.height()),
-      WriteField(character.appearance.thighVolume()),
-      WriteField(character.appearance.legVolume()),
-      WriteField(character.appearance.emblemId()),
-      WriteField(character.guildUid()),
-      WriteField(character.horseSlotCount()),
-      WriteField(character.mountUid()),
-      WriteField(character.petUid()),
-      WriteField(character.ranchManagement.ranchExperience()),
-      WriteField(character.ranchManagement.totalRaces()),
-      WriteField(character.isRanchLocked()),
-      WriteField(character.isIntroCompleted()),
-      WriteField(character.settingsUid()),
-      WriteField(character.dailyQuestGroupUid()),
-      WriteField(character.mailbox.hasNewMail())));
-
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
-  WriteCharacterRelations(query, uid, character);
+  // The character is inserted first, the store requires its UID to claim the ownership of its records.
+  const auto uid = InsertRecord(
+    query, "character", std::to_array<Column>({{"name"}}), "uid", pqxx::params(WriteField(character.name())));
+  WriteCharacter(query, uid, character);
   query.commit();
   character.uid = uid;
 }
@@ -867,19 +1670,10 @@ void PqDataSource::RetrieveCharacter(
   const data::Uid uid,
   data::Character& character)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("set transaction isolation level repeatable read read only");
+  const auto connection = AcquireConnection();
+  SnapshotTransaction query(*connection);
 
-  const auto result = query.exec(
-    "select * from \"data\".\"characters\" where \"uid\" = $1",
-    pqxx::params(uid));
-
-  if (result.empty())
-  {
-    throw std::runtime_error("Character does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto row = SelectRecord(query, "character", "uid", uid);
   ReadField(row, "uid", character.uid);
   ReadField(row, "name", character.name);
   ReadField(row, "introduction", character.introduction);
@@ -916,74 +1710,33 @@ void PqDataSource::StoreCharacter(
   const data::Uid uid,
   const data::Character& character)
 {
-  pqxx::work query(RequireConnection(_connection));
-
-  query.exec(
-    "update \"data\".\"characters\" set "
-    "\"name\" = $2, \"introduction\" = $3, \"level\" = $4, "
-    "\"experience\" = $5, \"carrots\" = $6, \"cash\" = $7, "
-    "\"role\" = $8, \"staffRank\" = $9, \"partsModelId\" = $10, "
-    "\"partsMouthId\" = $11, \"partsFaceId\" = $12, \"appearanceVoiceId\" = $13, "
-    "\"appearanceHeadSize\" = $14, \"appearanceHeight\" = $15, \"appearanceThighVolume\" = $16, "
-    "\"appearanceLegVolume\" = $17, \"appearanceEmblemId\" = $18, \"guildUid\" = $19, "
-    "\"horseSlotCount\" = $20, \"mountUid\" = $21, \"petUid\" = $22, "
-    "\"ranchExperience\" = $23, \"totalRaces\" = $24, \"isRanchLocked\" = $25, "
-    "\"isIntroCompleted\" = $26, \"settingsUid\" = $27, \"dailyQuestGroupUid\" = $28, "
-    "\"mailboxHasNewMail\" = $29 "
-    "where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      WriteField(character.name()),
-      WriteField(character.introduction()),
-      WriteField(character.level()),
-      WriteField(character.experience()),
-      WriteField(character.carrots()),
-      WriteField(character.cash()),
-      WriteField(character.role()),
-      WriteField(character.staffRank()),
-      WriteField(character.parts.modelId()),
-      WriteField(character.parts.mouthId()),
-      WriteField(character.parts.faceId()),
-      WriteField(character.appearance.voiceId()),
-      WriteField(character.appearance.headSize()),
-      WriteField(character.appearance.height()),
-      WriteField(character.appearance.thighVolume()),
-      WriteField(character.appearance.legVolume()),
-      WriteField(character.appearance.emblemId()),
-      WriteField(character.guildUid()),
-      WriteField(character.horseSlotCount()),
-      WriteField(character.mountUid()),
-      WriteField(character.petUid()),
-      WriteField(character.ranchManagement.ranchExperience()),
-      WriteField(character.ranchManagement.totalRaces()),
-      WriteField(character.isRanchLocked()),
-      WriteField(character.isIntroCompleted()),
-      WriteField(character.settingsUid()),
-      WriteField(character.dailyQuestGroupUid()),
-      WriteField(character.mailbox.hasNewMail())));
-
-  WriteCharacterRelations(query, uid, character);
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  WriteCharacter(query, uid, character);
   query.commit();
 }
 
 void PqDataSource::DeleteCharacter(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "delete from \"data\".\"characters\" where \"uid\" = $1",
-    pqxx::params(uid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "character", "uid", uid);
   query.commit();
 }
 
 data::Uid PqDataSource::RetrieveCharacterUidByName(
   const std::string_view& name)
 {
-  pqxx::work query(RequireConnection(_connection));
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
+  // The empty name condition allows the use of the partial unique index.
   const auto result = query.exec(
-    "select \"uid\" from \"data\".\"characters\" where lower(\"name\") = lower($1)",
+    "select \"uid\" "
+    "from \"data\".\"character\" "
+    "where \"name\" <> '' and lower(\"name\") = lower($1)",
     pqxx::params(name));
-  return result.empty() ? data::InvalidUid : result.front()["uid"].as<data::Uid>();
+  return result.empty() ? data::InvalidUid : FieldOf(result.front(), "uid").as<data::Uid>();
 }
 
 bool PqDataSource::IsCharacterNameUnique(
@@ -992,99 +1745,40 @@ bool PqDataSource::IsCharacterNameUnique(
   return RetrieveCharacterUidByName(name) == data::InvalidUid;
 }
 
+bool PqDataSource::ClaimCharacterName(
+  const data::Uid uid,
+  const std::string_view& name)
+{
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  try
+  {
+    // The unique index on the character names makes the claim atomic.
+    const auto result = query.exec(
+      "update \"data\".\"character\" "
+      "set \"name\" = $2 "
+      "where \"uid\" = $1",
+      pqxx::params(uid, name));
+    if (result.affected_rows() == 0)
+    {
+      throw std::runtime_error("Character does not exist");
+    }
+    query.commit();
+  }
+  catch (const pqxx::unique_violation&)
+  {
+    return false;
+  }
+
+  return true;
+}
+
 void PqDataSource::CreateHorse(
   data::Horse& horse)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"horses\" (\"tid\", \"name\", \"partsSkinTid\", \"partsFaceTid\", \"partsManeTid\", \"partsTailTid\", "
-    "\"appearanceScale\", \"appearanceLegLength\", \"appearanceLegVolume\", \"appearanceBodyLength\", "
-    "\"appearanceBodyVolume\", \"statsAgility\", \"statsCourage\", \"statsRush\", \"statsEndurance\", \"statsAmbition\", "
-    "\"masterySpurMagicCount\", \"masteryJumpCount\", \"masterySlidingTime\", \"masteryGlidingDistance\", "
-    "\"rating\", \"clazz\", \"clazzProgress\", \"grade\", \"growthPoints\", \"breedingCount\", \"breedingCombo\", \"type\", "
-    "\"dateOfBirth\", \"tendency\", \"spirit\", \"potentialType\", \"potentialLevel\", \"potentialValue\", \"luckState\", "
-    "\"fatigue\", \"emblemUid\", \"mountConditionStamina\", \"mountConditionCharm\", \"mountConditionFriendliness\", "
-    "\"mountConditionInjury\", \"mountConditionPlenitude\", \"mountConditionBodyDirtiness\", "
-    "\"mountConditionManeDirtiness\", \"mountConditionTailDirtiness\", \"mountConditionBodyPolish\", "
-    "\"mountConditionManePolish\", \"mountConditionTailPolish\", \"mountConditionAttachment\", "
-    "\"mountConditionBoredom\", \"mountConditionLastDailyCareTick\", \"mountConditionStopAmendsPoint\", "
-    "\"mountInfoBoostsInARow\", \"mountInfoWinsSpeedSingle\", \"mountInfoWinsSpeedTeam\", "
-    "\"mountInfoWinsMagicSingle\", \"mountInfoWinsMagicTeam\", \"mountInfoTotalDistance\", "
-    "\"mountInfoTopSpeed\", \"mountInfoLongestGlideDistance\", \"mountInfoParticipated\", "
-    "\"mountInfoCumulativePrize\", \"mountInfoBiggestPrize\", \"ancestorsFather\", \"ancestorsMother\", \"lineage\") "
-    "values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, "
-    "$21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, "
-    "$41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, "
-    "$61, $62, $63, $64, $65, $66) returning \"uid\"",
-    pqxx::params(
-      WriteField(horse.tid()),
-      WriteField(horse.name()),
-      WriteField(horse.parts.skinTid()),
-      WriteField(horse.parts.faceTid()),
-      WriteField(horse.parts.maneTid()),
-      WriteField(horse.parts.tailTid()),
-      WriteField(horse.appearance.scale()),
-      WriteField(horse.appearance.legLength()),
-      WriteField(horse.appearance.legVolume()),
-      WriteField(horse.appearance.bodyLength()),
-      WriteField(horse.appearance.bodyVolume()),
-      WriteField(horse.stats.agility()),
-      WriteField(horse.stats.courage()),
-      WriteField(horse.stats.rush()),
-      WriteField(horse.stats.endurance()),
-      WriteField(horse.stats.ambition()),
-      WriteField(horse.mastery.spurMagicCount()),
-      WriteField(horse.mastery.jumpCount()),
-      WriteField(horse.mastery.slidingTime()),
-      WriteField(horse.mastery.glidingDistance()),
-      WriteField(horse.rating()),
-      WriteField(horse.clazz()),
-      WriteField(horse.clazzProgress()),
-      WriteField(horse.grade()),
-      WriteField(horse.growthPoints()),
-      WriteField(horse.breedingCount()),
-      WriteField(horse.breedingCombo()),
-      WriteField(horse.type()),
-      WriteField(horse.dateOfBirth()),
-      WriteField(horse.tendency()),
-      WriteField(horse.spirit()),
-      WriteField(horse.potential.type()),
-      WriteField(horse.potential.level()),
-      WriteField(horse.potential.value()),
-      WriteField(horse.luckState()),
-      WriteField(horse.fatigue()),
-      WriteField(horse.emblemUid()),
-      WriteField(horse.mountCondition.stamina()),
-      WriteField(horse.mountCondition.charm()),
-      WriteField(horse.mountCondition.friendliness()),
-      WriteField(horse.mountCondition.injury()),
-      WriteField(horse.mountCondition.plenitude()),
-      WriteField(horse.mountCondition.bodyDirtiness()),
-      WriteField(horse.mountCondition.maneDirtiness()),
-      WriteField(horse.mountCondition.tailDirtiness()),
-      WriteField(horse.mountCondition.bodyPolish()),
-      WriteField(horse.mountCondition.manePolish()),
-      WriteField(horse.mountCondition.tailPolish()),
-      WriteField(horse.mountCondition.attachment()),
-      WriteField(horse.mountCondition.boredom()),
-      WriteField(horse.mountCondition.lastDailyCareTick()),
-      WriteField(horse.mountCondition.stopAmendsPoint()),
-      WriteField(horse.mountInfo.boostsInARow()),
-      WriteField(horse.mountInfo.winsSpeedSingle()),
-      WriteField(horse.mountInfo.winsSpeedTeam()),
-      WriteField(horse.mountInfo.winsMagicSingle()),
-      WriteField(horse.mountInfo.winsMagicTeam()),
-      WriteField(horse.mountInfo.totalDistance()),
-      WriteField(horse.mountInfo.topSpeed()),
-      WriteField(horse.mountInfo.longestGlideDistance()),
-      WriteField(horse.mountInfo.participated()),
-      WriteField(horse.mountInfo.cumulativePrize()),
-      WriteField(horse.mountInfo.biggestPrize()),
-      WriteField(horse.ancestors.father),
-      WriteField(horse.ancestors.mother),
-      WriteField(horse.lineage())));
-
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto uid = InsertRecord(query, "horse", HorseColumns, "uid", HorseParams(horse));
   query.commit();
   horse.uid = uid;
 }
@@ -1093,17 +1787,10 @@ void PqDataSource::RetrieveHorse(
   const data::Uid uid,
   data::Horse& horse)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "select * from \"data\".\"horses\" where \"uid\" = $1",
-    pqxx::params(uid));
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
 
-  if (result.empty())
-  {
-    throw std::runtime_error("Horse does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto row = SelectRecord(query, "horse", "uid", uid);
   ReadField(row, "uid", horse.uid);
   ReadField(row, "tid", horse.tid);
   ReadField(row, "name", horse.name);
@@ -1168,8 +1855,8 @@ void PqDataSource::RetrieveHorse(
   ReadField(row, "mountInfoParticipated", horse.mountInfo.participated);
   ReadField(row, "mountInfoCumulativePrize", horse.mountInfo.cumulativePrize);
   ReadField(row, "mountInfoBiggestPrize", horse.mountInfo.biggestPrize);
-  horse.ancestors.father = row["ancestorsFather"].as<data::Uid>();
-  horse.ancestors.mother = row["ancestorsMother"].as<data::Uid>();
+  horse.ancestors.father = FieldOf(row, "ancestorsFather").as<data::Uid>(data::InvalidUid);
+  horse.ancestors.mother = FieldOf(row, "ancestorsMother").as<data::Uid>(data::InvalidUid);
   ReadField(row, "lineage", horse.lineage);
 }
 
@@ -1177,124 +1864,28 @@ void PqDataSource::StoreHorse(
   const data::Uid uid,
   const data::Horse& horse)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"horses\" set \"tid\" = $2, \"name\" = $3, \"partsSkinTid\" = $4, \"partsFaceTid\" = $5, "
-    "\"partsManeTid\" = $6, \"partsTailTid\" = $7, \"appearanceScale\" = $8, \"appearanceLegLength\" = $9, "
-    "\"appearanceLegVolume\" = $10, \"appearanceBodyLength\" = $11, \"appearanceBodyVolume\" = $12, "
-    "\"statsAgility\" = $13, \"statsCourage\" = $14, \"statsRush\" = $15, \"statsEndurance\" = $16, "
-    "\"statsAmbition\" = $17, \"masterySpurMagicCount\" = $18, \"masteryJumpCount\" = $19, "
-    "\"masterySlidingTime\" = $20, \"masteryGlidingDistance\" = $21, \"rating\" = $22, \"clazz\" = $23, "
-    "\"clazzProgress\" = $24, \"grade\" = $25, \"growthPoints\" = $26, \"breedingCount\" = $27, \"breedingCombo\" = $28, "
-    "\"type\" = $29, \"dateOfBirth\" = $30, \"tendency\" = $31, \"spirit\" = $32, \"potentialType\" = $33, "
-    "\"potentialLevel\" = $34, \"potentialValue\" = $35, \"luckState\" = $36, \"fatigue\" = $37, \"emblemUid\" = $38, "
-    "\"mountConditionStamina\" = $39, \"mountConditionCharm\" = $40, \"mountConditionFriendliness\" = $41, "
-    "\"mountConditionInjury\" = $42, \"mountConditionPlenitude\" = $43, "
-    "\"mountConditionBodyDirtiness\" = $44, \"mountConditionManeDirtiness\" = $45, "
-    "\"mountConditionTailDirtiness\" = $46, \"mountConditionBodyPolish\" = $47, "
-    "\"mountConditionManePolish\" = $48, \"mountConditionTailPolish\" = $49, "
-    "\"mountConditionAttachment\" = $50, \"mountConditionBoredom\" = $51, "
-    "\"mountConditionLastDailyCareTick\" = $52, \"mountConditionStopAmendsPoint\" = $53, "
-    "\"mountInfoBoostsInARow\" = $54, \"mountInfoWinsSpeedSingle\" = $55, "
-    "\"mountInfoWinsSpeedTeam\" = $56, \"mountInfoWinsMagicSingle\" = $57, "
-    "\"mountInfoWinsMagicTeam\" = $58, \"mountInfoTotalDistance\" = $59, \"mountInfoTopSpeed\" = $60, "
-    "\"mountInfoLongestGlideDistance\" = $61, \"mountInfoParticipated\" = $62, "
-    "\"mountInfoCumulativePrize\" = $63, \"mountInfoBiggestPrize\" = $64, \"ancestorsFather\" = $65, "
-    "\"ancestorsMother\" = $66, \"lineage\" = $67 where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      WriteField(horse.tid()),
-      WriteField(horse.name()),
-      WriteField(horse.parts.skinTid()),
-      WriteField(horse.parts.faceTid()),
-      WriteField(horse.parts.maneTid()),
-      WriteField(horse.parts.tailTid()),
-      WriteField(horse.appearance.scale()),
-      WriteField(horse.appearance.legLength()),
-      WriteField(horse.appearance.legVolume()),
-      WriteField(horse.appearance.bodyLength()),
-      WriteField(horse.appearance.bodyVolume()),
-      WriteField(horse.stats.agility()),
-      WriteField(horse.stats.courage()),
-      WriteField(horse.stats.rush()),
-      WriteField(horse.stats.endurance()),
-      WriteField(horse.stats.ambition()),
-      WriteField(horse.mastery.spurMagicCount()),
-      WriteField(horse.mastery.jumpCount()),
-      WriteField(horse.mastery.slidingTime()),
-      WriteField(horse.mastery.glidingDistance()),
-      WriteField(horse.rating()),
-      WriteField(horse.clazz()),
-      WriteField(horse.clazzProgress()),
-      WriteField(horse.grade()),
-      WriteField(horse.growthPoints()),
-      WriteField(horse.breedingCount()),
-      WriteField(horse.breedingCombo()),
-      WriteField(horse.type()),
-      WriteField(horse.dateOfBirth()),
-      WriteField(horse.tendency()),
-      WriteField(horse.spirit()),
-      WriteField(horse.potential.type()),
-      WriteField(horse.potential.level()),
-      WriteField(horse.potential.value()),
-      WriteField(horse.luckState()),
-      WriteField(horse.fatigue()),
-      WriteField(horse.emblemUid()),
-      WriteField(horse.mountCondition.stamina()),
-      WriteField(horse.mountCondition.charm()),
-      WriteField(horse.mountCondition.friendliness()),
-      WriteField(horse.mountCondition.injury()),
-      WriteField(horse.mountCondition.plenitude()),
-      WriteField(horse.mountCondition.bodyDirtiness()),
-      WriteField(horse.mountCondition.maneDirtiness()),
-      WriteField(horse.mountCondition.tailDirtiness()),
-      WriteField(horse.mountCondition.bodyPolish()),
-      WriteField(horse.mountCondition.manePolish()),
-      WriteField(horse.mountCondition.tailPolish()),
-      WriteField(horse.mountCondition.attachment()),
-      WriteField(horse.mountCondition.boredom()),
-      WriteField(horse.mountCondition.lastDailyCareTick()),
-      WriteField(horse.mountCondition.stopAmendsPoint()),
-      WriteField(horse.mountInfo.boostsInARow()),
-      WriteField(horse.mountInfo.winsSpeedSingle()),
-      WriteField(horse.mountInfo.winsSpeedTeam()),
-      WriteField(horse.mountInfo.winsMagicSingle()),
-      WriteField(horse.mountInfo.winsMagicTeam()),
-      WriteField(horse.mountInfo.totalDistance()),
-      WriteField(horse.mountInfo.topSpeed()),
-      WriteField(horse.mountInfo.longestGlideDistance()),
-      WriteField(horse.mountInfo.participated()),
-      WriteField(horse.mountInfo.cumulativePrize()),
-      WriteField(horse.mountInfo.biggestPrize()),
-      WriteField(horse.ancestors.father),
-      WriteField(horse.ancestors.mother),
-      WriteField(horse.lineage())));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "horse", HorseColumns, "uid", uid, HorseParams(horse));
   query.commit();
 }
 
 void PqDataSource::DeleteHorse(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "delete from \"data\".\"horses\" where \"uid\" = $1",
-    pqxx::params(uid));
+  // Horses are never deleted, the data source rejects the deletion.
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "horse", "uid", uid);
   query.commit();
 }
 
 void PqDataSource::CreateItem(
   data::Item& item)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"items\" (\"tid\", \"count\", \"duration\", \"createdAt\") "
-    "values ($1, $2, $3, $4) returning \"uid\"",
-    pqxx::params(
-      WriteField(item.tid()),
-      WriteField(item.count()),
-      WriteField(item.duration()),
-      WriteField(item.createdAt())));
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto uid = InsertRecord(query, "item", ItemColumns, "uid", ItemParams(item));
   query.commit();
   item.uid = uid;
 }
@@ -1303,16 +1894,9 @@ void PqDataSource::RetrieveItem(
   const data::Uid uid,
   data::Item& item)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "select * from \"data\".\"items\" where \"uid\" = $1",
-    pqxx::params(uid));
-  if (result.empty())
-  {
-    throw std::runtime_error("Item does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
+  const auto row = SelectRecord(query, "item", "uid", uid);
   ReadField(row, "uid", item.uid);
   ReadField(row, "tid", item.tid);
   ReadField(row, "count", item.count);
@@ -1324,44 +1908,28 @@ void PqDataSource::StoreItem(
   const data::Uid uid,
   const data::Item& item)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"items\" set \"tid\" = $2, \"count\" = $3, \"duration\" = $4, \"createdAt\" = $5 "
-    "where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      WriteField(item.tid()),
-      WriteField(item.count()),
-      WriteField(item.duration()),
-      WriteField(item.createdAt())));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "item", ItemColumns, "uid", uid, ItemParams(item));
   query.commit();
 }
 
 void PqDataSource::DeleteItem(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("delete from \"data\".\"items\" where \"uid\" = $1", pqxx::params(uid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "item", "uid", uid);
   query.commit();
 }
 
 void PqDataSource::CreateStorageItem(
   data::StorageItem& storageItem)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"storageItems\" (\"sender\", \"message\", \"carrots\", \"checked\", \"createdAt\", \"duration\", "
-    "\"goodsSq\", \"priceId\") values ($1, $2, $3, $4, $5, $6, $7, $8) returning \"uid\"",
-    pqxx::params(
-      WriteField(storageItem.sender()),
-      WriteField(storageItem.message()),
-      WriteField(storageItem.carrots()),
-      WriteField(storageItem.checked()),
-      WriteField(storageItem.createdAt()),
-      WriteField(storageItem.duration()),
-      WriteField(storageItem.goodsSq()),
-      WriteField(storageItem.priceId())));
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto uid = InsertRecord(
+    query, "storageItem", StorageItemColumns, "uid", StorageItemParams(storageItem));
   WriteStorageItemContents(query, uid, storageItem.items());
   query.commit();
   storageItem.uid = uid;
@@ -1371,18 +1939,9 @@ void PqDataSource::RetrieveStorageItem(
   const data::Uid uid,
   data::StorageItem& storageItem)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("set transaction isolation level repeatable read read only");
-  const auto result = query.exec(
-    "select * from \"data\".\"storageItems\" where \"uid\" = $1",
-    pqxx::params(
-      uid));
-  if (result.empty())
-  {
-    throw std::runtime_error("StorageItem does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto connection = AcquireConnection();
+  SnapshotTransaction query(*connection);
+  const auto row = SelectRecord(query, "storageItem", "uid", uid);
   ReadField(row, "uid", storageItem.uid);
   ReadField(row, "sender", storageItem.sender);
   ReadField(row, "message", storageItem.message);
@@ -1399,20 +1958,9 @@ void PqDataSource::StoreStorageItem(
   const data::Uid uid,
   const data::StorageItem& storageItem)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"storageItems\" set \"sender\" = $2, \"message\" = $3, \"carrots\" = $4, \"checked\" = $5, \"createdAt\" = "
-    "$6, \"duration\" = $7, \"goodsSq\" = $8, \"priceId\" = $9 where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      WriteField(storageItem.sender()),
-      WriteField(storageItem.message()),
-      WriteField(storageItem.carrots()),
-      WriteField(storageItem.checked()),
-      WriteField(storageItem.createdAt()),
-      WriteField(storageItem.duration()),
-      WriteField(storageItem.goodsSq()),
-      WriteField(storageItem.priceId())));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "storageItem", StorageItemColumns, "uid", uid, StorageItemParams(storageItem));
   WriteStorageItemContents(query, uid, storageItem.items());
   query.commit();
 }
@@ -1420,28 +1968,18 @@ void PqDataSource::StoreStorageItem(
 void PqDataSource::DeleteStorageItem(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "delete from \"data\".\"storageItems\" where \"uid\" = $1",
-    pqxx::params(
-      uid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "storageItem", "uid", uid);
   query.commit();
 }
 
 void PqDataSource::CreateEgg(
   data::Egg& egg)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"eggs\" (\"itemUid\", \"itemTid\", \"incubatedAt\", \"incubatorSlot\", \"boostsUsed\") "
-    "values ($1, $2, $3, $4, $5) returning \"uid\"",
-    pqxx::params(
-      WriteField(egg.itemUid()),
-      WriteField(egg.itemTid()),
-      WriteField(egg.incubatedAt()),
-      WriteField(egg.incubatorSlot()),
-      WriteField(egg.boostsUsed())));
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto uid = InsertRecord(query, "egg", EggColumns, "uid", EggParams(egg));
   query.commit();
   egg.uid = uid;
 }
@@ -1450,16 +1988,9 @@ void PqDataSource::RetrieveEgg(
   const data::Uid uid,
   data::Egg& egg)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "select * from \"data\".\"eggs\" where \"uid\" = $1",
-    pqxx::params(uid));
-  if (result.empty())
-  {
-    throw std::runtime_error("Egg does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
+  const auto row = SelectRecord(query, "egg", "uid", uid);
   ReadField(row, "uid", egg.uid);
   ReadField(row, "itemUid", egg.itemUid);
   ReadField(row, "itemTid", egg.itemTid);
@@ -1472,41 +2003,27 @@ void PqDataSource::StoreEgg(
   const data::Uid uid,
   const data::Egg& egg)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"eggs\" set \"itemUid\" = $2, \"itemTid\" = $3, \"incubatedAt\" = $4, \"incubatorSlot\" = $5, \"boostsUsed\" = $6 "
-    "where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      WriteField(egg.itemUid()),
-      WriteField(egg.itemTid()),
-      WriteField(egg.incubatedAt()),
-      WriteField(egg.incubatorSlot()),
-      WriteField(egg.boostsUsed())));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "egg", EggColumns, "uid", uid, EggParams(egg));
   query.commit();
 }
 
 void PqDataSource::DeleteEgg(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("delete from \"data\".\"eggs\" where \"uid\" = $1", pqxx::params(uid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "egg", "uid", uid);
   query.commit();
 }
 
 void PqDataSource::CreatePet(
   data::Pet& pet)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"pets\" (\"itemUid\", \"petId\", \"name\", \"birthDate\") "
-    "values ($1, $2, $3, $4) returning \"uid\"",
-    pqxx::params(
-      WriteField(pet.itemUid()),
-      WriteField(pet.petId()),
-      WriteField(pet.name()),
-      WriteField(pet.birthDate())));
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto uid = InsertRecord(query, "pet", PetColumns, "uid", PetParams(pet));
   query.commit();
   pet.uid = uid;
 }
@@ -1515,16 +2032,9 @@ void PqDataSource::RetrievePet(
   const data::Uid uid,
   data::Pet& pet)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "select * from \"data\".\"pets\" where \"uid\" = $1",
-    pqxx::params(uid));
-  if (result.empty())
-  {
-    throw std::runtime_error("Pet does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
+  const auto row = SelectRecord(query, "pet", "uid", uid);
   ReadField(row, "uid", pet.uid);
   ReadField(row, "itemUid", pet.itemUid);
   ReadField(row, "petId", pet.petId);
@@ -1536,39 +2046,27 @@ void PqDataSource::StorePet(
   const data::Uid uid,
   const data::Pet& pet)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"pets\" set \"itemUid\" = $2, \"petId\" = $3, \"name\" = $4, \"birthDate\" = $5 "
-    "where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      WriteField(pet.itemUid()),
-      WriteField(pet.petId()),
-      WriteField(pet.name()),
-      WriteField(pet.birthDate())));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "pet", PetColumns, "uid", uid, PetParams(pet));
   query.commit();
 }
 
 void PqDataSource::DeletePet(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("delete from \"data\".\"pets\" where \"uid\" = $1", pqxx::params(uid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "pet", "uid", uid);
   query.commit();
 }
 
 void PqDataSource::CreateHousing(
   data::Housing& housing)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"housing\" (\"housingId\", \"expiresAt\", \"durability\") "
-    "values ($1, $2, $3) returning \"uid\"",
-    pqxx::params(
-      WriteField(housing.housingId()),
-      WriteField(housing.expiresAt()),
-      WriteField(housing.durability())));
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto uid = InsertRecord(query, "housing", HousingColumns, "uid", HousingParams(housing));
   query.commit();
   housing.uid = uid;
 }
@@ -1577,16 +2075,9 @@ void PqDataSource::RetrieveHousing(
   const data::Uid uid,
   data::Housing& housing)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "select * from \"data\".\"housing\" where \"uid\" = $1",
-    pqxx::params(uid));
-  if (result.empty())
-  {
-    throw std::runtime_error("Housing does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
+  const auto row = SelectRecord(query, "housing", "uid", uid);
   ReadField(row, "uid", housing.uid);
   ReadField(row, "housingId", housing.housingId);
   ReadField(row, "expiresAt", housing.expiresAt);
@@ -1597,44 +2088,31 @@ void PqDataSource::StoreHousing(
   const data::Uid uid,
   const data::Housing& housing)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"housing\" set \"housingId\" = $2, \"expiresAt\" = $3, \"durability\" = $4 "
-    "where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      WriteField(housing.housingId()),
-      WriteField(housing.expiresAt()),
-      WriteField(housing.durability())));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "housing", HousingColumns, "uid", uid, HousingParams(housing));
   query.commit();
 }
 
 void PqDataSource::DeleteHousing(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("delete from \"data\".\"housing\" where \"uid\" = $1", pqxx::params(uid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "housing", "uid", uid);
   query.commit();
 }
 
 void PqDataSource::CreateGuild(
   data::Guild& guild)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"guilds\" (\"name\", \"description\", \"owner\", \"rank\", \"totalWins\", \"totalLosses\", \"seasonalWins\", \"seasonalLosses\") values ($1, $2, $3, $4, $5, $6, $7, $8) returning \"uid\"",
-    pqxx::params(
-      WriteField(guild.name()),
-      WriteField(guild.description()),
-      WriteField(guild.owner()),
-      WriteField(guild.rank()),
-      WriteField(guild.totalWins()),
-      WriteField(guild.totalLosses()),
-      WriteField(guild.seasonalWins()),
-      WriteField(guild.seasonalLosses())));
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
-  WriteUidList(query, "guildOfficers", "guildUid", uid, guild.officers());
-  WriteUidList(query, "guildMembers", "guildUid", uid, guild.members());
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto uid = InsertRecord(query, "guild", GuildColumns, "uid", GuildParams(guild));
+  WriteUids(query, "guildOfficer", "guildUid", uid,
+    "characterUid", "character", guild.officers());
+  WriteUids(query, "guildMember", "guildUid", uid,
+    "characterUid", "character", guild.members());
   query.commit();
   guild.uid = uid;
 }
@@ -1643,16 +2121,10 @@ void PqDataSource::RetrieveGuild(
   const data::Uid uid,
   data::Guild& guild)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("set transaction isolation level repeatable read read only");
-  const auto result = query.exec(
-    "select * from \"data\".\"guilds\" where \"uid\" = $1",
-    pqxx::params(uid));
-  if (result.empty())
-  {
-    throw std::runtime_error("Guild does not exist");
-  }
-  const auto row = result.one_row();
+  const auto connection = AcquireConnection();
+  SnapshotTransaction query(*connection);
+  const auto row = SelectRecord(query, "guild", "uid", uid);
+  ReadField(row, "uid", guild.uid);
   ReadField(row, "name", guild.name);
   ReadField(row, "description", guild.description);
   ReadField(row, "owner", guild.owner);
@@ -1661,47 +2133,43 @@ void PqDataSource::RetrieveGuild(
   ReadField(row, "totalLosses", guild.totalLosses);
   ReadField(row, "seasonalWins", guild.seasonalWins);
   ReadField(row, "seasonalLosses", guild.seasonalLosses);
-  ReadField(row, "uid", guild.uid);
-  guild.officers = ReadUidList(query, "guildOfficers", "guildUid", uid);
-  guild.members = ReadUidList(query, "guildMembers", "guildUid", uid);
+  guild.officers = ReadUids<std::vector<data::Uid>>(query, "guildOfficer", "guildUid", uid, "characterUid");
+  guild.members = ReadUids<std::vector<data::Uid>>(query, "guildMember", "guildUid", uid, "characterUid");
 }
 
 void PqDataSource::StoreGuild(
   const data::Uid uid,
   const data::Guild& guild)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"guilds\" set \"name\" = $2, \"description\" = $3, \"owner\" = $4, \"rank\" = $5, \"totalWins\" = $6, \"totalLosses\" = $7, \"seasonalWins\" = $8, \"seasonalLosses\" = $9 where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      WriteField(guild.name()),
-      WriteField(guild.description()),
-      WriteField(guild.owner()),
-      WriteField(guild.rank()),
-      WriteField(guild.totalWins()),
-      WriteField(guild.totalLosses()),
-      WriteField(guild.seasonalWins()),
-      WriteField(guild.seasonalLosses())));
-  WriteUidList(query, "guildOfficers", "guildUid", uid, guild.officers());
-  WriteUidList(query, "guildMembers", "guildUid", uid, guild.members());
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "guild", GuildColumns, "uid", uid, GuildParams(guild));
+  WriteUids(query, "guildOfficer", "guildUid", uid,
+    "characterUid", "character", guild.officers());
+  WriteUids(query, "guildMember", "guildUid", uid,
+    "characterUid", "character", guild.members());
   query.commit();
 }
 
 void PqDataSource::DeleteGuild(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("delete from \"data\".\"guilds\" where \"uid\" = $1", pqxx::params(uid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "guild", "uid", uid);
   query.commit();
 }
 
 bool PqDataSource::IsGuildNameUnique(
   const std::string_view& name)
 {
-  pqxx::work query(RequireConnection(_connection));
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
+  // The empty name condition allows the use of the partial unique index.
   const auto result = query.exec(
-    "select 1 from \"data\".\"guilds\" where lower(\"name\") = lower($1)",
+    "select 1 "
+    "from \"data\".\"guild\" "
+    "where \"name\" <> '' and lower(\"name\") = lower($1)",
     pqxx::params(name));
   return result.empty();
 }
@@ -1709,20 +2177,12 @@ bool PqDataSource::IsGuildNameUnique(
 void PqDataSource::CreateSettings(
   data::Settings& settings)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"settings\" (\"hasKeyboardBindings\", \"hasMacros\", \"hasGamepadBindings\", \"age\", \"hideAge\") "
-    "values ($1, $2, $3, $4, $5) returning \"uid\"",
-    pqxx::params(
-      settings.keyboardBindings().has_value(),
-      settings.macros().has_value(),
-      settings.gamepadBindings().has_value(),
-      WriteField(settings.age()),
-      WriteField(settings.hideAge())));
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
-  WriteSettingsKeyboardBindings(query, uid, settings.keyboardBindings());
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto uid = InsertRecord(query, "settings", SettingsColumns, "uid", SettingsParams(settings));
+  WriteSettingsBindings(query, "settingsKeyboardBinding", uid, settings.keyboardBindings());
   WriteSettingsMacros(query, uid, settings.macros());
-  WriteSettingsGamepadBindings(query, uid, settings.gamepadBindings());
+  WriteSettingsBindings(query, "settingsGamepadBinding", uid, settings.gamepadBindings());
   query.commit();
   settings.uid = uid;
 }
@@ -1731,71 +2191,49 @@ void PqDataSource::RetrieveSettings(
   const data::Uid uid,
   data::Settings& settings)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("set transaction isolation level repeatable read read only");
-  const auto result = query.exec(
-    "select * from \"data\".\"settings\" where \"uid\" = $1",
-    pqxx::params(
-      uid));
-  if (result.empty())
-  {
-    throw std::runtime_error("Settings does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto connection = AcquireConnection();
+  SnapshotTransaction query(*connection);
+  const auto row = SelectRecord(query, "settings", "uid", uid);
   ReadField(row, "uid", settings.uid);
   ReadField(row, "age", settings.age);
   ReadField(row, "hideAge", settings.hideAge);
-  settings.keyboardBindings = ReadSettingsKeyboardBindings(query, uid, row["hasKeyboardBindings"].as<bool>());
-  settings.macros = ReadSettingsMacros(query, uid, row["hasMacros"].as<bool>());
-  settings.gamepadBindings = ReadSettingsGamepadBindings(query, uid, row["hasGamepadBindings"].as<bool>());
+  settings.keyboardBindings = ReadSettingsBindings(
+    query, "settingsKeyboardBinding", uid, FieldOf(row, "hasKeyboardBindings").as<bool>());
+  settings.macros = ReadSettingsMacros(
+    query, uid, FieldOf(row, "hasMacros").as<bool>());
+  settings.gamepadBindings = ReadSettingsBindings(
+    query, "settingsGamepadBinding", uid, FieldOf(row, "hasGamepadBindings").as<bool>());
 }
 
 void PqDataSource::StoreSettings(
   const data::Uid uid,
   const data::Settings& settings)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"settings\" set \"hasKeyboardBindings\" = $2, \"hasMacros\" = $3, \"hasGamepadBindings\" = $4, \"age\" = "
-    "$5, \"hideAge\" = $6 where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      settings.keyboardBindings().has_value(),
-      settings.macros().has_value(),
-      settings.gamepadBindings().has_value(),
-      WriteField(settings.age()),
-      WriteField(settings.hideAge())));
-  WriteSettingsKeyboardBindings(query, uid, settings.keyboardBindings());
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "settings", SettingsColumns, "uid", uid, SettingsParams(settings));
+  WriteSettingsBindings(query, "settingsKeyboardBinding", uid, settings.keyboardBindings());
   WriteSettingsMacros(query, uid, settings.macros());
-  WriteSettingsGamepadBindings(query, uid, settings.gamepadBindings());
+  WriteSettingsBindings(query, "settingsGamepadBinding", uid, settings.gamepadBindings());
   query.commit();
 }
 
 void PqDataSource::DeleteSettings(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "delete from \"data\".\"settings\" where \"uid\" = $1",
-    pqxx::params(
-      uid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "settings", "uid", uid);
   query.commit();
 }
 
 void PqDataSource::CreateDailyQuestGroup(
   data::DailyQuestGroup& group)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"dailyQuestGroups\" (\"rewardId\", \"rewardType\", \"rewardPoints\", \"carrotsClaimed\") values ($1, "
-    "$2, $3, $4) returning \"uid\"",
-    pqxx::params(
-      WriteField(group.rewardId()),
-      WriteField(group.rewardType()),
-      WriteField(group.rewardPoints()),
-      WriteField(group.carrotsClaimed())));
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto uid = InsertRecord(
+    query, "dailyQuestGroup", DailyQuestGroupColumns, "uid", DailyQuestGroupParams(group));
   WriteDailyQuestEntries(query, uid, group.quests());
   query.commit();
   group.uid = uid;
@@ -1805,18 +2243,9 @@ void PqDataSource::RetrieveDailyQuestGroup(
   const data::Uid uid,
   data::DailyQuestGroup& group)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("set transaction isolation level repeatable read read only");
-  const auto result = query.exec(
-    "select * from \"data\".\"dailyQuestGroups\" where \"uid\" = $1",
-    pqxx::params(
-      uid));
-  if (result.empty())
-  {
-    throw std::runtime_error("DailyQuestGroup does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto connection = AcquireConnection();
+  SnapshotTransaction query(*connection);
+  const auto row = SelectRecord(query, "dailyQuestGroup", "uid", uid);
   ReadField(row, "uid", group.uid);
   ReadField(row, "rewardId", group.rewardId);
   ReadField(row, "rewardType", group.rewardType);
@@ -1829,16 +2258,10 @@ void PqDataSource::StoreDailyQuestGroup(
   const data::Uid uid,
   const data::DailyQuestGroup& group)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"dailyQuestGroups\" set \"rewardId\" = $2, \"rewardType\" = $3, \"rewardPoints\" = $4, \"carrotsClaimed\" "
-    "= $5 where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      WriteField(group.rewardId()),
-      WriteField(group.rewardType()),
-      WriteField(group.rewardPoints()),
-      WriteField(group.carrotsClaimed())));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(
+    query, "dailyQuestGroup", DailyQuestGroupColumns, "uid", uid, DailyQuestGroupParams(group));
   WriteDailyQuestEntries(query, uid, group.quests());
   query.commit();
 }
@@ -1846,31 +2269,18 @@ void PqDataSource::StoreDailyQuestGroup(
 void PqDataSource::DeleteDailyQuestGroup(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "delete from \"data\".\"dailyQuestGroups\" where \"uid\" = $1",
-    pqxx::params(
-      uid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "dailyQuestGroup", "uid", uid);
   query.commit();
 }
 
 void PqDataSource::CreateMail(
   data::Mail& mail)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"mails\" (\"senderUid\", \"recipientUid\", \"isRead\", \"isDeleted\", \"type\", \"claimUid\", \"createdAt\", \"body\") "
-    "values ($1, $2, $3, $4, $5, $6, $7, $8) returning \"uid\"",
-    pqxx::params(
-      WriteField(mail.from()),
-      WriteField(mail.to()),
-      WriteField(mail.isRead()),
-      WriteField(mail.isDeleted()),
-      WriteField(mail.type()),
-      WriteField(mail.claimUid()),
-      WriteField(mail.createdAt()),
-      WriteField(mail.body())));
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto uid = InsertRecord(query, "mail", MailColumns, "uid", MailParams(mail));
   query.commit();
   mail.uid = uid;
 }
@@ -1879,16 +2289,9 @@ void PqDataSource::RetrieveMail(
   const data::Uid uid,
   data::Mail& mail)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "select * from \"data\".\"mails\" where \"uid\" = $1",
-    pqxx::params(uid));
-  if (result.empty())
-  {
-    throw std::runtime_error("Mail does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
+  const auto row = SelectRecord(query, "mail", "uid", uid);
   ReadField(row, "uid", mail.uid);
   ReadField(row, "senderUid", mail.from);
   ReadField(row, "recipientUid", mail.to);
@@ -1904,43 +2307,27 @@ void PqDataSource::StoreMail(
   const data::Uid uid,
   const data::Mail& mail)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"mails\" set \"senderUid\" = $2, \"recipientUid\" = $3, \"isRead\" = $4, \"isDeleted\" = $5, \"type\" = $6, \"claimUid\" = $7, \"createdAt\" = $8, \"body\" = $9 "
-    "where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      WriteField(mail.from()),
-      WriteField(mail.to()),
-      WriteField(mail.isRead()),
-      WriteField(mail.isDeleted()),
-      WriteField(mail.type()),
-      WriteField(mail.claimUid()),
-      WriteField(mail.createdAt()),
-      WriteField(mail.body())));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "mail", MailColumns, "uid", uid, MailParams(mail));
   query.commit();
 }
 
 void PqDataSource::DeleteMail(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("delete from \"data\".\"mails\" where \"uid\" = $1", pqxx::params(uid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "mail", "uid", uid);
   query.commit();
 }
 
 void PqDataSource::CreateQuest(
   data::Quest& quest)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"quests\" (\"questId\", \"isCompleted\", \"progress\") "
-    "values ($1, $2, $3) returning \"uid\"",
-    pqxx::params(
-      WriteField(quest.questId()),
-      WriteField(quest.isCompleted()),
-      WriteField(quest.progress())));
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto uid = InsertRecord(query, "quest", QuestColumns, "uid", QuestParams(quest));
   query.commit();
   quest.uid = uid;
 }
@@ -1949,16 +2336,9 @@ void PqDataSource::RetrieveQuest(
   const data::Uid uid,
   data::Quest& quest)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "select * from \"data\".\"quests\" where \"uid\" = $1",
-    pqxx::params(uid));
-  if (result.empty())
-  {
-    throw std::runtime_error("Quest does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
+  const auto row = SelectRecord(query, "quest", "uid", uid);
   ReadField(row, "uid", quest.uid);
   ReadField(row, "questId", quest.questId);
   ReadField(row, "isCompleted", quest.isCompleted);
@@ -1969,41 +2349,27 @@ void PqDataSource::StoreQuest(
   const data::Uid uid,
   const data::Quest& quest)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"quests\" set \"questId\" = $2, \"isCompleted\" = $3, \"progress\" = $4 "
-    "where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      WriteField(quest.questId()),
-      WriteField(quest.isCompleted()),
-      WriteField(quest.progress())));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "quest", QuestColumns, "uid", uid, QuestParams(quest));
   query.commit();
 }
 
 void PqDataSource::DeleteQuest(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("delete from \"data\".\"quests\" where \"uid\" = $1", pqxx::params(uid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "quest", "uid", uid);
   query.commit();
 }
 
 void PqDataSource::CreateStallion(
   data::Stallion& stallion)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"stallions\" (\"horseUid\", \"ownerUid\", \"breedingCharge\", \"timesMated\", \"registeredAt\", \"expiresAt\") "
-    "values ($1, $2, $3, $4, $5, $6) returning \"uid\"",
-    pqxx::params(
-      WriteField(stallion.horseUid()),
-      WriteField(stallion.ownerUid()),
-      WriteField(stallion.breedingCharge()),
-      WriteField(stallion.timesMated()),
-      WriteField(stallion.registeredAt()),
-      WriteField(stallion.expiresAt())));
-  const auto uid = result.one_row()["uid"].as<data::Uid>();
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto uid = InsertRecord(query, "stallion", StallionColumns, "uid", StallionParams(stallion));
   query.commit();
   stallion.uid = uid;
 }
@@ -2012,16 +2378,9 @@ void PqDataSource::RetrieveStallion(
   const data::Uid uid,
   data::Stallion& stallion)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "select * from \"data\".\"stallions\" where \"uid\" = $1",
-    pqxx::params(uid));
-  if (result.empty())
-  {
-    throw std::runtime_error("Stallion does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
+  const auto row = SelectRecord(query, "stallion", "uid", uid);
   ReadField(row, "uid", stallion.uid);
   ReadField(row, "horseUid", stallion.horseUid);
   ReadField(row, "ownerUid", stallion.ownerUid);
@@ -2035,38 +2394,35 @@ void PqDataSource::StoreStallion(
   const data::Uid uid,
   const data::Stallion& stallion)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"stallions\" set \"horseUid\" = $2, \"ownerUid\" = $3, \"breedingCharge\" = $4, \"timesMated\" = $5, \"registeredAt\" = $6, \"expiresAt\" = $7 "
-    "where \"uid\" = $1",
-    pqxx::params(
-      uid,
-      WriteField(stallion.horseUid()),
-      WriteField(stallion.ownerUid()),
-      WriteField(stallion.breedingCharge()),
-      WriteField(stallion.timesMated()),
-      WriteField(stallion.registeredAt()),
-      WriteField(stallion.expiresAt())));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "stallion", StallionColumns, "uid", uid, StallionParams(stallion));
   query.commit();
 }
 
 void PqDataSource::DeleteStallion(
   const data::Uid uid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("delete from \"data\".\"stallions\" where \"uid\" = $1", pqxx::params(uid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "stallion", "uid", uid);
   query.commit();
 }
 
 std::vector<data::Uid> PqDataSource::ListRegisteredStallions()
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec("select \"uid\" from \"data\".\"stallions\" order by \"uid\"");
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
+  const auto result = query.exec(
+    "select \"uid\" "
+    "from \"data\".\"stallion\" "
+    "order by \"uid\"");
+
   std::vector<data::Uid> uids;
   uids.reserve(result.size());
   for (const auto& row : result)
   {
-    uids.emplace_back(row["uid"].as<data::Uid>());
+    uids.emplace_back(FieldOf(row, "uid").as<data::Uid>());
   }
   return uids;
 }
@@ -2074,36 +2430,20 @@ std::vector<data::Uid> PqDataSource::ListRegisteredStallions()
 void PqDataSource::CreateReward(
   data::Reward& reward)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "insert into \"data\".\"rewards\" (\"characterUid\", \"type\", \"carrots\", \"isClaimed\", \"createdAt\", \"claimedAt\") "
-    "values ($1, $2, $3, $4, $5, $6) returning \"claimUid\"",
-    pqxx::params(
-      WriteField(reward.characterUid()),
-      WriteField(reward.type()),
-      WriteField(reward.carrots()),
-      WriteField(reward.isClaimed()),
-      WriteField(reward.createdAt()),
-      WriteField(reward.claimedAt())));
-  const auto uid = result.one_row()["claimUid"].as<data::Uid>();
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  const auto claimUid = InsertRecord(query, "reward", RewardColumns, "claimUid", RewardParams(reward));
   query.commit();
-  reward.claimUid = uid;
+  reward.claimUid = claimUid;
 }
 
 void PqDataSource::RetrieveReward(
   const data::Uid claimUid,
   data::Reward& reward)
 {
-  pqxx::work query(RequireConnection(_connection));
-  const auto result = query.exec(
-    "select * from \"data\".\"rewards\" where \"claimUid\" = $1",
-    pqxx::params(claimUid));
-  if (result.empty())
-  {
-    throw std::runtime_error("Reward does not exist");
-  }
-
-  const auto row = result.one_row();
+  const auto connection = AcquireConnection();
+  pqxx::nontransaction query(*connection);
+  const auto row = SelectRecord(query, "reward", "claimUid", claimUid);
   ReadField(row, "claimUid", reward.claimUid);
   ReadField(row, "characterUid", reward.characterUid);
   ReadField(row, "type", reward.type);
@@ -2117,26 +2457,18 @@ void PqDataSource::StoreReward(
   const data::Uid claimUid,
   const data::Reward& reward)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec(
-    "update \"data\".\"rewards\" set \"characterUid\" = $2, \"type\" = $3, \"carrots\" = $4, \"isClaimed\" = $5, \"createdAt\" = $6, \"claimedAt\" = $7 "
-    "where \"claimUid\" = $1",
-    pqxx::params(
-      claimUid,
-      WriteField(reward.characterUid()),
-      WriteField(reward.type()),
-      WriteField(reward.carrots()),
-      WriteField(reward.isClaimed()),
-      WriteField(reward.createdAt()),
-      WriteField(reward.claimedAt())));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  UpdateRecord(query, "reward", RewardColumns, "claimUid", claimUid, RewardParams(reward));
   query.commit();
 }
 
 void PqDataSource::DeleteReward(
   const data::Uid claimUid)
 {
-  pqxx::work query(RequireConnection(_connection));
-  query.exec("delete from \"data\".\"rewards\" where \"claimUid\" = $1", pqxx::params(claimUid));
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  DeleteRecord(query, "reward", "claimUid", claimUid);
   query.commit();
 }
 

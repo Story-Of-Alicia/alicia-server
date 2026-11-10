@@ -26,6 +26,7 @@
 #include <regex>
 
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 
 namespace
 {
@@ -187,27 +188,38 @@ void server::FileDataSource::CreateUser(data::User& user)
 
 }
 
-void server::FileDataSource::RetrieveUser(const std::string_view& name, data::User& user)
+std::optional<bool> server::FileDataSource::RetrieveUser(const std::string_view& name, data::User& user)
 {
-  user.name = std::string(name);
-
-  const std::filesystem::path dataFilePath = ProduceDataFilePath(
-    _userDataPath, user.name());
-
-  std::ifstream dataFile(dataFilePath);
-  if (not dataFile.is_open())
+  try
   {
-    throw std::runtime_error(
-      std::format("User file '{}' not accessible", dataFilePath.string()));
+    const std::filesystem::path dataFilePath = ProduceDataFilePath(
+      _userDataPath, std::string(name));
+
+    if (not std::filesystem::exists(dataFilePath))
+      return false;
+
+    std::ifstream dataFile(dataFilePath);
+    if (not dataFile.is_open())
+    {
+      throw std::runtime_error(
+        std::format("User file '{}' not accessible", dataFilePath.string()));
+    }
+
+    const auto json = nlohmann::json::parse(dataFile);
+    user.name = json.value("name", std::string{});
+    user.token = json.value("token", std::string{});
+    user.characterUid = json.value("characterUid", data::Uid{});
+    user.infractions = json.value("infractions", std::vector<data::Uid>{});
+    user.lastSeenOnline = data::Clock::time_point(std::chrono::seconds(
+      json.value("lastSeenOnline", int64_t(0))));
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::error("Exception retrieving user '{}' from the file data source: {}", name, x.what());
+    return std::nullopt;
   }
 
-  const auto json = nlohmann::json::parse(dataFile);
-  user.name = json.value("name", std::string{});
-  user.token = json.value("token", std::string{});
-  user.characterUid = json.value("characterUid", data::Uid{});
-  user.infractions = json.value("infractions", std::vector<data::Uid>{});
-  user.lastSeenOnline = data::Clock::time_point(std::chrono::seconds(
-    json.value("lastSeenOnline", int64_t(0))));
+  return true;
 }
 
 void server::FileDataSource::StoreUser(const std::string_view&, const data::User& user)
@@ -280,7 +292,7 @@ void server::FileDataSource::StoreInfraction(data::Uid uid, const data::Infracti
   json["description"] = infraction.description();
   json["punishment"] = infraction.punishment();
   json["duration"] = infraction.duration().count();
-  json["createdAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+  json["createdAt"] = std::chrono::ceil<std::chrono::seconds>(
     infraction.createdAt().time_since_epoch()).count();
 
   StoreJsonData(json, dataFilePath);
@@ -591,13 +603,28 @@ void server::FileDataSource::DeleteCharacter(data::Uid uid)
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _characterDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
+
+  std::scoped_lock lock(_characterNameMutex);
+  _claimedCharacterNames.erase(uid);
 }
 
 server::data::Uid server::FileDataSource::RetrieveCharacterUidByName(const std::string_view& name)
 {
+  std::scoped_lock lock(_characterNameMutex);
+  return FindCharacterUidByName(name);
+}
+
+server::data::Uid server::FileDataSource::FindCharacterUidByName(const std::string_view& name)
+{
   const std::regex rg(
     std::format("{}", name),
     std::regex_constants::icase);
+
+  for (const auto& [characterUid, claimedName] : _claimedCharacterNames)
+  {
+    if (std::regex_match(claimedName, rg))
+      return characterUid;
+  }
 
   for (const auto& file : std::filesystem::directory_iterator(_characterDataPath))
   {
@@ -609,10 +636,15 @@ server::data::Uid server::FileDataSource::RetrieveCharacterUidByName(const std::
       continue;
 
     const auto json = nlohmann::json::parse(dataFile);
-    const auto existingCharacterName = json["name"].get<std::string>();
+    const auto existingCharacterUid = json["uid"].get<data::Uid>();
 
+    // The claimed name supersedes the name in the data file.
+    if (_claimedCharacterNames.contains(existingCharacterUid))
+      continue;
+
+    const auto existingCharacterName = json["name"].get<std::string>();
     if (std::regex_match(existingCharacterName, rg))
-      return json["uid"].get<data::Uid>();
+      return existingCharacterUid;
   }
 
   return data::InvalidUid;
@@ -621,6 +653,18 @@ server::data::Uid server::FileDataSource::RetrieveCharacterUidByName(const std::
 bool server::FileDataSource::IsCharacterNameUnique(const std::string_view& name)
 {
   return RetrieveCharacterUidByName(name) == data::InvalidUid;
+}
+
+bool server::FileDataSource::ClaimCharacterName(data::Uid uid, const std::string_view& name)
+{
+  std::scoped_lock lock(_characterNameMutex);
+
+  const auto holderUid = FindCharacterUidByName(name);
+  if (holderUid != data::InvalidUid && holderUid != uid)
+    return false;
+
+  _claimedCharacterNames[uid] = std::string(name);
+  return true;
 }
 
 void server::FileDataSource::CreateHorse(data::Horse& horse)
@@ -1041,7 +1085,7 @@ void server::FileDataSource::StoreEgg(data::Uid uid, const data::Egg& egg)
   json["uid"] = egg.uid();
   json["itemUid"] = egg.itemUid();
   json["itemTid"] = egg.itemTid();
-  json["incubatedAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+  json["incubatedAt"] = std::chrono::ceil<std::chrono::seconds>(
     egg.incubatedAt().time_since_epoch()).count();
   json["incubatorSlot"] = egg.incubatorSlot();
   json["boostsUsed"] = egg.boostsUsed();
@@ -1094,7 +1138,7 @@ void server::FileDataSource::StorePet(data::Uid uid, const data::Pet& pet)
   json["itemUid"] = pet.itemUid();
   json["petId"] = pet.petId();
   json["name"] = pet.name();
-  json["birthDate"] = std::chrono::duration_cast<std::chrono::seconds>(
+  json["birthDate"] = std::chrono::ceil<std::chrono::seconds>(
     pet.birthDate().time_since_epoch()).count();
 
   StoreJsonData(json, dataFilePath);
@@ -1141,7 +1185,7 @@ void server::FileDataSource::StoreHousing(data::Uid uid, const data::Housing& ho
   nlohmann::json json;
   json["uid"] = housing.uid();
   json["housingId"] = housing.housingId();
-  json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+  json["expiresAt"] = std::chrono::ceil<std::chrono::seconds>(
     housing.expiresAt().time_since_epoch()).count();
   json["durability"] = housing.durability();
 
@@ -1407,8 +1451,8 @@ void server::FileDataSource::RetrieveDailyQuestGroup(data::Uid uid, data::DailyQ
 
   const auto json = nlohmann::json::parse(dataFile);
   group.uid          = json.value("uid", data::Uid{});
-  group.rewardId     = json.value("rewardId", uint8_t{});
-  group.rewardType   = json.value("rewardType", uint8_t{});
+  group.rewardId     = json.value("rewardId", uint32_t{});
+  group.rewardType   = json.value("rewardType", uint32_t{});
   group.rewardPoints = json.value("rewardPoints", uint32_t{0});
   // Support both boolean `true`/`false` and legacy integer `1`/`0` representations.
   if (const auto it = json.find("carrotsClaimed"); it != json.end())
@@ -1420,7 +1464,7 @@ void server::FileDataSource::RetrieveDailyQuestGroup(data::Uid uid, data::DailyQ
   const auto& questsJson = json.value("quests", nlohmann::json::array());
   for (size_t i = 0; i < questsJson.size() && i < 3; ++i)
   {
-    quests[i].questId  = questsJson[i].value("questId", uint16_t{});
+    quests[i].questId  = questsJson[i].value("questId", uint32_t{});
     quests[i].progress = questsJson[i].value("progress", uint32_t{});
   }
   group.quests = quests;
@@ -1509,7 +1553,7 @@ void server::FileDataSource::StoreMail(data::Uid uid, const data::Mail& mail)
   json["type"] = mail.type();
   json["claimUid"] = mail.claimUid();
 
-  json["createdAt"] = std::chrono::duration_cast<
+  json["createdAt"] = std::chrono::ceil<
     std::chrono::seconds>(
       mail.createdAt().time_since_epoch()).count();
   json["body"] = mail.body();
@@ -1611,9 +1655,9 @@ void server::FileDataSource::StoreStallion(data::Uid uid, const data::Stallion& 
   json["ownerUid"] = stallion.ownerUid();
   json["breedingCharge"] = stallion.breedingCharge();
   json["timesMated"] = stallion.timesMated();
-  json["registeredAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+  json["registeredAt"] = std::chrono::ceil<std::chrono::seconds>(
     stallion.registeredAt().time_since_epoch()).count();
-  json["expiresAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+  json["expiresAt"] = std::chrono::ceil<std::chrono::seconds>(
     stallion.expiresAt().time_since_epoch()).count();
 
   StoreJsonData(json, dataFilePath);
@@ -1696,9 +1740,9 @@ void server::FileDataSource::StoreReward(data::Uid claimUid, const data::Reward&
   json["type"] = static_cast<uint32_t>(reward.type());
   json["carrots"] = reward.carrots();
   json["isClaimed"] = reward.isClaimed();
-  json["createdAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+  json["createdAt"] = std::chrono::ceil<std::chrono::seconds>(
     reward.createdAt().time_since_epoch()).count();
-  json["claimedAt"] = std::chrono::duration_cast<std::chrono::seconds>(
+  json["claimedAt"] = std::chrono::ceil<std::chrono::seconds>(
     reward.claimedAt().time_since_epoch()).count();
 
   StoreJsonData(json, dataFilePath);
