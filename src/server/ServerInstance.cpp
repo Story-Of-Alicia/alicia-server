@@ -43,7 +43,6 @@ ServerInstance::ServerInstance(
   const std::filesystem::path& resourceDirectory)
   : _resourceDirectory(resourceDirectory)
   , _authenticationService(*this)
-  , _dataDirector(resourceDirectory / "data")
   , _lobbyDirector(*this)
   , _messengerDirector(*this)
   , _allChatDirector(*this)
@@ -94,6 +93,17 @@ void ServerInstance::Initialize()
   LoadConfigurations();
   // Load configurations from environment variables.
   _config.LoadFromEnvironment();
+
+  // Establish the data source before the directors start using it.
+  try
+  {
+    _dataDirector.EstablishDataSource(_config.data, _resourceDirectory);
+  }
+  catch (const std::exception& x)
+  {
+    spdlog::critical("Failed to establish the data source: {}", x.what());
+    throw;
+  }
 
   // Initialize the directors and tick them on their own threads.
   // Directors will terminate their tick loop once `_shouldRun` flag is set to false.

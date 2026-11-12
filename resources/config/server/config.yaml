@@ -157,6 +157,15 @@ server:
       # Additionally configurable through environment variable UDP_RACE_RELAY_SERVER_PORT.
       port: 10500
   data:
+    # Type of data source.
+    # Supported types are `file` and `postgres`.
     source: file
     file:
       basePath: "./data"
+    postgres:
+      # Connection string to the Postgre SQL database.
+      # The database layout is in `scripts/game-data-layout.sql`.
+      # https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+      connectionUri: 'postgresql://storyofalicia:dev@127.0.0.1:5432/storyofalicia'
+      # Count of connections in the connection pool.
+      connectionCount: 4

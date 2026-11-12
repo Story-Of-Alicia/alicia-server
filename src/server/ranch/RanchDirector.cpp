@@ -6151,11 +6151,15 @@ void RanchDirector::HandleChangeNickname(
 
   // todo: automod for the nickname
 
+  bool hasItem = false;
+  bool isNameClaimed = false;
   bool itemConsumed = false;
   uint32_t remainingItemCount = 0;
+  std::string previousName{};
 
   characterRecord.Mutable(
-    [this, &itemConsumed, &remainingItemCount](data::Character& character)
+    [this, &hasItem, &isNameClaimed, &itemConsumed, &remainingItemCount, &previousName, newName = command.newNickname](
+      data::Character& character)
     {
       const data::Tid CharacterRenameItem = 46002;
 
@@ -6163,11 +6167,34 @@ void RanchDirector::HandleChangeNickname(
       //       to rename the character. This would allow us to not remember `CharacterRenameItem` and
       //       to use the item UID to find the item.
 
+      // Check for the item first so that a name is not claimed without the item being consumed.
+      hasItem = GetServerInstance().GetItemSystem().CountItem(character, CharacterRenameItem) > 0;
+      if (not hasItem)
+        return;
+
+      // Claim the name, the uniqueness check above might have raced with another claim.
+      isNameClaimed = GetServerInstance().GetDataDirector().GetDataSource().ClaimCharacterName(
+        character.uid(), newName);
+      if (not isNameClaimed)
+        return;
+
+      // The name is claimed in the data source, keep the record consistent with it.
+      previousName = character.name();
+      character.name() = newName;
+
       const auto consumeResult = GetServerInstance().GetItemSystem().ConsumeItem(
         character, CharacterRenameItem, 1);
       itemConsumed = consumeResult.itemConsumed;
       remainingItemCount = consumeResult.remainingItemCount;
     });
+
+  if (not isNameClaimed and hasItem)
+  {
+    SendChangeNicknameCancel(
+      clientId,
+      protocol::ChangeNicknameError::DuplicateNickname);
+    return;
+  }
 
   if (not itemConsumed)
   {
@@ -6176,13 +6203,6 @@ void RanchDirector::HandleChangeNickname(
       protocol::ChangeNicknameError::NoOrIncorrectItem);
     return;
   }
-
-  std::string previousName{};
-  characterRecord.Mutable([newName = command.newNickname, &previousName](data::Character& character)
-  {
-    previousName = character.name();
-    character.name() = newName;
-  });
 
   const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
     clientContext.characterUid).userName;
@@ -7759,7 +7779,7 @@ void RanchDirector::HandleExpandMountSlot(
   characterRecord.Mutable([&newHorseSlotCount](data::Character& character)
   {
     character.horseSlotCount() += 1;
-    newHorseSlotCount = character.horseSlotCount();
+    newHorseSlotCount = static_cast<uint8_t>(character.horseSlotCount());
   });
 
   const protocol::AcCmdCRExpandMountSlotOK response{
