@@ -101,7 +101,7 @@ potentials:
     name: 'Iron Heart'
   - type: 5
     name: 'One Plus One'
-    chanceBp: 5000        # 50% chance for an extra magic
+    chanceBp: 7000        # 70% chance for an extra magic
   - type: 6
     name: 'Superior Reward'
   - type: 7
