@@ -20,6 +20,7 @@
 #ifndef ALICIA_SERVER_LOBBYNETWORKHANDLER_HPP
 #define ALICIA_SERVER_LOBBYNETWORKHANDLER_HPP
 
+#include "server/room/Room.hpp"
 #include "server/system/MatchmakingSystem.hpp"
 
 #include <libserver/data/DataDefinitions.hpp>
@@ -125,6 +126,10 @@ private:
   void HandleRoomList(
     ClientId clientId,
     const protocol::AcCmdCLRoomList& command);
+
+  void FillStraightWin(
+    protocol::LobbyCommandRoomListOK& response,
+    const std::vector<server::Room::Snapshot>& roomSnapshots);
 
   void HandleHeartbeat(
     ClientId clientId);

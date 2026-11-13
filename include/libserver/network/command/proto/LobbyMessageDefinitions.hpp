@@ -735,12 +735,16 @@ struct LobbyCommandRoomListOK
 
   std::vector<Room> rooms{};
 
+  //! Win streak banner in the room list ("RoomStrings/StraightWin").
   struct
   {
-    uint32_t unk0{};
-    std::string unk1{};
-    uint16_t unk2{};
-  } unk3{};
+    //! Room the streak is running in.
+    uint32_t roomUid{};
+    //! Name formatted into the banner (%s).
+    std::string name{};
+    //! Consecutive wins formatted into the banner (%d).
+    uint16_t winCount{};
+  } straightWin{};
 
   static Command GetCommand()
   {

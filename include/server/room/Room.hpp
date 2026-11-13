@@ -104,6 +104,8 @@ public:
     Details details;
     size_t playerCount;
     bool isPlaying;
+    WinStreak winStreak;
+    data::Uid teamStreakCharacterUid{data::InvalidUid};
   };
 
   enum PreventStartReason

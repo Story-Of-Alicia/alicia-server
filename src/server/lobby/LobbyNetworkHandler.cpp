@@ -1137,12 +1137,60 @@ void LobbyNetworkHandler::HandleRoomList(
     }
   }
 
+  FillStraightWin(response, roomSnapshots);
+
   _commandServer.QueueCommand<decltype(response)>(
     clientId,
     [response]()
     {
       return response;
     });
+}
+
+void LobbyNetworkHandler::FillStraightWin(
+  protocol::LobbyCommandRoomListOK& response,
+  const std::vector<server::Room::Snapshot>& roomSnapshots)
+{
+  constexpr uint16_t MinimumStraightWins = 2;
+
+  const bool isTeamMode = response.teamMode == protocol::TeamMode::Team;
+  const auto getWins = [isTeamMode](const server::Room::Snapshot& snapshot) -> uint16_t
+  {
+    return isTeamMode ? snapshot.winStreak.teamWins : snapshot.winStreak.characterWins;
+  };
+  const auto getCharacterUid = [isTeamMode](const server::Room::Snapshot& snapshot)
+  {
+    return isTeamMode ? snapshot.teamStreakCharacterUid : snapshot.winStreak.characterUid;
+  };
+
+  // The room with the longest streak across all pages of this mode.
+  const server::Room::Snapshot* bestRoom = nullptr;
+  for (const auto& snapshot : roomSnapshots)
+  {
+    if (getWins(snapshot) < MinimumStraightWins)
+      continue;
+    if (getCharacterUid(snapshot) == data::InvalidUid)
+      continue;
+    if (bestRoom == nullptr || getWins(snapshot) > getWins(*bestRoom))
+      bestRoom = &snapshot;
+  }
+
+  if (bestRoom != nullptr)
+  {
+    response.straightWin.roomUid = bestRoom->uid;
+    response.straightWin.winCount = getWins(*bestRoom);
+
+    const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(
+      getCharacterUid(*bestRoom));
+    if (characterRecord)
+    {
+      characterRecord.Immutable(
+        [&response](const data::Character& character)
+        {
+          response.straightWin.name = character.name();
+        });
+    }
+  }
 }
 
 void LobbyNetworkHandler::HandleHeartbeat(

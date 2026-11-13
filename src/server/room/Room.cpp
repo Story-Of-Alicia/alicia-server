@@ -213,11 +213,25 @@ Room::Details& Room::GetRoomDetails()
 
 Room::Snapshot Room::GetRoomSnapshot() const
 {
+  data::Uid teamStreakCharacterUid = data::InvalidUid;
+  if (_winStreak.teamWins > 0)
+  {
+    for (const auto& [characterUid, player] : _players)
+    {
+      if (player.GetTeam() != _winStreak.team)
+        continue;
+      if (teamStreakCharacterUid == data::InvalidUid || characterUid < teamStreakCharacterUid)
+        teamStreakCharacterUid = characterUid;
+    }
+  }
+
   return Snapshot{
     .uid = _uid,
     .details = _details,
     .playerCount = _players.size(),
     .isPlaying = _roomIsPlaying,
+    .winStreak = _winStreak,
+    .teamStreakCharacterUid = teamStreakCharacterUid,
   };
 }
 

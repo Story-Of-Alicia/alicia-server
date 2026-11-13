@@ -516,9 +516,9 @@ void LobbyCommandRoomListOK::Write(
   {
     stream.Write(room);
   }
-  stream.Write(command.unk3.unk0)
-    .Write(command.unk3.unk1)
-    .Write(command.unk3.unk2);
+  stream.Write(command.straightWin.roomUid)
+    .Write(command.straightWin.name)
+    .Write(command.straightWin.winCount);
 }
 
 void LobbyCommandRoomListOK::Read(
