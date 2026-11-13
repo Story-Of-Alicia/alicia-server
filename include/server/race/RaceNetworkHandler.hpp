@@ -215,6 +215,12 @@ private:
     uint16_t effectInstanceId,
     uint16_t obstacleInstanceCount);
 
+  void ReserveMagicTarget(
+    RaceInstance& raceInstance,
+    tracker::Oid casterOid,
+    tracker::Oid targetOid,
+    uint16_t effectInstanceId);
+
   void QueueIceWallExpiry(
     RaceInstance& raceInstance,
     uint32_t magicType,

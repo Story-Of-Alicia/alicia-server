@@ -134,6 +134,7 @@ public:
     {
       uint16_t casterOid;
       uint16_t effectInstanceId;
+      bool started{false};
     };
     std::optional<MagicTargetInfo> pendingMagicTarget{};
   };

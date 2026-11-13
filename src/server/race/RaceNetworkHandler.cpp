@@ -2759,6 +2759,46 @@ std::vector<tracker::Oid> RaceNetworkHandler::ResolveMagicTargets(
   return resolvedTargetList;
 }
 
+void RaceNetworkHandler::ReserveMagicTarget(
+  RaceInstance& raceInstance,
+  const tracker::Oid casterOid,
+  const tracker::Oid targetOid,
+  const uint16_t effectInstanceId)
+{
+  auto& racers = raceInstance.GetTracker().GetRacers();
+  const auto targetIter = race::MagicSystem::FindRacerByOid(racers, targetOid);
+  if (targetIter == racers.end())
+    return;
+
+  targetIter->second.pendingMagicTarget = {
+    .casterOid = casterOid,
+    .effectInstanceId = effectInstanceId};
+
+  constexpr auto MagicTargetReservationLifetime = std::chrono::seconds(10);
+
+  _scheduler.Queue(
+    [this, roomUid = raceInstance.GetRoomUid(), targetCharacterUid = targetIter->first,
+      effectInstanceId]
+    {
+      std::scoped_lock lock(_raceInstancesMutex);
+      const auto raceInstanceIter = _raceInstances.find(roomUid);
+      if (raceInstanceIter == _raceInstances.cend())
+        return;
+      auto& tracker = raceInstanceIter->second.GetTracker();
+      if (not tracker.IsRacer(targetCharacterUid))
+        return;
+
+      auto& pendingMagicTarget = tracker.GetRacer(targetCharacterUid).pendingMagicTarget;
+      if (pendingMagicTarget.has_value()
+        && not pendingMagicTarget->started
+        && pendingMagicTarget->effectInstanceId == effectInstanceId)
+      {
+        pendingMagicTarget.reset();
+      }
+    },
+    Scheduler::Clock::now() + MagicTargetReservationLifetime);
+}
+
 void RaceNetworkHandler::QueueIceWallExpiry(
   RaceInstance& raceInstance,
   const uint32_t magicType,
@@ -2938,6 +2978,9 @@ void RaceNetworkHandler::HandleUseMagicItem(
     .unk4 = magicSlotInfo.castingTime};
 
   this->BroadcastExceptCharacterUid(raceInstance, usageNotify, clientContext.characterUid);
+
+  if (magicSlotInfo.basicType == race::MagicType::Summon && not targetList.empty())
+    ReserveMagicTarget(raceInstance, racer.oid, targetList.front(), effectInstanceId);
 
   ApplyImmediateMagicEffects(
     raceInstance,
@@ -3204,40 +3247,33 @@ void RaceNetworkHandler::HandleStartMagicTarget(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  auto& racer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
+  auto& targetRacer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
 
   // TODO: Revise this in NPC races
-  if (command.casterOid != racer.oid)
+  if (command.targetOid != targetRacer.oid)
   {
-    spdlog::warn("Character OID mismatch in HandleStartMagicTarget");
+    spdlog::warn("Target OID mismatch in HandleStartMagicTarget");
     return;
   }
 
   spdlog::info(
-    "Racer '{}' (uid '{}') started magic target against racer OID {}",
-    racer.oid,
+    "Racer '{}' (uid '{}') received dragon {} from racer OID {}",
+    targetRacer.oid,
     clientContext.characterUid,
-    command.targetOid);
+    command.effectInstanceId,
+    command.casterOid);
 
-  auto& racers = raceInstance.GetTracker().GetRacers();
-  const auto targetIter = std::ranges::find_if(
-    racers,
-    [&command](const auto& entry)
-    {
-      return entry.second.oid == command.targetOid;
-    });
+  const bool isReservedForThisDragon = targetRacer.pendingMagicTarget.has_value()
+    && not targetRacer.pendingMagicTarget->started
+    && targetRacer.pendingMagicTarget->casterOid == command.casterOid
+    && targetRacer.pendingMagicTarget->effectInstanceId == command.effectInstanceId;
 
-  if (targetIter == racers.end())
-  {
-    spdlog::warn("Target OID {} not found in HandleStartMagicTarget", command.targetOid);
-    return;
-  }
-
-  auto& targetRacer = targetIter->second;
-
-  if (targetRacer.pendingMagicTarget.has_value()
+  if ((targetRacer.pendingMagicTarget.has_value() && not isReservedForThisDragon)
     || race::MagicSystem::IsDowned(targetRacer))
   {
+    if (isReservedForThisDragon)
+      targetRacer.pendingMagicTarget.reset();
+
     const protocol::AcCmdRCRemoveMagicTarget removeMagicTarget{
       .effectInstanceId = command.effectInstanceId,
       .casterOid = command.casterOid,
@@ -3248,7 +3284,10 @@ void RaceNetworkHandler::HandleStartMagicTarget(
   }
 
   targetRacer.dragonReceivedAt = std::chrono::steady_clock::now();
-  targetRacer.pendingMagicTarget = {command.casterOid, command.effectInstanceId};
+  targetRacer.pendingMagicTarget = {
+    .casterOid = command.casterOid,
+    .effectInstanceId = command.effectInstanceId,
+    .started = true};
 }
 
 void RaceNetworkHandler::HandleChangeMagicTarget(
@@ -3276,9 +3315,11 @@ void RaceNetworkHandler::HandleChangeMagicTarget(
     command.targetOid,
     command.targetOid2);
 
-  if (!racer.pendingMagicTarget.has_value())
+  if (not racer.pendingMagicTarget.has_value()
+    || not racer.pendingMagicTarget->started
+    || racer.pendingMagicTarget->effectInstanceId != command.effectInstanceId)
   {
-    spdlog::warn("Caster does not have dragon in HandleChangeMagicTarget");
+    spdlog::warn("Caster does not have dragon {} in HandleChangeMagicTarget", command.effectInstanceId);
 
     // The client thinks it is carrying a dragon that the server does not know about.
     // Cancel so it drops the phantom, instead of leaving it stuck holding one forever.
@@ -3314,7 +3355,6 @@ void RaceNetworkHandler::HandleChangeMagicTarget(
 
   auto& targetRacer = targetIter->second;
 
-  // Enforce cooldown: dragon cannot be passed until 5s after it was received
   constexpr auto DragonPassCooldown = std::chrono::milliseconds(500);
   if (std::chrono::steady_clock::now() - racer.dragonReceivedAt < DragonPassCooldown)
   {
@@ -3350,7 +3390,7 @@ void RaceNetworkHandler::HandleChangeMagicTarget(
   }
 
   targetRacer.dragonReceivedAt = std::chrono::steady_clock::now();
-  targetRacer.pendingMagicTarget = {command.casterOid, command.effectInstanceId};
+  targetRacer.pendingMagicTarget = racer.pendingMagicTarget;
   racer.pendingMagicTarget.reset();
 
   // Send OK response
@@ -3475,7 +3515,9 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
 
   if (verdict == EffectVerdict::Applied)
   {
-    if (magicSlotInfo->attackRank > 1 && targetRacer.pendingMagicTarget)
+    if (magicSlotInfo->attackRank > 1
+      && targetRacer.pendingMagicTarget
+      && targetRacer.pendingMagicTarget->started)
     {
       const protocol::AcCmdRCRemoveMagicTarget removeMagicTarget{
         .effectInstanceId = targetRacer.pendingMagicTarget->effectInstanceId,
@@ -3499,7 +3541,21 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
       GrantOnePlusOneMagicItem(raceInstance, command.attackerOid);
   }
   if (magicSlotInfo->basicType == race::MagicType::Summon)
-    targetRacer.pendingMagicTarget.reset();
+  {
+    if (targetRacer.pendingMagicTarget
+      && targetRacer.pendingMagicTarget->effectInstanceId == command.effectInstanceId)
+    {
+      targetRacer.pendingMagicTarget.reset();
+    }
+    else
+    {
+      spdlog::warn(
+        "Racer '{}' (uid '{}') reported hit of untracked dragon {}",
+        targetRacer.oid,
+        clientContext.characterUid,
+        command.effectInstanceId);
+    }
+  }
 }
 
 void RaceNetworkHandler::HandleOpCmd(
