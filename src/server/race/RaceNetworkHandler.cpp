@@ -3247,25 +3247,34 @@ void RaceNetworkHandler::HandleStartMagicTarget(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  auto& targetRacer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
+  const auto& racer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
 
   // TODO: Revise this in NPC races
-  if (command.targetOid != targetRacer.oid)
+  if (command.casterOid != racer.oid && command.targetOid != racer.oid)
   {
-    spdlog::warn("Target OID mismatch in HandleStartMagicTarget");
+    spdlog::warn("Racer OID mismatch in HandleStartMagicTarget");
     return;
   }
 
-  spdlog::info(
-    "Racer '{}' (uid '{}') received dragon {} from racer OID {}",
-    targetRacer.oid,
-    clientContext.characterUid,
-    command.effectInstanceId,
-    command.casterOid);
+  auto& racers = raceInstance.GetTracker().GetRacers();
+  const auto targetIter = race::MagicSystem::FindRacerByOid(racers, command.targetOid);
+  if (targetIter == racers.end())
+  {
+    spdlog::warn("Target OID {} not found in HandleStartMagicTarget", command.targetOid);
+    return;
+  }
+
+  auto& targetRacer = targetIter->second;
+
+  if (targetRacer.pendingMagicTarget.has_value()
+    && targetRacer.pendingMagicTarget->started
+    && targetRacer.pendingMagicTarget->effectInstanceId == command.effectInstanceId)
+  {
+    return;
+  }
 
   const bool isReservedForThisDragon = targetRacer.pendingMagicTarget.has_value()
     && not targetRacer.pendingMagicTarget->started
-    && targetRacer.pendingMagicTarget->casterOid == command.casterOid
     && targetRacer.pendingMagicTarget->effectInstanceId == command.effectInstanceId;
 
   if ((targetRacer.pendingMagicTarget.has_value() && not isReservedForThisDragon)
@@ -3283,9 +3292,13 @@ void RaceNetworkHandler::HandleStartMagicTarget(
     return;
   }
 
+  const auto casterOid = isReservedForThisDragon
+    ? targetRacer.pendingMagicTarget->casterOid
+    : command.casterOid;
+
   targetRacer.dragonReceivedAt = std::chrono::steady_clock::now();
   targetRacer.pendingMagicTarget = {
-    .casterOid = command.casterOid,
+    .casterOid = casterOid,
     .effectInstanceId = command.effectInstanceId,
     .started = true};
 }
