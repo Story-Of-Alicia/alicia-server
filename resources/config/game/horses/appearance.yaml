@@ -44,7 +44,7 @@ coats:
     minGrade: 2
     tier: 1
     inheritanceRate: 21.0
-    allowedColorGroups: 0
+    allowedColorGroups: 2
   - tid: 5
     name: 'Buckskin'
     faceType: -1
@@ -65,7 +65,7 @@ coats:
     minGrade: 5
     tier: 1
     inheritanceRate: 21.0
-    allowedColorGroups: 3
+    allowedColorGroups: 2
   # 2 Star Coats
   - tid: 8
     name: 'Blanket Appaloosa'
@@ -87,14 +87,14 @@ coats:
     minGrade: 6
     tier: 2
     inheritanceRate: 18.0
-    allowedColorGroups: 0
+    allowedColorGroups: 2
   - tid: 12
     name: 'Sooty Bay'
     faceType: 0
     minGrade: 6
     tier: 2
     inheritanceRate: 11.0
-    allowedColorGroups: 3
+    allowedColorGroups: 2
   - tid: 13
     name: 'Palomino'
     faceType: 0
@@ -137,7 +137,7 @@ coats:
     minGrade: 8
     tier: 3
     inheritanceRate: 10.0
-    allowedColorGroups: 0
+    allowedColorGroups: 2
   - tid: 18
     name: 'Mealy Bay'
     faceType: 0
@@ -158,7 +158,7 @@ coats:
     minGrade: 8
     tier: 3
     inheritanceRate: 5.0
-    allowedColorGroups: 0
+    allowedColorGroups: 2
   - tid: 21
     name: 'Spotted Blue Roan'
     faceType: 0
