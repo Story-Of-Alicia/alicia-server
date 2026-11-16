@@ -88,12 +88,12 @@ concept Container = requires(T a) {
 
 template <typename T>
 concept WritableStruct = requires(T value, SinkStream& stream) {
-  { T::Write(value, stream) };
+  { std::remove_cvref_t<T>::Write(value, stream) };
 };
 
 template <typename T>
 concept ReadableStruct = requires(T value, SourceStream& stream) {
-  { T::Read(value, stream) };
+  { std::remove_cvref_t<T>::Read(value, stream) };
 };
 
 //! Buffered stream sink.

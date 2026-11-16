@@ -128,10 +128,10 @@ public:
   template <WritableStruct C>
   void QueueCommand(
     ClientId clientId,
-    std::function<C()> supplier)
+    std::function<std::remove_cvref_t<C>()> supplier)
   {
-    SendCommand(clientId, C::GetCommand(), [supplier](SinkStream& sink){
-      C::Write(supplier(), sink);
+    SendCommand(clientId, std::remove_cvref_t<C>::GetCommand(), [supplier](SinkStream& sink){
+      std::remove_cvref_t<C>::Write(supplier(), sink);
     });
   }
 

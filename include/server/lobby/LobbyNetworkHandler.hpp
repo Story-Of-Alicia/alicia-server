@@ -70,7 +70,7 @@ public:
   void NotifyAchievementReward(
     data::Uid characterUid);
   void NotifyMatchmakeResult(
-    const data::Uid characterUid,
+    data::Uid characterUid,
     const MatchmakingSystem::Result& result);
 
   void NotifyMissionRecordUpdate(
@@ -144,7 +144,7 @@ private:
 
   void SendRoomEntryResponse(
     bool leftRanch,
-    Scheduler::Task sendResponse);
+    const Scheduler::Task& sendResponse);
 
   void HandleLeaveRoom(
     ClientId clientId);

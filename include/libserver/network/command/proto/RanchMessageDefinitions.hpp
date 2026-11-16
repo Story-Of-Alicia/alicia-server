@@ -157,7 +157,7 @@ struct AcCmdCREnterRanchOK
     SourceStream& stream);
 };
 
-struct RanchCommandEnterRanchCancel
+struct AcCmdCREnterRanchCancel
 {
   static Command GetCommand()
   {
@@ -168,18 +168,18 @@ struct RanchCommandEnterRanchCancel
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandEnterRanchCancel& command,
+    const AcCmdCREnterRanchCancel& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandEnterRanchCancel& command,
+    AcCmdCREnterRanchCancel& command,
     SourceStream& stream);
 };
 
-struct RanchCommandEnterRanchNotify
+struct AcCmdCREnterRanchNotify
 {
   RanchCharacter character{};
 
@@ -192,14 +192,14 @@ struct RanchCommandEnterRanchNotify
   //! @param command Command.
   //! @param stream Sink stream.
   static void Write(
-    const RanchCommandEnterRanchNotify& command,
+    const AcCmdCREnterRanchNotify& command,
     SinkStream& stream);
 
   //! Reader a command from a provided source stream.
   //! @param command Command.
   //! @param stream Source stream.
   static void Read(
-    RanchCommandEnterRanchNotify& command,
+    AcCmdCREnterRanchNotify& command,
     SourceStream& stream);
 };
 

@@ -3969,7 +3969,7 @@ void RaceNetworkHandler::HandleRequestUser(
     command.roomUid,
     command.ranchUid);
 
-  GetServerInstance().GetRanchDirector().SummonCharacter(
+  GetServerInstance().GetRanchDirector().SendCharacterSummon(
     characterUid,
     command.force,
     command.characterName,

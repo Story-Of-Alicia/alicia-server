@@ -301,7 +301,7 @@ Genetics::Ancestry Genetics::BuildAncestry(const data::Uid mareUid, const data::
   ancestry.stallion = stallionUid;
 
   // Each parent's own parents become the foal's grandparents.
-  const auto readGrandparents = [&](data::Uid parentUid, size_t firstSlot)
+  const auto ReadAncestors = [&](const data::Uid parentUid, const size_t firstSlot)
   {
     if (parentUid == data::InvalidUid)
       return;
@@ -317,8 +317,8 @@ Genetics::Ancestry Genetics::BuildAncestry(const data::Uid mareUid, const data::
     });
   };
 
-  readGrandparents(mareUid, 0);     // Maternal grandparents.
-  readGrandparents(stallionUid, 2); // Paternal grandparents.
+  ReadAncestors(mareUid, 0);     // Maternal grandparents.
+  ReadAncestors(stallionUid, 2); // Paternal grandparents.
   return ancestry;
 }
 
