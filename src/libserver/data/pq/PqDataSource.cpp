@@ -498,7 +498,7 @@ void WriteUids(
   }
 
   // The whole list is written by a single statement, a reference held more than once is stored once.
-  const auto result = query.exec(
+  const pqxx::result result = query.exec(
     std::format(
       "insert into {} ({}, {}) "
       "select $1::{}, \"uid\" "
@@ -559,7 +559,7 @@ void WriteUidList(
 
   // The whole list is written by a single statement. The position of a reference is its index
   // in the list, a skipped reference leaves its position empty.
-  const auto result = query.exec(
+  const pqxx::result result = query.exec(
     std::format(
       "insert into {} ({}, \"position\", {}) "
       "select $1::{}, (\"list\".\"index\" - 1)::\"data\".\"uint32\", \"record\".\"uid\" "
@@ -604,7 +604,7 @@ std::vector<data::Uid> ReadUidList(
   const Key& ownerKey,
   const std::string_view valueColumn)
 {
-  const auto result = query.exec(
+  const pqxx::result result = query.exec(
     std::format(
       "select {} from {} where {} = $1 order by \"position\"",
       query.quote_name(valueColumn),
@@ -630,7 +630,7 @@ Values ReadUids(
   const Key& ownerKey,
   const std::string_view valueColumn)
 {
-  const auto result = query.exec(
+  const pqxx::result result = query.exec(
     std::format(
       "select {0} from {1} where {2} = $1 order by {0}",
       query.quote_name(valueColumn),
