@@ -92,6 +92,7 @@ public:
   void StoreGuild(data::Uid uid, const data::Guild& guild) override;
   void DeleteGuild(data::Uid uid) override;
   bool IsGuildNameUnique(const std::string_view& name) override;
+  bool ClaimGuildName(data::Uid uid, const std::string_view& name) override;
   void CreateSettings(data::Settings& settings) override;
   void RetrieveSettings(data::Uid uid, data::Settings& settings) override;
   void StoreSettings(data::Uid uid, const data::Settings& settings) override;

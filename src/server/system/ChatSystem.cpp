@@ -1910,6 +1910,15 @@ void ChatSystem::RegisterAdminCommands()
           std::string previousName{};
           // Join remaining arguments to form new name
           std::string newName = concatString(arguments.subspan(3));
+
+          // The name is assigned only by the claim, which fails if another guild holds the name.
+          const bool isNameClaimed = _serverInstance.GetDataDirector().GetDataSource().ClaimGuildName(
+            guildUid,
+            newName);
+          if (not isNameClaimed)
+            return {
+              std::format("Guild name '{}' is already taken", newName)};
+
           guildRecord.Mutable([&previousName, newName](data::Guild& guild)
             {
               previousName = guild.name();

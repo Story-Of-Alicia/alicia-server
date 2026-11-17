@@ -238,7 +238,7 @@ void AcCmdRCUpdateMountAppearanceNotify::Write(
 {
   stream.Write(command.unk0);
 
-  constexpr size_t MaxHorseUpdateValues = 10;
+  [[maybe_unused]] constexpr size_t MaxHorseUpdateValues = 10;
   assert(command.horseUpdateValues.size() <= MaxHorseUpdateValues);
   stream.Write(static_cast<uint8_t>(command.horseUpdateValues.size()));
   for (const auto& val : command.horseUpdateValues)

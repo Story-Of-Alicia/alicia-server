@@ -3515,9 +3515,37 @@ void RanchDirector::HandleCreateGuild(
       std::format("Failed to create guild for user '{}'", clientContext.userName));
   }
 
+  auto createdGuildUid = data::InvalidUid;
+  guildRecord.Immutable([&createdGuildUid](const data::Guild& guild)
+  {
+    createdGuildUid = guild.uid();
+  });
+
+  // Claim the name, the uniqueness check above might have raced with another claim.
+  const bool isNameClaimed = GetServerInstance().GetDataDirector().GetDataSource().ClaimGuildName(
+    createdGuildUid,
+    command.name);
+  if (not isNameClaimed)
+  {
+    GetServerInstance().GetDataDirector().GetGuildCache().Delete(createdGuildUid);
+
+    protocol::AcCmdCRCreateGuildCancel cancel{
+      .status = 0,
+      .member2 = 0}; // TODO: Unidentified
+
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
   guildRecord.Mutable([&response, command, characterUid = clientContext.characterUid](data::Guild& guild)
   {
     response.uid = guild.uid();
+    // The name is claimed in the data source, keep the record consistent with it.
     guild.name = command.name;
     guild.description = command.description;
     guild.owner = characterUid;

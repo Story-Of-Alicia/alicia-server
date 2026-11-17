@@ -877,8 +877,9 @@ pqxx::params HousingParams(
     WriteField(housing.durability()));
 }
 
+//! Columns of the guild without the name, which is assigned only by `ClaimGuildName`
+//! so that a name conflict can never fail the store of the whole guild.
 constexpr auto GuildColumns = std::to_array<Column>({
-  {"name"},
   {"description"},
   {"owner", "character"},
   {"rank"},
@@ -891,7 +892,6 @@ pqxx::params GuildParams(
   const data::Guild& guild)
 {
   return pqxx::params(
-    WriteField(guild.name()),
     WriteField(guild.description()),
     WriteField(guild.owner()),
     WriteField(guild.rank()),
@@ -2262,6 +2262,34 @@ bool PqDataSource::IsGuildNameUnique(
     "where \"name\" <> '' and lower(\"name\") = lower($1)",
     pqxx::params(name));
   return result.empty();
+}
+
+bool PqDataSource::ClaimGuildName(
+  const data::Uid uid,
+  const std::string_view& name)
+{
+  const auto connection = AcquireConnection();
+  pqxx::work query(*connection);
+  try
+  {
+    // The unique index on the guild names makes the claim atomic.
+    const auto result = query.exec(
+      "update \"data\".\"guild\" "
+      "set \"name\" = $2 "
+      "where \"uid\" = $1",
+      pqxx::params(uid, name));
+    if (result.affected_rows() == 0)
+    {
+      throw std::runtime_error("Guild does not exist");
+    }
+    query.commit();
+  }
+  catch (const pqxx::unique_violation&)
+  {
+    return false;
+  }
+
+  return true;
 }
 
 void PqDataSource::CreateSettings(

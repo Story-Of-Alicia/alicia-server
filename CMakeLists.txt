@@ -156,8 +156,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             PRIVATE -fexperimental-library)
     target_compile_options(alicia-server
             PRIVATE -fexperimental-library)
-    target_compile_options(alicia-migrate
-            PRIVATE -fexperimental-library)
 endif ()
 
 add_custom_command(

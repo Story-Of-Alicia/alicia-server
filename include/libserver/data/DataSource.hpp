@@ -202,6 +202,12 @@ public:
   //! Returns whether the guild name is unique.
   //! @return `true` if the guild name is unique, otherwise returns `false`.
   virtual bool IsGuildNameUnique(const std::string_view& name) = 0;
+  //! Atomically assigns the name to the guild, unless another guild holds the name.
+  //! The name of a guild is assigned only by the claim, the store of the guild does not change it.
+  //! @param uid UID of the guild.
+  //! @param name Name to claim.
+  //! @return `true` if the name was claimed, `false` if another guild holds the name.
+  virtual bool ClaimGuildName(data::Uid uid, const std::string_view& name) = 0;
 
   //! Creates the settings in the data source.
   //! @param settings Settings to create.

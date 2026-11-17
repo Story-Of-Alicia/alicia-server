@@ -1260,9 +1260,30 @@ void server::FileDataSource::DeleteGuild(data::Uid uid)
   const std::filesystem::path dataFilePath = ProduceDataFilePath(
     _guildDataPath, std::format("{}", uid));
   std::filesystem::remove(dataFilePath);
+
+  std::scoped_lock lock(_guildNameMutex);
+  _claimedGuildNames.erase(uid);
 }
 
 bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
+{
+  std::scoped_lock lock(_guildNameMutex);
+  return FindGuildUidByName(name) == data::InvalidUid;
+}
+
+bool server::FileDataSource::ClaimGuildName(data::Uid uid, const std::string_view& name)
+{
+  std::scoped_lock lock(_guildNameMutex);
+
+  const auto holderUid = FindGuildUidByName(name);
+  if (holderUid != data::InvalidUid && holderUid != uid)
+    return false;
+
+  _claimedGuildNames[uid] = std::string(name);
+  return true;
+}
+
+server::data::Uid server::FileDataSource::FindGuildUidByName(const std::string_view& name)
 {
   const auto equalsIgnoreCase = [](std::string_view lhs, std::string_view rhs)
   {
@@ -1273,6 +1294,12 @@ bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
         return std::tolower(a) == std::tolower(b);
       });
   };
+
+  for (const auto& [guildUid, claimedName] : _claimedGuildNames)
+  {
+    if (equalsIgnoreCase(claimedName, name))
+      return guildUid;
+  }
 
   for (const auto& file : std::filesystem::directory_iterator(_guildDataPath))
   {
@@ -1286,10 +1313,15 @@ bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
     try
     {
       const auto json = nlohmann::json::parse(dataFile);
-      const auto existingGuildName = json.value("name", std::string{});
+      const auto existingGuildUid = json.value("uid", data::Uid{});
 
-      if (equalsIgnoreCase(existingGuildName, name))
-        return false;
+      // The claimed name supersedes the name in the data file.
+      if (_claimedGuildNames.contains(existingGuildUid))
+        continue;
+
+      const auto existingGuildName = json.value("name", std::string{});
+      if (not existingGuildName.empty() && equalsIgnoreCase(existingGuildName, name))
+        return existingGuildUid;
     }
     catch (const std::exception&)
     {
@@ -1298,7 +1330,7 @@ bool server::FileDataSource::IsGuildNameUnique(const std::string_view& name)
     }
   }
 
-  return true;
+  return data::InvalidUid;
 }
 
 void server::FileDataSource::CreateSettings(data::Settings& settings)
