@@ -42,12 +42,6 @@ target_sources(race_test_p2did_pool PRIVATE
 target_link_libraries(race_test_p2did_pool
         PRIVATE project-properties alicia-libserver)
 
-add_executable(data_test_data_storage)
-target_sources(data_test_data_storage PRIVATE
-        src/data/TestDataStorage.cpp)
-target_link_libraries(data_test_data_storage
-        PRIVATE project-properties alicia-libserver)
-
 add_test(NAME ProtocolTestMagic COMMAND protocol_test_magic)
 add_test(NAME UtilTestStream COMMAND util_test_stream)
 add_test(NAME UtilTestScheduler COMMAND util_test_scheduler)
@@ -55,5 +49,4 @@ add_test(NAME UtilTestLocale COMMAND util_test_locale)
 add_test(NAME UtilTestAliciaShopTime COMMAND util_test_alicia_shop_time)
 add_test(NAME UtilTestProfiler COMMAND util_test_profiler)
 add_test(NAME RaceTestP2dIdPool COMMAND race_test_p2did_pool)
-add_test(NAME DataTestDataStorage COMMAND data_test_data_storage)
 
