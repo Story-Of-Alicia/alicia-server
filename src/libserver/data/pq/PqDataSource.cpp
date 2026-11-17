@@ -184,6 +184,62 @@ void ClaimOwnership(
     pqxx::params(ownerKey, uid));
 }
 
+//! Produces the returning list of the reference columns, which pairs the UID bound
+//! to every reference column with the value stored in it.
+//! @param firstIndex Index of the parameter bound to the first column.
+std::string ReferenceReturning(
+  const pqxx::transaction_base& query,
+  const std::span<const Column> columns,
+  const std::size_t firstIndex)
+{
+  std::string returning;
+  for (std::size_t index = 0; index < columns.size(); ++index)
+  {
+    if (columns[index].referencedTable.empty())
+      continue;
+
+    returning += std::format(
+      ", ${}::bigint, {}",
+      firstIndex + index,
+      query.quote_name(columns[index].name));
+  }
+  return returning;
+}
+
+//! Warns about the references stored as null because the referenced record does not exist,
+//! or is owned by another owner. Such a reference never fails the store, but it is lost.
+//! @param row Row returned by a statement with the `ReferenceReturning` list after its first column.
+template <typename Key>
+void WarnClearedReferences(
+  const pqxx::row& row,
+  const std::span<const Column> columns,
+  const std::string_view table,
+  const Key& key)
+{
+  pqxx::row::size_type field = 1;
+  for (const auto& column : columns)
+  {
+    if (column.referencedTable.empty())
+      continue;
+
+    const auto requested = row[field].as<int64_t>(0);
+    const bool isStored = not row[field + 1].is_null();
+    field += 2;
+
+    if (requested == 0 || isStored)
+      continue;
+
+    spdlog::warn(
+      "The reference of '{}' {} to '{}' {} in '{}' was stored as empty, the record does not exist{}",
+      table,
+      key,
+      column.referencedTable,
+      requested,
+      column.name,
+      column.isOwned ? " or is owned by another owner" : "");
+  }
+}
+
 //! Produces a list of columns with the column prepended.
 std::vector<Column> PrependColumn(
   const Column& column,
@@ -218,11 +274,12 @@ std::string InsertSql(
   }
 
   return std::format(
-    "insert into {} ({}) values ({}) returning {}",
+    "insert into {} ({}) values ({}) returning {}{}",
     QualifiedTable(query, table),
     columnList,
     valueList,
-    query.quote_name(keyColumn));
+    query.quote_name(keyColumn),
+    ReferenceReturning(query, columns, 1));
 }
 
 //! Produces an update statement of the columns.
@@ -249,11 +306,13 @@ std::string UpdateSql(
   }
 
   return std::format(
-    "update {} set {} where {} = ${}",
+    "update {} set {} where {} = ${} returning {}{}",
     QualifiedTable(query, table),
     assignmentList,
     query.quote_name(keyColumn),
-    keyIndex);
+    keyIndex,
+    query.quote_name(keyColumn),
+    ReferenceReturning(query, columns, 1));
 }
 
 //! Inserts the record and returns its generated UID.
@@ -264,9 +323,10 @@ data::Uid InsertRecord(
   const std::string_view keyColumn,
   const pqxx::params& params)
 {
-  return query.exec(InsertSql(query, table, columns, keyColumn), params)
-    .one_row()[0]
-    .as<data::Uid>();
+  const auto row = query.exec(InsertSql(query, table, columns, keyColumn), params).one_row();
+  const auto uid = row[0].as<data::Uid>();
+  WarnClearedReferences(row, columns, table, uid);
+  return uid;
 }
 
 //! Updates the record by its key.
@@ -282,10 +342,11 @@ void UpdateRecord(
 {
   params.append(key);
   const auto result = query.exec(UpdateSql(query, table, columns, keyColumn), params);
-  if (result.affected_rows() == 0)
+  if (result.empty())
   {
     throw std::runtime_error(std::format("Record of '{}' does not exist", table));
   }
+  WarnClearedReferences(result.front(), columns, table, key);
 }
 
 //! Selects the record by its key.
@@ -417,39 +478,63 @@ void WriteUids(
 {
   DeleteRecord(query, table, ownerColumn, ownerKey);
 
-  const bool isOwning = ownership == Ownership::Permanent;
-  // A reference held more than once is stored once.
-  const auto insertSql = std::format(
-    "insert into {} ({}, {}) "
-    "select $1::{}, \"uid\" "
-    "from {} "
-    "where \"uid\" = $2{} "
-    "on conflict do nothing",
-    QualifiedTable(query, table),
-    query.quote_name(ownerColumn),
-    query.quote_name(valueColumn),
-    OwnerKeyType<Key>(),
-    QualifiedTable(query, referencedTable),
-    isOwning ? " and \"ownerUid\" = $1" : "");
-
-  for (const auto value : values)
+  const std::vector<data::Uid> uids(values.begin(), values.end());
+  if (uids.empty())
   {
-    if (isOwning)
+    return;
+  }
+
+  const bool isOwning = ownership == Ownership::Permanent;
+  if (isOwning)
+  {
+    // The records without an owner are assigned to the list owner, all at once.
+    query.exec(
+      std::format(
+        "update {} "
+        "set \"ownerUid\" = $1 "
+        "where \"uid\" = any($2::bigint[]) and \"ownerUid\" is null",
+        QualifiedTable(query, referencedTable)),
+      pqxx::params(ownerKey, uids));
+  }
+
+  // The whole list is written by a single statement, a reference held more than once is stored once.
+  const auto result = query.exec(
+    std::format(
+      "insert into {} ({}, {}) "
+      "select $1::{}, \"uid\" "
+      "from {} "
+      "where \"uid\" = any($2::bigint[]){} "
+      "on conflict do nothing "
+      "returning {}",
+      QualifiedTable(query, table),
+      query.quote_name(ownerColumn),
+      query.quote_name(valueColumn),
+      OwnerKeyType<Key>(),
+      QualifiedTable(query, referencedTable),
+      isOwning ? " and \"ownerUid\" = $1" : "",
+      query.quote_name(valueColumn)),
+    pqxx::params(ownerKey, uids));
+
+  std::set<data::Uid> written;
+  for (const auto& row : result)
+  {
+    written.insert(row[0].as<data::Uid>());
+  }
+
+  for (const auto uid : std::set<data::Uid>(uids.begin(), uids.end()))
+  {
+    if (written.contains(uid))
     {
-      ClaimOwnership(query, referencedTable, ownerKey, value);
+      continue;
     }
 
-    const auto result = query.exec(insertSql, pqxx::params(ownerKey, value));
-    if (result.affected_rows() == 0)
-    {
-      spdlog::warn(
-        "Skipped the reference to '{}' {} held by '{}' of {}, "
-        "the record does not exist, is owned by another owner or is held more than once",
-        referencedTable,
-        value,
-        table,
-        ownerKey);
-    }
+    spdlog::warn(
+      "Skipped the reference to '{}' {} held by '{}' of {}, "
+      "the record does not exist or is owned by another owner",
+      referencedTable,
+      uid,
+      table,
+      ownerKey);
   }
 }
 
@@ -467,30 +552,46 @@ void WriteUidList(
 {
   DeleteRecord(query, table, ownerColumn, ownerKey);
 
-  const auto insertSql = std::format(
-    "insert into {} ({}, \"position\", {}) "
-    "select $1::{}, $2::\"data\".\"uint32\", \"uid\" "
-    "from {} "
-    "where \"uid\" = $3",
-    QualifiedTable(query, table),
-    query.quote_name(ownerColumn),
-    query.quote_name(valueColumn),
-    OwnerKeyType<Key>(),
-    QualifiedTable(query, referencedTable));
+  if (values.empty())
+  {
+    return;
+  }
+
+  // The whole list is written by a single statement. The position of a reference is its index
+  // in the list, a skipped reference leaves its position empty.
+  const auto result = query.exec(
+    std::format(
+      "insert into {} ({}, \"position\", {}) "
+      "select $1::{}, (\"list\".\"index\" - 1)::\"data\".\"uint32\", \"record\".\"uid\" "
+      "from unnest($2::bigint[]) with ordinality as \"list\" (\"uid\", \"index\") "
+      "join {} as \"record\" on \"record\".\"uid\" = \"list\".\"uid\" "
+      "returning \"position\"",
+      QualifiedTable(query, table),
+      query.quote_name(ownerColumn),
+      query.quote_name(valueColumn),
+      OwnerKeyType<Key>(),
+      QualifiedTable(query, referencedTable)),
+    pqxx::params(ownerKey, values));
+
+  std::set<uint32_t> written;
+  for (const auto& row : result)
+  {
+    written.insert(row[0].as<uint32_t>());
+  }
 
   for (uint32_t position = 0; position < values.size(); ++position)
   {
-    const auto value = values[position];
-    const auto result = query.exec(insertSql, pqxx::params(ownerKey, position, value));
-    if (result.affected_rows() == 0)
+    if (written.contains(position))
     {
-      spdlog::warn(
-        "Skipped the reference to '{}' {} held by '{}' of {}, the record does not exist",
-        referencedTable,
-        value,
-        table,
-        ownerKey);
+      continue;
     }
+
+    spdlog::warn(
+      "Skipped the reference to '{}' {} held by '{}' of {}, the record does not exist",
+      referencedTable,
+      values[position],
+      table,
+      ownerKey);
   }
 }
 
@@ -1065,34 +1166,48 @@ void WriteCharacterRelations(
   WriteUids(query, "characterQuest", "characterUid", uid,
     "questUid", "quest", character.quests());
 
+  // The groups, their members, the missions and their progress are each written by a single
+  // statement, from parallel arrays of their columns.
+
   // Deleting the groups cascades to their members.
   DeleteRecord(query, "characterContactGroup", "characterUid", uid);
+  std::vector<data::Uid> groupUids;
+  std::vector<std::string> groupNames;
+  std::vector<int64_t> groupCreatedAts;
+  std::vector<data::Uid> memberGroupUids;
+  std::vector<data::Uid> memberUids;
   for (const auto& [groupUid, group] : character.contacts.groups())
+  {
+    groupUids.emplace_back(groupUid);
+    groupNames.emplace_back(group.name);
+    groupCreatedAts.emplace_back(WriteField(group.createdAt));
+    for (const auto member : group.members)
+    {
+      memberGroupUids.emplace_back(groupUid);
+      memberUids.emplace_back(member);
+    }
+  }
+
+  if (not groupUids.empty())
   {
     query.exec(
       "insert into \"data\".\"characterContactGroup\" "
       "(\"characterUid\", \"groupUid\", \"name\", \"createdAt\") "
-      "values ($1, $2, $3, $4)",
-      pqxx::params(
-        uid,
-        groupUid,
-        group.name,
-        WriteField(group.createdAt)));
+      "select $1, \"groupUid\", \"name\", \"createdAt\" "
+      "from unnest($2::bigint[], $3::text[], $4::bigint[]) as \"group\" (\"groupUid\", \"name\", \"createdAt\")",
+      pqxx::params(uid, groupUids, groupNames, groupCreatedAts));
+  }
 
+  if (not memberUids.empty())
+  {
     // Members which do not exist are skipped.
-    for (const auto member : group.members)
-    {
-      query.exec(
-        "insert into \"data\".\"characterContactGroupMember\" "
-        "(\"characterUid\", \"groupUid\", \"memberUid\") "
-        "select $1::\"data\".\"uint32\", $2::\"data\".\"uint32\", \"uid\" "
-        "from \"data\".\"character\" "
-        "where \"uid\" = $3",
-        pqxx::params(
-          uid,
-          groupUid,
-          member));
-    }
+    query.exec(
+      "insert into \"data\".\"characterContactGroupMember\" "
+      "(\"characterUid\", \"groupUid\", \"memberUid\") "
+      "select $1, \"member\".\"groupUid\", \"character\".\"uid\" "
+      "from unnest($2::bigint[], $3::bigint[]) as \"member\" (\"groupUid\", \"memberUid\") "
+      "join \"data\".\"character\" as \"character\" on \"character\".\"uid\" = \"member\".\"memberUid\"",
+      pqxx::params(uid, memberGroupUids, memberUids));
   }
 
   DeleteRecord(query, "characterSkillSet", "characterUid", uid);
@@ -1101,31 +1216,44 @@ void WriteCharacterRelations(
 
   // Deleting the missions cascades to their progress.
   DeleteRecord(query, "characterMission", "characterUid", uid);
+  std::vector<uint32_t> missionKeys;
+  std::vector<uint32_t> missionIds;
+  std::vector<uint32_t> progressMissionKeys;
+  std::vector<uint32_t> progressPositions;
+  std::vector<uint32_t> progressIds;
+  std::vector<uint32_t> progressValues;
   for (const auto& [key, mission] : character.missions())
+  {
+    missionKeys.emplace_back(key);
+    missionIds.emplace_back(mission.id);
+    for (uint32_t position = 0; position < mission.progress.size(); ++position)
+    {
+      progressMissionKeys.emplace_back(key);
+      progressPositions.emplace_back(position);
+      progressIds.emplace_back(mission.progress[position].id);
+      progressValues.emplace_back(mission.progress[position].value);
+    }
+  }
+
+  if (not missionKeys.empty())
   {
     query.exec(
       "insert into \"data\".\"characterMission\" "
       "(\"characterUid\", \"missionKey\", \"id\") "
-      "values ($1, $2, $3)",
-      pqxx::params(
-        uid,
-        key,
-        mission.id));
+      "select $1, \"missionKey\", \"id\" "
+      "from unnest($2::bigint[], $3::bigint[]) as \"mission\" (\"missionKey\", \"id\")",
+      pqxx::params(uid, missionKeys, missionIds));
+  }
 
-    for (uint32_t position = 0; position < mission.progress.size(); ++position)
-    {
-      const auto& progress = mission.progress[position];
-      query.exec(
-        "insert into \"data\".\"characterMissionProgress\" "
-        "(\"characterUid\", \"missionKey\", \"position\", \"id\", \"value\") "
-        "values ($1, $2, $3, $4, $5)",
-        pqxx::params(
-          uid,
-          key,
-          position,
-          progress.id,
-          progress.value));
-    }
+  if (not progressMissionKeys.empty())
+  {
+    query.exec(
+      "insert into \"data\".\"characterMissionProgress\" "
+      "(\"characterUid\", \"missionKey\", \"position\", \"id\", \"value\") "
+      "select $1, \"missionKey\", \"position\", \"id\", \"value\" "
+      "from unnest($2::bigint[], $3::bigint[], $4::bigint[], $5::bigint[]) "
+      "as \"progress\" (\"missionKey\", \"position\", \"id\", \"value\")",
+      pqxx::params(uid, progressMissionKeys, progressPositions, progressIds, progressValues));
   }
 }
 
