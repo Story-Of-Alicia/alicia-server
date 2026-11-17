@@ -249,6 +249,8 @@ create table "data"."horse"
     "uid" "data"."uint32" not null default nextval('"data"."equipmentUidSeq"') primary key,
     -- the character owning the horse, assigned once and never changed.
     "ownerUid" "data"."uint32",
+    -- whether the owner of the horse was deleted, an abandoned horse can not be claimed again.
+    "isAbandoned" boolean not null default false,
     "tid" "data"."uint32" not null default 0,
     "name" text not null default '',
     "partsSkinTid" "data"."uint32" not null default 0,
@@ -342,6 +344,26 @@ create trigger "horseOwnerPermanent"
     before update of "ownerUid" on "data"."horse"
     for each row execute function "data"."preventOwnerChange"();
 
+-- a horse unlinked from its deleted owner is abandoned,
+-- it is never claimed by another character, a claim of an abandoned horse is skipped.
+create function "data"."abandonHorse"() returns trigger
+    language plpgsql as
+$$
+begin
+    if old."isAbandoned" then
+        return null;
+    end if;
+    if old."ownerUid" is not null and new."ownerUid" is null then
+        new."isAbandoned" := true;
+    end if;
+    return new;
+end;
+$$;
+
+create trigger "horseAbandonment"
+    before update of "ownerUid" on "data"."horse"
+    for each row execute function "data"."abandonHorse"();
+
 create function "data"."preventHorseDelete"() returns trigger
     language plpgsql as
 $$
@@ -376,8 +398,10 @@ alter table "data"."egg"
 alter table "data"."pet"
     add foreign key ("itemUid") references "data"."item" ("uid") on delete set null;
 
+-- a guild always has an owner, the owner of a guild with other members can not be deleted
+-- until the ownership is transferred. a guild without other members is deleted with its owner.
 alter table "data"."guild"
-    add foreign key ("owner") references "data"."character" ("uid") on delete set null;
+    add foreign key ("owner") references "data"."character" ("uid") on delete restrict;
 
 alter table "data"."mail"
     add foreign key ("senderUid") references "data"."character" ("uid") on delete set null,
@@ -386,10 +410,11 @@ alter table "data"."mail"
 
 alter table "data"."stallion"
     add foreign key ("horseUid") references "data"."horse" ("uid"),
-    add foreign key ("ownerUid") references "data"."character" ("uid") on delete set null;
+    -- the stallion is withdrawn from the market with its owner.
+    add foreign key ("ownerUid") references "data"."character" ("uid") on delete cascade;
 
 alter table "data"."reward"
-    add foreign key ("characterUid") references "data"."character" ("uid") on delete set null;
+    add foreign key ("characterUid") references "data"."character" ("uid") on delete cascade;
 
 alter table "data"."character"
     add foreign key ("guildUid") references "data"."guild" ("uid") on delete set null,

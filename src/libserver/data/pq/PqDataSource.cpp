@@ -270,6 +270,7 @@ data::Uid InsertRecord(
 }
 
 //! Updates the record by its key.
+//! @throws std::runtime_error if the record does not exist.
 template <typename Key>
 void UpdateRecord(
   pqxx::transaction_base& query,
@@ -280,7 +281,11 @@ void UpdateRecord(
   pqxx::params params)
 {
   params.append(key);
-  query.exec(UpdateSql(query, table, columns, keyColumn), params);
+  const auto result = query.exec(UpdateSql(query, table, columns, keyColumn), params);
+  if (result.affected_rows() == 0)
+  {
+    throw std::runtime_error(std::format("Record of '{}' does not exist", table));
+  }
 }
 
 //! Selects the record by its key.
@@ -320,6 +325,54 @@ void DeleteRecord(
       QualifiedTable(query, table),
       query.quote_name(keyColumn)),
     pqxx::params(key));
+}
+
+//! A list of references held by a character.
+struct CharacterList
+{
+  //! Table of the list.
+  std::string_view table;
+  //! Column of the list holding the reference.
+  std::string_view valueColumn;
+};
+
+//! Deletes the records held in the lists of the character which no other character holds.
+//! The records are deleted before the character, while its lists still exist.
+void DeleteHeldRecords(
+  pqxx::transaction_base& query,
+  const data::Uid characterUid,
+  const std::string_view table,
+  const std::span<const CharacterList> lists)
+{
+  std::string heldByCharacter;
+  std::string heldByOthers;
+  for (std::size_t index = 0; index < lists.size(); ++index)
+  {
+    const auto& list = lists[index];
+    if (index > 0)
+    {
+      heldByCharacter += " union ";
+      heldByOthers += " or ";
+    }
+
+    heldByCharacter += std::format(
+      "select {} from {} where \"characterUid\" = $1",
+      query.quote_name(list.valueColumn),
+      QualifiedTable(query, list.table));
+    heldByOthers += std::format(
+      "exists (select 1 from {0} where {0}.{1} = \"record\".\"uid\" and {0}.\"characterUid\" <> $1)",
+      QualifiedTable(query, list.table),
+      query.quote_name(list.valueColumn));
+  }
+
+  query.exec(
+    std::format(
+      "delete from {} as \"record\" "
+      "where \"record\".\"uid\" in ({}) and not ({})",
+      QualifiedTable(query, table),
+      heldByCharacter,
+      heldByOthers),
+    pqxx::params(characterUid));
 }
 
 //! Returns the SQL type of the owner key.
@@ -1721,6 +1774,44 @@ void PqDataSource::DeleteCharacter(
 {
   const auto connection = AcquireConnection();
   pqxx::work query(*connection);
+
+  // The items, stallions and rewards are deleted with the character by the schema,
+  // the horses are abandoned. The records held in the lists of the character are deleted here,
+  // unless another character holds them too, for example the mail in the inbox of its recipient.
+  DeleteHeldRecords(query, uid, "mail", std::to_array<CharacterList>({
+    {"characterMailboxInbox", "mailUid"},
+    {"characterMailboxSent", "mailUid"}}));
+  DeleteHeldRecords(query, uid, "storageItem", std::to_array<CharacterList>({
+    {"characterGift", "storageItemUid"},
+    {"characterPurchase", "storageItemUid"}}));
+  DeleteHeldRecords(query, uid, "egg", std::to_array<CharacterList>({
+    {"characterEgg", "eggUid"}}));
+  DeleteHeldRecords(query, uid, "pet", std::to_array<CharacterList>({
+    {"characterPet", "petUid"}}));
+  DeleteHeldRecords(query, uid, "housing", std::to_array<CharacterList>({
+    {"characterHousing", "housingUid"}}));
+  DeleteHeldRecords(query, uid, "quest", std::to_array<CharacterList>({
+    {"characterQuest", "questUid"}}));
+
+  // The settings and the daily quest group belong to the character only.
+  query.exec(
+    "delete from \"data\".\"settings\" "
+    "where \"uid\" = (select \"settingsUid\" from \"data\".\"character\" where \"uid\" = $1)",
+    pqxx::params(uid));
+  query.exec(
+    "delete from \"data\".\"dailyQuestGroup\" "
+    "where \"uid\" = (select \"dailyQuestGroupUid\" from \"data\".\"character\" where \"uid\" = $1)",
+    pqxx::params(uid));
+
+  // A guild without other members is deleted with its owner.
+  // The owner of a guild with other members can not be deleted, the schema rejects the deletion.
+  query.exec(
+    "delete from \"data\".\"guild\" as \"guild\" "
+    "where \"guild\".\"owner\" = $1 and not exists ("
+    "  select 1 from \"data\".\"guildMember\" as \"member\" "
+    "  where \"member\".\"guildUid\" = \"guild\".\"uid\" and \"member\".\"characterUid\" <> $1)",
+    pqxx::params(uid));
+
   DeleteRecord(query, "character", "uid", uid);
   query.commit();
 }
@@ -1873,11 +1964,10 @@ void PqDataSource::StoreHorse(
 void PqDataSource::DeleteHorse(
   const data::Uid uid)
 {
-  // Horses are never deleted, the data source rejects the deletion.
-  const auto connection = AcquireConnection();
-  pqxx::work query(*connection);
-  DeleteRecord(query, "horse", "uid", uid);
-  query.commit();
+  // Horses are never deleted, they stay as the ancestors of their foals.
+  // The schema rejects the deletion too, the request is rejected before reaching it.
+  throw std::logic_error(std::format(
+    "Horse {} can not be deleted, horses are kept as the ancestors of their foals", uid));
 }
 
 void PqDataSource::CreateItem(
@@ -2318,7 +2408,16 @@ void PqDataSource::DeleteMail(
 {
   const auto connection = AcquireConnection();
   pqxx::work query(*connection);
+
+  // The reward claimed through the mail is deleted with it.
+  const auto result = query.exec(
+    "select \"claimUid\" from \"data\".\"mail\" where \"uid\" = $1",
+    pqxx::params(uid));
   DeleteRecord(query, "mail", "uid", uid);
+  if (not result.empty() && not result.front()[0].is_null())
+  {
+    DeleteRecord(query, "reward", "claimUid", result.front()[0].as<data::Uid>());
+  }
   query.commit();
 }
 
