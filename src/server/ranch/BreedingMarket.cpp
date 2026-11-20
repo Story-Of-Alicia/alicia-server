@@ -67,14 +67,22 @@ void BreedingMarket::Initialize()
       ownerUid = stallion.ownerUid();
     });
 
+    if (horseUid == data::InvalidUid || ownerUid == data::InvalidUid)
+    {
+      _serverInstance.GetDataDirector().GetDataSource().DeleteStallion(stallionUid);
+      continue;
+    }
+
     // Force load the associated horse and owner records
     const auto horseRecord = _serverInstance.GetDataDirector().GetHorseCache().ForceGet(horseUid);
     const auto characterRecord = _serverInstance.GetDataDirector().GetCharacterCache().ForceGet(ownerUid);
     if (not horseRecord || not characterRecord)
     {
-      // Attempted to force load a horse or owner record that does not exist, delete stallion
-      // Note: keep horse record as it may be used for family tree and lineage calculations
-      _serverInstance.GetDataDirector().GetDataSource().DeleteStallion(stallionUid);
+      spdlog::warn(
+        "Could not load the horse '{}' or the owner '{}' of stallion '{}', the stallion is not registered",
+        horseUid,
+        ownerUid,
+        stallionUid);
       continue;
     }
 

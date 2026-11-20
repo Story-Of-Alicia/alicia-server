@@ -23,6 +23,10 @@
 #include <libserver/data/DataDefinitions.hpp>
 #include <libserver/data/DataSource.hpp>
 
+#include <mutex>
+#include <string>
+#include <unordered_map>
+
 namespace server
 {
 
@@ -38,7 +42,7 @@ public:
   void SaveMetadata();
 
   void CreateUser(data::User& user) override;
-  void RetrieveUser(const std::string_view& name, data::User& user) override;
+  std::optional<bool> RetrieveUser(const std::string_view& name, data::User& user) override;
   void StoreUser(const std::string_view& name, const data::User& user) override;
   bool IsUserNameUnique(const std::string_view& name) override;
 
@@ -53,6 +57,7 @@ public:
   void DeleteCharacter(data::Uid uid) override;
   data::Uid RetrieveCharacterUidByName(const std::string_view& name) override;
   bool IsCharacterNameUnique(const std::string_view& name) override;
+  bool ClaimCharacterName(data::Uid uid, const std::string_view& name) override;
 
   void CreateHorse(data::Horse& horse) override;
   void RetrieveHorse(data::Uid uid, data::Horse& horse) override;
@@ -89,6 +94,7 @@ public:
   void StoreGuild(data::Uid uid, const data::Guild& guild) override;
   void DeleteGuild(data::Uid uid) override;
   bool IsGuildNameUnique(const std::string_view& name) override;
+  bool ClaimGuildName(data::Uid uid, const std::string_view& name) override;
 
   void CreateSettings(data::Settings& settings) override;
   void RetrieveSettings(data::Uid uid, data::Settings& settings) override;
@@ -122,6 +128,28 @@ public:
   void DeleteReward(data::Uid claimUid) override;
 
 private:
+  //! Finds the character holding the name. Expects `_characterNameMutex` to be held.
+  //! @param name Name of the character.
+  //! @return `data::InvalidUid` if no character holds the name, otherwise the UID of the character.
+  data::Uid FindCharacterUidByName(const std::string_view& name);
+
+  //! A mutex serializing character name lookups and claims.
+  std::mutex _characterNameMutex;
+  //! Names claimed during this session, by character UID.
+  //! These supersede the names in the character data files, which are written only on store.
+  std::unordered_map<data::Uid, std::string> _claimedCharacterNames;
+
+  //! Finds the guild holding the name, ignoring case. Expects `_guildNameMutex` to be held.
+  //! @param name Name of the guild.
+  //! @return `data::InvalidUid` if no guild holds the name, otherwise the UID of the guild.
+  data::Uid FindGuildUidByName(const std::string_view& name);
+
+  //! A mutex serializing guild name lookups and claims.
+  std::mutex _guildNameMutex;
+  //! Names claimed during this session, by guild UID.
+  //! These supersede the names in the guild data files, which are written only on store.
+  std::unordered_map<data::Uid, std::string> _claimedGuildNames;
+
   //! A root data path.
   std::filesystem::path _dataPath;
 
