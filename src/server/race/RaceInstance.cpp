@@ -28,9 +28,14 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ranges.h>
 
+#include <algorithm>
+#include <array>
 #include <tuple>
 #include <format>
 #include <limits>
+#include <optional>
+#include <random>
+#include <utility>
 
 namespace server
 {
@@ -116,9 +121,49 @@ void RaceInstance::Stop()
     }
   }
 
+  uint8_t npcDifficulty = 0;
+  uint32_t bestTrainingCourseTime = tracker::InvalidCourseTime;
+  bool unlockedNewDifficulty = false;
+  if (this->IsTraining())
+  {
+    this->GetRoom([&npcDifficulty](const Room& room)
+    {
+      npcDifficulty = room.GetRoomSnapshot().details.npcDifficulty;
+    });
+
+    for (const auto& racer : _tracker.GetRacers() | std::views::values)
+    {
+      if (racer.state != State::Disconnected
+        && racer.courseTime < bestTrainingCourseTime)
+      {
+        bestTrainingCourseTime = racer.courseTime;
+      }
+    }
+  }
+
   // Build the score board.
   for (const auto& [characterUid, racer] : _tracker.GetRacers())
   {
+    // Bots have no character record; they are listed but get no rewards.
+    if (racer.IsBot())
+    {
+      const auto& preset = _raceNetworkHandler.GetServerInstance()
+        .GetAiRiderRegistry()
+        .GetPresetById(racer.botConfig->presetId);
+
+      auto& score = raceResult.scores.emplace_back();
+      if (racer.state != State::Disconnected)
+        score.bitset = protocol::AcCmdRCRaceResultNotify::ScoreInfo::Bitset::Connected;
+      score.courseTime = racer.state != State::Disconnected
+        ? racer.courseTime
+        : tracker::InvalidCourseTime;
+      score.teamColor = racer.team;
+      score.uid = characterUid;
+      score.name = preset.name;
+      score.level = 1;
+      continue;
+    }
+
     const auto characterRecord = _raceNetworkHandler.GetServerInstance().GetDataDirector().GetCharacter(
       characterUid);
     if (not characterRecord.IsAvailable())
@@ -141,6 +186,26 @@ void RaceInstance::Stop()
     score.courseTime = racer.state != State::Disconnected
       ? racer.courseTime
       : tracker::InvalidCourseTime;
+
+    score.teamColor = racer.team;
+
+    if (this->IsTraining())
+    {
+      score.raceRecord.mapBlockId = static_cast<uint16_t>(this->GetMapBlockId());
+      score.raceRecord.gameMode = _parameters.gameMode;
+      score.raceRecord.teamMode = _parameters.teamMode;
+
+      // Level 0 is a time trial without bots, there is nothing to clear.
+      if (npcDifficulty >= 1
+        && racer.courseTime != tracker::InvalidCourseTime
+        && racer.courseTime == bestTrainingCourseTime)
+      {
+        score.raceRecord.trainingRecord.clearedDifficulty = npcDifficulty;
+        score.trainingCarrotReward = _raceNetworkHandler.GetServerInstance()
+          .GetAiRiderRegistry()
+          .GetClearRewardCarrots(npcDifficulty);
+      }
+    }
 
     static constexpr uint32_t BaseExpReward = 420;
     static constexpr uint32_t BaseCarrotReward = 2500;
@@ -199,12 +264,41 @@ void RaceInstance::Stop()
       }
     }
 
-    score.teamColor = racer.team;
-
-    characterRecord.Mutable([this, &score, &racer](data::Character& character)
+    characterRecord.Mutable([this, &score, &racer, npcDifficulty, bestTrainingCourseTime, &unlockedNewDifficulty](data::Character& character)
     {
       character.carrots() += score.carrots;
       character.experience() += score.experience;
+
+      if (this->IsTraining()
+        && npcDifficulty >= 1
+        && racer.courseTime != tracker::InvalidCourseTime
+        && racer.courseTime == bestTrainingCourseTime)
+      {
+        const auto mapBlockId = static_cast<uint32_t>(this->GetMapBlockId());
+        const auto gameMode = static_cast<uint8_t>(_parameters.gameMode);
+
+        auto& trainingRecords = character.trainingRecords();
+        const auto recordIter = std::ranges::find_if(
+          trainingRecords,
+          [mapBlockId, gameMode](const auto& record)
+          {
+            return record.mapBlockId == mapBlockId && record.gameMode == gameMode;
+          });
+
+        if (recordIter == trainingRecords.end())
+        {
+          trainingRecords.push_back(data::Character::TrainingRecord{
+            .mapBlockId = mapBlockId,
+            .gameMode = gameMode,
+            .clearedDifficulty = npcDifficulty});
+          unlockedNewDifficulty = true;
+        }
+        else if (npcDifficulty > recordIter->clearedDifficulty)
+        {
+          recordIter->clearedDifficulty = npcDifficulty;
+          unlockedNewDifficulty = true;
+        }
+      }
 
       const uint32_t newLevel = _raceNetworkHandler.GetServerInstance().GetCharacterRegistry().GetLevelForExp(character.experience());
       if (newLevel > character.level())
@@ -275,13 +369,24 @@ void RaceInstance::Stop()
   // Broadcast the race result
   _raceNetworkHandler.Broadcast(*this, raceResult);
 
+  if (unlockedNewDifficulty && npcDifficulty < 4)
+  {
+    _pendingDifficultyAdvance = PendingDifficultyAdvance{
+      .nextDifficulty = static_cast<uint8_t>(npcDifficulty + 1),
+      .mapBlockId = static_cast<uint16_t>(this->GetMapBlockId())};
+  }
+
   // The race counts towards every racer's ranch bonus, which pays out on each
   // twentieth race. The client expects the update to follow the race result.
   auto& ranchManagementSystem = _raceNetworkHandler.GetServerInstance()
     .GetRanchManagementSystem();
 
-  for (const data::Uid characterUid : _tracker.GetRacers() | std::views::keys)
+  for (const auto& [characterUid, racer] : _tracker.GetRacers())
   {
+    // skip bots
+    if (racer.IsBot())
+      continue;
+
     const auto payout = ranchManagementSystem.RecordRaceCompletion(characterUid);
     if (not payout)
       continue;
@@ -548,6 +653,18 @@ void RaceInstance::SetBonusCourseType(const protocol::BonusCourseType type) noex
   _bonusCourseType = type;
 }
 
+data::Uid RaceInstance::GetBotControllerUid() const noexcept
+{
+  return _botControllerUid;
+}
+
+std::optional<RaceInstance::PendingDifficultyAdvance> RaceInstance::TakePendingDifficultyAdvance() noexcept
+{
+  const auto pending = _pendingDifficultyAdvance;
+  _pendingDifficultyAdvance.reset();
+  return pending;
+}
+
 void RaceInstance::TickLoading()
 {
   // Determine whether all racers have started racing.
@@ -752,16 +869,36 @@ void RaceInstance::TickItemSpawners()
       });
   };
 
-  // Loop through each player in the room
-  this->GetRoom([this, &processItemSpawn](const Room& room)
-  {
-    for (const auto& [characterUid, player] : room.GetPlayers())
-    {
-      // Check if this player is an active racer
-      if (not this->GetTracker().IsRacer(characterUid))
-        continue;
+  std::optional<ClientId> botControllerClientId;
+  if (this->GetBotControllerUid() != data::InvalidUid)
+    botControllerClientId = _raceNetworkHandler.FindClientIdByCharacterUid(
+      this->GetBotControllerUid());
 
-      auto& racer = this->GetTracker().GetRacer(characterUid);
+  // Loop through each player in the room
+  this->GetRoom([this, &processItemSpawn, &botControllerClientId](Room& room)
+  {
+    for (auto& [characterUid, racer] : this->GetTracker().GetRacers())
+    {
+      ClientId clientId{};
+      if (racer.IsBot())
+      {
+        // Bots are simulated by the controller and leave the race with it.
+        if (not botControllerClientId.has_value()
+          || racer.state == tracker::RaceTracker::Racer::State::Disconnected)
+        {
+          continue;
+        }
+
+        clientId = *botControllerClientId;
+      }
+      else
+      {
+        if (not room.HasPlayer(characterUid))
+          continue;
+
+        clientId = room.GetPlayer(characterUid).GetClientId();
+      }
+
       for (const auto& item : this->GetTracker().GetItemDecks() | std::views::values)
       {
         const auto now = std::chrono::steady_clock::now();
@@ -773,7 +910,7 @@ void RaceInstance::TickItemSpawners()
           continue;
 
         processItemSpawn(
-          player.GetClientId(),
+          clientId,
           racer,
           item.oid,
           item.currentItem,
@@ -782,7 +919,7 @@ void RaceInstance::TickItemSpawners()
 
       for (const auto& eventItem : racer.eventItems)
         processItemSpawn(
-          player.GetClientId(),
+          clientId,
           racer,
           eventItem.oid,
           eventItem.itemType,
@@ -803,18 +940,38 @@ void RaceInstance::TickMagicGauge()
   if (now <= this->GetRaceStartTimePoint())
     return;
 
-  this->GetRoom([this, &now](const Room& room)
+  std::optional<ClientId> botControllerClientId;
+  if (this->GetBotControllerUid() != data::InvalidUid)
+    botControllerClientId = _raceNetworkHandler.FindClientIdByCharacterUid(
+      this->GetBotControllerUid());
+
+  this->GetRoom([this, &now, &botControllerClientId](Room& room)
   {
     const auto& regenerationInfo = _raceNetworkHandler.GetServerInstance().GetMagicRegistry().GetRegenInfo();
     const auto tickInterval = std::chrono::milliseconds(regenerationInfo.intervalMs);
 
-    for (const auto& [characterUid, player] : room.GetPlayers())
+    for (auto& [characterUid, racer] : this->GetTracker().GetRacers())
     {
-      // Check if this player is an active racer
-      if (not this->GetTracker().IsRacer(characterUid))
-        continue;
+      ClientId clientId{};
+      if (racer.IsBot())
+      {
+        // Bots are simulated by the controller and leave the race with it.
+        if (not botControllerClientId.has_value()
+          || racer.state == tracker::RaceTracker::Racer::State::Disconnected)
+        {
+          continue;
+        }
 
-      auto& racer = this->GetTracker().GetRacer(characterUid);
+        clientId = *botControllerClientId;
+      }
+      else
+      {
+        if (not room.HasPlayer(characterUid))
+          continue;
+
+        clientId = room.GetPlayer(characterUid).GetClientId();
+      }
+
       const bool isRacerHoldingItem = racer.magicItem.has_value();
 
       // Anchor at race start so fill time is consistent regardless of when the first pos-update arrives.
@@ -870,7 +1027,7 @@ void RaceInstance::TickMagicGauge()
         .giveMagicItem = shouldGiveItem};
 
       _raceNetworkHandler.GetCommandServer().QueueCommand<decltype(starPointResponse)>(
-        player.GetClientId(),
+        clientId,
         [starPointResponse]
         {
           return starPointResponse;
@@ -960,8 +1117,12 @@ void RaceInstance::PrepareMap()
         _gameModeId));
   }
 
+  if (_parameters.mapBlockId == AllMapsCourseId && this->IsTraining())
+  {
+    _mapBlockId = 1;
+  }
   // If the map is set to a course pick a random map.
-  if (_parameters.mapBlockId == AllMapsCourseId
+  else if (_parameters.mapBlockId == AllMapsCourseId
     || _parameters.mapBlockId == NewMapsCourseId
     || _parameters.mapBlockId == HotMapsCourseId)
   {
@@ -1053,6 +1214,91 @@ void RaceInstance::PrepareItemDecks()
       PickRandomItemFromDeck(deck);
     }
   }
+}
+
+void RaceInstance::PrepareBots(uint8_t difficulty)
+{
+  _botControllerUid = data::InvalidUid;
+  for (const auto& [characterUid, racer] : _tracker.GetRacers())
+  {
+    if (racer.IsBot())
+      continue;
+
+    if (racer.state != tracker::RaceTracker::Racer::State::Disconnected)
+    {
+      _botControllerUid = characterUid;
+      break;
+    }
+  }
+
+  // A race holds at most 8 racers, the humans plus the bots.
+  static constexpr size_t MaxRacers = 8;
+
+  static constexpr std::array<std::pair<uint32_t, uint32_t>, 4> DifficultyPresetIdRanges{{
+    {8, 14},
+    {15, 21},
+    {22, 28},
+    {219, 225},
+  }};
+
+  if (difficulty < 1 || difficulty > DifficultyPresetIdRanges.size())
+    return;
+
+  const auto& [firstPresetId, lastPresetId] = DifficultyPresetIdRanges[difficulty - 1];
+
+  auto& aiRiderRegistry = _raceNetworkHandler.GetServerInstance().GetAiRiderRegistry();
+  std::vector<registry::AiRiderPreset> botPresets;
+  for (uint32_t presetId = firstPresetId; presetId <= lastPresetId; ++presetId)
+    botPresets.push_back(aiRiderRegistry.GetPresetById(presetId));
+
+  std::uniform_int_distribution<size_t> offsetDist(0, botPresets.size() - 1);
+  std::ranges::rotate(
+    botPresets,
+    botPresets.begin() + static_cast<std::ptrdiff_t>(offsetDist(util::GetRandomEngine())));
+
+  const auto humanCount = static_cast<size_t>(std::ranges::count_if(
+    _tracker.GetRacers() | std::views::values,
+    [](const tracker::RaceTracker::Racer& racer)
+    {
+      return not racer.IsBot();
+    }));
+  const size_t count = humanCount >= MaxRacers
+    ? 0
+    : std::min(botPresets.size(), MaxRacers - humanCount);
+
+  static constexpr data::Uid BotUidBase = 0xF0000000u;
+
+  for (size_t i = 0; i < count; ++i)
+  {
+    const auto& preset = botPresets[i];
+    const data::Uid botUid = BotUidBase + preset.id;
+
+    // Already tracked (bots were prepared and not torn down) - leave it alone.
+    if (_tracker.IsRacer(botUid))
+      continue;
+
+    auto& racer = _tracker.AddRacer(botUid);
+    racer.state = tracker::RaceTracker::Racer::State::Loading;
+    racer.team = tracker::RaceTracker::Racer::Team::Solo;
+    racer.botConfig = tracker::RaceTracker::Racer::BotConfig{
+      .presetId = preset.id,
+      .aiDifficulty = difficulty,
+      .aiType = preset.aiType};
+
+    _raceNetworkHandler.ApplyMountEquipmentStats(racer, preset.equipmentTids);
+  }
+}
+
+bool RaceInstance::IsTraining() const
+{
+  // Check if race is a single speed/magic race
+  const auto& parameters = this->GetParameters();
+  const protocol::GameMode gameMode = parameters.gameMode;
+  const protocol::TeamMode teamMode = parameters.teamMode;
+
+  return
+    teamMode == protocol::TeamMode::Single and
+    (gameMode == protocol::GameMode::Speed or gameMode == protocol::GameMode::Magic);
 }
 
 } // namespace server

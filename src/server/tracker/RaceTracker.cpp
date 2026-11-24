@@ -19,6 +19,8 @@
 
 #include "server/tracker/RaceTracker.hpp"
 
+#include <algorithm>
+
 namespace server::tracker
 {
 
@@ -55,6 +57,46 @@ RaceTracker::Racer& RaceTracker::GetRacer(data::Uid characterUid)
     throw std::runtime_error("Character is not a racer");
 
   return racerIter->second;
+}
+
+RaceTracker::Racer& RaceTracker::GetRacerByOid(const Oid oid)
+{
+  const auto racerIter = std::ranges::find_if(
+    _racers,
+    [oid](const auto& entry)
+    {
+      return entry.second.oid == oid;
+    });
+
+  if (racerIter == _racers.cend())
+    throw std::runtime_error("No racer with the given OID is tracked");
+
+  return racerIter->second;
+}
+
+bool RaceTracker::HasRacerWithOid(const Oid oid) const
+{
+  return std::ranges::any_of(
+    _racers,
+    [oid](const auto& entry)
+    {
+      return entry.second.oid == oid;
+    });
+}
+
+data::Uid RaceTracker::GetCharacterUidByOid(const Oid oid) const
+{
+  const auto racerIter = std::ranges::find_if(
+    _racers,
+    [oid](const auto& entry)
+    {
+      return entry.second.oid == oid;
+    });
+
+  if (racerIter == _racers.cend())
+    throw std::runtime_error("No racer with the given OID is tracked");
+
+  return racerIter->first;
 }
 
 RaceTracker::RacerObjectMap& RaceTracker::GetRacers()
@@ -164,8 +206,31 @@ uint16_t RaceTracker::GetNextEffectInstanceIdAndIncrementBy(uint16_t increment)
   return nextId;
 }
 
+void RaceTracker::AddIceWallObstacle(
+  const uint16_t effectInstanceId,
+  const protocol::Vector3& position)
+{
+  _iceWallObstacles[effectInstanceId] = position;
+}
+
+const protocol::Vector3* RaceTracker::FindIceWallObstacle(
+  const uint16_t effectInstanceId) const
+{
+  const auto obstacleIter = _iceWallObstacles.find(effectInstanceId);
+  if (obstacleIter == _iceWallObstacles.cend())
+    return nullptr;
+
+  return &obstacleIter->second;
+}
+
+void RaceTracker::RemoveIceWallObstacle(const uint16_t effectInstanceId)
+{
+  _iceWallObstacles.erase(effectInstanceId);
+}
+
 void RaceTracker::Clear()
 {
+  _iceWallObstacles.clear();
   _racers.clear();
   _itemDecks.clear();
   _events.clear();

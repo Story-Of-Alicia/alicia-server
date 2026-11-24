@@ -93,6 +93,17 @@ public:
   ServerInstance& GetServerInstance();
   CommandServer& GetCommandServer();
 
+  std::optional<ClientId> FindClientIdByCharacterUid(data::Uid characterUid);
+
+  void ApplyMountEquipmentStats(
+    tracker::RaceTracker::Racer& racer,
+    const std::vector<uint32_t>& equippedTids);
+
+  void RefreshBotsForDifficulty(
+    RaceInstance& raceInstance,
+    Room& room,
+    uint8_t difficulty);
+
   template <WritableStruct C>
   void Broadcast(
     const RaceInstance& raceInstance,
@@ -157,9 +168,29 @@ private:
   ClientContext& GetClientContext(
     ClientId clientId,
     bool requireAuthorized = true);
-  std::optional<ClientId> FindClientIdByCharacterUid(data::Uid characterUid);
   ClientId GetClientIdByCharacterUid(data::Uid characterUid);
   ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
+
+  //! Returns the racer with the given OID if the client may act for it:
+  //! its own racer, or a bot it simulates. Otherwise returns nullptr.
+  tracker::RaceTracker::Racer* FindControlledRacer(
+    RaceInstance& raceInstance,
+    const ClientContext& clientContext,
+    tracker::Oid oid);
+
+  //! Returns the client that receives the packets of a racer:
+  //! the racer's own client, or for a bot the client simulating it.
+  std::optional<ClientId> FindRacerClientId(
+    RaceInstance& raceInstance,
+    data::Uid racerUid);
+
+  void ScheduleBotMagicCast(
+    RaceInstance& raceInstance,
+    data::Uid botUid);
+
+  void CastBotMagicItem(
+    RaceInstance& raceInstance,
+    data::Uid botUid);
 
   RaceInstance& GetRaceInstance(
     const ClientContext& clientContext,
@@ -186,6 +217,7 @@ private:
     const registry::Magic::SlotInfo& magicSlotInfo);
 
   void DrainGauge(
+    RaceInstance& raceInstance,
     data::Uid targetCharacterUid,
     tracker::RaceTracker::Racer& targetRacer);
 
@@ -232,7 +264,8 @@ private:
   void GrantMagicItem(
     RaceInstance& raceInstance,
     ClientId clientId,
-    data::Uid characterUid,
+    data::Uid racerUid,
+    data::Uid senderCharacterUid,
     tracker::RaceTracker::Racer& racer);
 
   //! Hands the attacker a bonus magic item for the hit they just landed,
