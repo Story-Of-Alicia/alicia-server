@@ -137,6 +137,16 @@ public:
       bool started{false};
     };
     std::optional<MagicTargetInfo> pendingMagicTarget{};
+
+    struct BotConfig
+    {
+      uint32_t presetId{};
+      uint32_t aiDifficulty{};
+      uint32_t aiType{};
+    };
+    std::optional<BotConfig> botConfig{};
+
+    [[nodiscard]] bool IsBot() const noexcept { return botConfig.has_value(); }
   };
 
   //! An item deck.
@@ -200,6 +210,14 @@ public:
   //! Returns reference to the racer record.
   //! @returns Racer record.
   [[nodiscard]] Racer& GetRacer(data::Uid characterUid);
+  //! Returns reference to the racer record by OID.
+  //! @throws std::runtime_error if no racer with the given OID is tracked.
+  [[nodiscard]] Racer& GetRacerByOid(Oid oid);
+  //! Returns whether a racer with the given OID is tracked.
+  [[nodiscard]] bool HasRacerWithOid(Oid oid) const;
+  //! Returns the character UID of the racer with the given OID.
+  //! @throws std::runtime_error if no racer with the given OID is tracked.
+  [[nodiscard]] data::Uid GetCharacterUidByOid(Oid oid) const;
   //! Returns a reference to all racer records.
   //! @return Reference to racer records.
   [[nodiscard]] RacerObjectMap& GetRacers();
@@ -243,6 +261,13 @@ public:
   //! @returns The next object instance ID before incrementing.
   uint16_t GetNextEffectInstanceIdAndIncrementBy(uint16_t increment);
 
+  //! Records where an ice wall icicle was placed, keyed by its effect instance ID.
+  void AddIceWallObstacle(uint16_t effectInstanceId, const protocol::Vector3& position);
+  //! Returns the position of an ice wall icicle, or nullptr if it is not tracked.
+  [[nodiscard]] const protocol::Vector3* FindIceWallObstacle(uint16_t effectInstanceId) const;
+  //! Stops tracking an ice wall icicle.
+  void RemoveIceWallObstacle(uint16_t effectInstanceId);
+
   void Clear();
 
 private:
@@ -261,6 +286,8 @@ private:
   EventMap _events;
   //! Next effect instance ID.
   uint16_t _nextEffectInstanceId = 0;
+  //! Position of every live ice wall icicle, keyed by effect instance ID.
+  std::unordered_map<uint16_t, protocol::Vector3> _iceWallObstacles;
 };
 
 } // namespace server::tracker

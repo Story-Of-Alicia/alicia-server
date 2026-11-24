@@ -444,6 +444,16 @@ void server::FileDataSource::RetrieveCharacter(data::Uid uid, data::Character& c
   character.missions = std::move(missions);
 
   character.quests = json.value("quests", std::vector<data::Uid>{});
+
+  std::vector<data::Character::TrainingRecord> trainingRecords;
+  for (const auto& recordJson : json.value("trainingRecords", nlohmann::json::array()))
+  {
+    trainingRecords.emplace_back(data::Character::TrainingRecord{
+      .mapBlockId = recordJson.value("mapBlockId", uint32_t{}),
+      .gameMode = recordJson.value("gameMode", uint8_t{}),
+      .clearedDifficulty = recordJson.value("clearedDifficulty", uint8_t{})});
+  }
+  character.trainingRecords = std::move(trainingRecords);
 }
 
 void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character& character)
@@ -582,6 +592,18 @@ void server::FileDataSource::StoreCharacter(data::Uid uid, const data::Character
   json["missions"] = missions;
 
   json["quests"] = character.quests();
+
+  nlohmann::json trainingRecords;
+  for (const auto& record : character.trainingRecords())
+  {
+    nlohmann::json recordJson;
+    recordJson["mapBlockId"] = record.mapBlockId;
+    recordJson["gameMode"] = record.gameMode;
+    recordJson["clearedDifficulty"] = record.clearedDifficulty;
+
+    trainingRecords.emplace_back(recordJson);
+  }
+  json["trainingRecords"] = trainingRecords;
 
   StoreJsonData(json, dataFilePath);
 }

@@ -551,6 +551,176 @@ ClientId RaceNetworkHandler::GetClientIdByCharacterUid(data::Uid characterUid)
   return *clientId;
 }
 
+void RaceNetworkHandler::ApplyMountEquipmentStats(
+  tracker::RaceTracker::Racer& racer,
+  const std::vector<data::Tid>& equippedTids)
+{
+  auto& itemRegistry = GetServerInstance().GetItemRegistry();
+
+  std::vector<uint32_t> validTids;
+  for (const auto tid : equippedTids)
+  {
+    if (tid == data::InvalidTid)
+      continue;
+
+    // Only mount parts count towards mount stats and sets.
+    const auto itemTemplate = itemRegistry.GetItem(tid);
+    if (not itemTemplate.has_value()
+      || not itemTemplate->mountPartInfo.has_value())
+    {
+      continue;
+    }
+
+    validTids.emplace_back(tid);
+
+    if (itemTemplate->mountAbility.has_value())
+    {
+      const auto& ability = itemTemplate->mountAbility.value();
+      racer.mountStats.agility += ability.agility;
+      racer.mountStats.ambition += ability.ambition;
+      racer.mountStats.rush += ability.rush;
+      racer.mountStats.endurance += ability.endurance;
+      racer.mountStats.courage += ability.courage;
+    }
+  }
+
+  // A racer can only benefit from a single set bonus at a time, so the first
+  // fully-equipped set wins.
+  racer.activeSetEffect = registry::SetEquipEffect::None;
+  const auto activeSets = itemRegistry.GetActiveSets(validTids);
+  if (not activeSets.empty())
+    racer.activeSetEffect = activeSets.front()->equipEffect;
+}
+
+void RaceNetworkHandler::RefreshBotsForDifficulty(
+  RaceInstance& raceInstance,
+  Room& room,
+  const uint8_t difficulty)
+{
+  auto& tracker = raceInstance.GetTracker();
+
+  // Remove existing bots.
+  std::erase_if(
+    tracker.GetRacers(),
+    [this, &room](const auto& pair)
+    {
+      const auto& [botUid, racer] = pair;
+      if (not racer.IsBot())
+        return false;
+
+      const protocol::AcCmdCRLeaveRoomNotify leaveNotify{
+        .characterId = botUid};
+      for (const auto& player : room.GetPlayers() | std::views::values)
+      {
+        _commandServer.QueueCommand<decltype(leaveNotify)>(
+          player.GetClientId(),
+          [leaveNotify]()
+          {
+            return leaveNotify;
+          });
+      }
+
+      return true;
+    });
+
+  const auto& roomDetails = room.GetRoomDetails();
+
+  // Validate gamemode.
+  switch (roomDetails.gameMode)
+  {
+    case Room::GameMode::Speed:
+    case Room::GameMode::Magic:
+      break;
+    default:
+      return;
+  }
+
+  // Validate teammode.
+  if (roomDetails.teamMode != Room::TeamMode::Single)
+    return;
+
+  raceInstance.PrepareBots(difficulty);
+
+  for (const auto& [botUid, racer] : raceInstance.GetTracker().GetRacers())
+  {
+    if (not racer.IsBot())
+      continue;
+
+    const auto& preset = GetServerInstance()
+      .GetAiRiderRegistry()
+      .GetPresetById(racer.botConfig->presetId);
+
+    const protocol::Racer aiRacerProto{
+      .level = 1,
+      .oid = racer.oid,
+      .uid = botUid,
+      .name = preset.name,
+      .teamColor = protocol::TeamColor::None,
+      .isHidden = false,
+      .isNPC = true,
+      .npcTid = racer.botConfig->presetId};
+
+    const protocol::AcCmdCREnterRoomNotify aiNotify{
+      .racer = aiRacerProto,
+      .averageTimeRecord = 0};
+
+    for (const auto& player : room.GetPlayers() | std::views::values)
+    {
+      _commandServer.QueueCommand<decltype(aiNotify)>(
+        player.GetClientId(),
+        [aiNotify]()
+        {
+          return aiNotify;
+        });
+    }
+  }
+}
+
+tracker::RaceTracker::Racer* RaceNetworkHandler::FindControlledRacer(
+  RaceInstance& raceInstance,
+  const ClientContext& clientContext,
+  const tracker::Oid oid)
+{
+  auto& tracker = raceInstance.GetTracker();
+  if (not tracker.HasRacerWithOid(oid))
+    return nullptr;
+
+  auto& racer = tracker.GetRacerByOid(oid);
+
+  // A bot can only be acted for by the client simulating it.
+  if (racer.IsBot())
+  {
+    return raceInstance.GetBotControllerUid() == clientContext.characterUid
+      ? &racer
+      : nullptr;
+  }
+
+  if (not tracker.IsRacer(clientContext.characterUid))
+    return nullptr;
+
+  return tracker.GetRacer(clientContext.characterUid).oid == oid
+    ? &racer
+    : nullptr;
+}
+
+std::optional<ClientId> RaceNetworkHandler::FindRacerClientId(
+  RaceInstance& raceInstance,
+  const data::Uid racerUid)
+{
+  // A bot's packets go to the client simulating it.
+  if (raceInstance.GetTracker().IsRacer(racerUid)
+    && raceInstance.GetTracker().GetRacer(racerUid).IsBot())
+  {
+    const auto controllerUid = raceInstance.GetBotControllerUid();
+    if (controllerUid == data::InvalidUid)
+      return std::nullopt;
+
+    return FindClientIdByCharacterUid(controllerUid);
+  }
+
+  return FindClientIdByCharacterUid(racerUid);
+}
+
 RaceNetworkHandler::ClientContext& RaceNetworkHandler::GetClientContextByCharacterUid(
   const data::Uid characterUid)
 {
@@ -963,9 +1133,10 @@ void RaceNetworkHandler::HandleChangeRoomOptions(
   }
 
   // Change the room options.
+  Room::Details updatedRoomDetails{};
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
-    [&options, &command](Room& room)
+    [&options, &command, &updatedRoomDetails](Room& room)
     {
       auto& roomDetails = room.GetRoomDetails();
 
@@ -1004,18 +1175,44 @@ void RaceNetworkHandler::HandleChangeRoomOptions(
       }
       if (options.test(5))
       {
-        roomDetails.npcDifficulty = command.npcDifficulty;
+        // AI level 0 is a solo time trial, 1 to 4 add bots.
+        static constexpr uint8_t MaxDifficulty = 4;
+        roomDetails.npcDifficulty = std::min(
+          command.npcDifficulty,
+          MaxDifficulty);
       }
+      updatedRoomDetails = roomDetails;
     });
+
+  if (options.test(5))
+  {
+    // Lock the race instances before the room, like everywhere else.
+    std::scoped_lock lock(_raceInstancesMutex);
+    auto& raceInstance = GetRaceInstance(clientContext, false);
+
+    // Only refresh the line-up while the room is waiting, never mid-race.
+    if (raceInstance.GetStage() == RaceInstance::Stage::Waiting)
+    {
+      _serverInstance.GetRoomSystem().GetRoom(
+        clientContext.roomUid,
+        [this, &raceInstance](Room& room)
+        {
+          RefreshBotsForDifficulty(
+            raceInstance,
+            room,
+            room.GetRoomDetails().npcDifficulty);
+        });
+    }
+  }
 
   const protocol::AcCmdCRChangeRoomOptionsNotify notify{
     .optionsBitfield = command.optionsBitfield,
-    .name = command.name,
-    .playerCount = command.playerCount,
-    .password = command.password,
-    .gameMode = command.gameMode,
-    .mapBlockId = command.mapBlockId,
-    .npcDifficulty = command.npcDifficulty};
+    .name = updatedRoomDetails.name,
+    .playerCount = static_cast<uint8_t>(updatedRoomDetails.maxPlayerCount),
+    .password = updatedRoomDetails.password,
+    .gameMode = static_cast<protocol::GameMode>(updatedRoomDetails.gameMode),
+    .mapBlockId = updatedRoomDetails.courseId,
+    .npcDifficulty = updatedRoomDetails.npcDifficulty};
 
   _serverInstance.GetRoomSystem().GetRoom(
     clientContext.roomUid,
@@ -1126,6 +1323,30 @@ void RaceNetworkHandler::HandleLeaveRoom(ClientId clientId)
       raceInstance,
       deleteNotify,
       clientContext.characterUid);
+
+    // Nobody else simulates the bots, so they leave the race with their controller.
+    // Otherwise they would never finish and the race would never end.
+    if (raceInstance.GetBotControllerUid() == clientContext.characterUid
+      && raceInstance.GetStage() != RaceInstance::Stage::Waiting)
+    {
+      for (auto& botRacer : raceInstance.GetTracker().GetRacers() | std::views::values)
+      {
+        if (not botRacer.IsBot()
+          || botRacer.state == tracker::RaceTracker::Racer::State::Disconnected)
+        {
+          continue;
+        }
+
+        botRacer.state = tracker::RaceTracker::Racer::State::Disconnected;
+
+        const protocol::AcCmdUserRaceDeleteNotify botDeleteNotify{
+          .racerOid = botRacer.oid};
+        this->BroadcastExceptCharacterUid(
+          raceInstance,
+          botDeleteNotify,
+          clientContext.characterUid);
+      }
+    }
   }
 
   data::Uid roomMasterUid{data::InvalidUid};
@@ -1179,7 +1400,9 @@ void RaceNetworkHandler::HandleLeaveRoom(ClientId clientId)
         [&tracker](const data::Uid characterUid)
         {
           const auto& racer = tracker.GetRacer(characterUid);
-          return racer.state != tracker::RaceTracker::Racer::State::Disconnected;
+          // Bots can not become the room master.
+          return not racer.IsBot()
+            && racer.state != tracker::RaceTracker::Racer::State::Disconnected;
         });
     }
 
@@ -1412,6 +1635,29 @@ void RaceNetworkHandler::HandleStartRace(
             break;
         }
       }
+
+      const auto& details = room.GetRoomDetails();
+      switch (details.teamMode)
+      {
+        // Spawn bots for single player races
+        case Room::TeamMode::Single:
+        {
+          switch (details.gameMode)
+          {
+            case Room::GameMode::Speed:
+            case Room::GameMode::Magic:
+            {
+              raceInstance.PrepareBots(details.npcDifficulty);
+              break;
+            }
+            default:
+              break;
+          }
+          break;
+        }
+        default:
+          break;
+      }
     });
 
   _serverInstance.GetRoomSystem().GetRoom(
@@ -1443,27 +1689,44 @@ void RaceNetworkHandler::HandleStartRace(
         .p2pRelayPort = lobbyConfig.advertisement.udpRaceRelay.port,
         .raceMissionId = parameters.missionId,};
 
+      // Find the human racer's OID to assign as controller/simulator for AI racers
+      tracker::Oid humanRacerOid = 0;
+      const auto botControllerUid = raceInstance.GetBotControllerUid();
+      if (botControllerUid != data::InvalidUid)
+        humanRacerOid = raceInstance.GetTracker().GetRacer(botControllerUid).oid;
+
       // Build the racers.
       for (const auto& [characterUid, racer] : raceInstance.GetTracker().GetRacers())
       {
         if (racer.state == tracker::RaceTracker::Racer::State::Disconnected)
           continue;
 
-        std::string characterName;
-        GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
-          [&characterName](const data::Character& character)
-          {
-            characterName = character.name();
-          });
-
         auto& protocolRacer = notify.racers.emplace_back(
           protocol::AcCmdCRStartRaceNotify::Player{
-            .oid = racer.oid,
-            .name = characterName});
+            .oid = racer.oid});
 
-        // Assign the racer P2dId
-        const ClientId racerClientId = GetClientIdByCharacterUid(characterUid);
-        protocolRacer.p2dId = GetOrCreateP2dId(racerClientId);
+        if (racer.IsBot())
+        {
+          const auto& preset = GetServerInstance()
+            .GetAiRiderRegistry()
+            .GetPresetById(racer.botConfig->presetId);
+
+          protocolRacer.name = preset.name;
+          protocolRacer.controllerOid = humanRacerOid;
+          protocolRacer.aiRiderId = racer.botConfig->presetId;
+        }
+        else
+        {
+          protocolRacer.controllerOid = 0;
+          GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
+            [&protocolRacer](const data::Character& character)
+            {
+              protocolRacer.name = character.name();
+            });
+
+          const ClientId racerClientId = GetClientIdByCharacterUid(characterUid);
+          protocolRacer.p2dId = GetOrCreateP2dId(racerClientId);
+        }
 
         switch (racer.team)
         {
@@ -1602,7 +1865,8 @@ void RaceNetworkHandler::HandleLoadingComplete(
   auto& raceInstance = GetRaceInstance(clientContext);
   const auto& parameters = raceInstance.GetParameters();
 
-  auto& racer = raceInstance.GetTracker().GetRacer(
+  auto& tracker = raceInstance.GetTracker();
+  auto& racer = tracker.GetRacer(
     clientContext.characterUid);
 
   // Guard against duplicate loading completes
@@ -1633,11 +1897,10 @@ void RaceNetworkHandler::HandleLoadingComplete(
           };
         });
 
-      auto& itemRegistry = GetServerInstance().GetItemRegistry();
       const auto equipmentRecords = GetServerInstance().GetDataDirector().GetItemCache().Get(
         character.characterEquipment());
 
-      std::vector<uint32_t> equippedMountTids;
+      std::vector<data::Tid> equippedTids;
       if (equipmentRecords)
       {
         for (const auto& equipmentRecord : *equipmentRecords)
@@ -1647,40 +1910,32 @@ void RaceNetworkHandler::HandleLoadingComplete(
           {
             itemTid = item.tid();
           });
-
-          const auto itemTemplate = itemRegistry.GetItem(itemTid);
-          if (not itemTemplate.has_value()
-            || not itemTemplate->mountPartInfo.has_value())
-          {
-            continue;
-          }
-
-          equippedMountTids.emplace_back(itemTid);
-
-          if (itemTemplate->mountAbility.has_value())
-          {
-            const auto& ability = itemTemplate->mountAbility.value();
-            racer.mountStats.agility += ability.agility;
-            racer.mountStats.ambition += ability.ambition;
-            racer.mountStats.rush += ability.rush;
-            racer.mountStats.endurance += ability.endurance;
-            racer.mountStats.courage += ability.courage;
-          }
+          equippedTids.emplace_back(itemTid);
         }
       }
 
-      // A racer can only benefit from a single set bonus at a time, so the first
-      // fully-equipped set wins.
-      racer.activeSetEffect = registry::SetEquipEffect::None;
-      const auto activeSets = itemRegistry.GetActiveSets(equippedMountTids);
-      if (not activeSets.empty())
-        racer.activeSetEffect = activeSets.front()->equipEffect;
+      ApplyMountEquipmentStats(racer, equippedTids);
     });
 
   // Notify all clients in the room that this player's loading is complete
   const protocol::AcCmdCRLoadingCompleteNotify notify{
     .oid = racer.oid};
   this->Broadcast(raceInstance, notify);
+
+  // Auto-complete loading for bots
+  for (auto& [_, trackedRacer] : tracker.GetRacers())
+  {
+    if (not trackedRacer.IsBot())
+      continue;
+
+    if (trackedRacer.state != tracker::RaceTracker::Racer::State::Loading)
+      continue;
+
+    trackedRacer.state = tracker::RaceTracker::Racer::State::Racing;
+    const protocol::AcCmdCRLoadingCompleteNotify trackedRacerLoadedNotify{
+      .oid = trackedRacer.oid};
+    this->Broadcast(raceInstance, trackedRacerLoadedNotify);
+  }
 
   // Egg spawning mechanism
 
@@ -1778,9 +2033,13 @@ void RaceNetworkHandler::HandleUserRaceFinal(
   auto& raceInstance = GetRaceInstance(clientContext);
 
   // todo: sanity check for course time
-  // todo: address npc racers and update their states
-  auto& racer = raceInstance.GetTracker().GetRacer(
-    clientContext.characterUid);
+  auto* const controlledRacer = FindControlledRacer(raceInstance, clientContext, command.oid);
+  if (controlledRacer == nullptr)
+  {
+    throw std::runtime_error(
+      "Client tried to perform action on behalf of different racer");
+  }
+  auto& racer = *controlledRacer;
 
   racer.state = tracker::RaceTracker::Racer::State::Finishing;
   racer.courseTime = didNotFinish
@@ -1920,40 +2179,37 @@ void RaceNetworkHandler::HandleAwardStart(
 }
 
 void RaceNetworkHandler::HandleAwardEnd(
-  ClientId,
+  ClientId clientId,
   const protocol::AcCmdCRAwardEnd&)
 {
-  // todo: this always crashes everyone
+  // The client is done showing the award/result screen - apply any training
+  // difficulty tier unlocked by the race that just ended.
+  const auto& clientContext = GetClientContext(clientId);
 
-  // const auto& clientContext = GetClientContext(clientId);
-  // auto& raceInstance = GetRaceInstance(clientContext);
-  //
-  // protocol::AcCmdCRAwardEndNotify notify{};
-  //
-  // // Send to clients not participating in races.
-  // for (const auto raceClientId : raceInstance.clients)
-  // {
-  //   const auto& roomClientContext = _clients[raceClientId];
-  //
-  //   // Whether the client is a participating racer that did not disconnect.
-  //   bool isParticipatingRacer = false;
-  //   if (raceInstance.GetTracker().IsRacer(roomClientContext.characterUid))
-  //   {
-  //     auto& racer = raceInstance.GetTracker().GetRacer(
-  //       roomClientContext.characterUid);
-  //     isParticipatingRacer = racer.state != tracker::RaceTracker::Racer::State::Disconnected;
-  //   }
-  //
-  //   if (isParticipatingRacer)
-  //     continue;
-  //
-  //   _commandServer.QueueCommand<decltype(notify)>(
-  //     raceClientId,
-  //     [notify]()
-  //     {
-  //       return notify;
-  //     });
-  // }
+  std::scoped_lock lock(_raceInstancesMutex);
+  auto& raceInstance = GetRaceInstance(clientContext);
+
+  const auto pendingAdvance = raceInstance.TakePendingDifficultyAdvance();
+  if (not pendingAdvance)
+    return;
+
+  raceInstance.GetRoom(
+    [this, &raceInstance, &pendingAdvance](Room& room)
+    {
+      auto& roomDetails = room.GetRoomDetails();
+      roomDetails.npcDifficulty = pendingAdvance->nextDifficulty;
+      roomDetails.courseId = pendingAdvance->mapBlockId;
+
+      RefreshBotsForDifficulty(raceInstance, room, pendingAdvance->nextDifficulty);
+    });
+
+  const protocol::AcCmdCRChangeRoomOptionsNotify notify{
+    .optionsBitfield = static_cast<protocol::RoomOptionType>(
+      static_cast<uint16_t>(protocol::RoomOptionType::MapBlockId)
+      | static_cast<uint16_t>(protocol::RoomOptionType::NpcDifficulty)),
+    .mapBlockId = pendingAdvance->mapBlockId,
+    .npcDifficulty = pendingAdvance->nextDifficulty};
+  Broadcast(raceInstance, notify);
 }
 
 void RaceNetworkHandler::HandleStarPointGet(
@@ -1965,15 +2221,13 @@ void RaceNetworkHandler::HandleStarPointGet(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
 
-  auto& racer = raceInstance.GetTracker().GetRacer(
-    clientContext.characterUid);
-
-  // TODO: Revise this in NPC races
-  if (command.characterOid != racer.oid)
+  auto* const controlledRacer = FindControlledRacer(raceInstance, clientContext, command.characterOid);
+  if (controlledRacer == nullptr)
   {
     throw std::runtime_error(
       "Client tried to perform action on behalf of different racer");
   }
+  auto& racer = *controlledRacer;
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.GetGameModeId()));
@@ -2012,15 +2266,13 @@ void RaceNetworkHandler::HandleRequestSpur(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
 
-  auto& racer = raceInstance.GetTracker().GetRacer(
-    clientContext.characterUid);
-
-  // TODO: Revise this in NPC races
-  if (command.characterOid != racer.oid)
+  auto* const controlledRacer = FindControlledRacer(raceInstance, clientContext, command.characterOid);
+  if (controlledRacer == nullptr)
   {
     throw std::runtime_error(
       "Client tried to perform action on behalf of different racer");
   }
+  auto& racer = *controlledRacer;
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.GetGameModeId()));
@@ -2066,15 +2318,13 @@ void RaceNetworkHandler::HandleHurdleClearResult(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
 
-  auto& racer = raceInstance.GetTracker().GetRacer(
-    clientContext.characterUid);
-
-  // TODO: Revise this in NPC races
-  if (command.characterOid != racer.oid)
+  auto* const controlledRacer = FindControlledRacer(raceInstance, clientContext, command.characterOid);
+  if (controlledRacer == nullptr)
   {
     throw std::runtime_error(
       "Client tried to perform action on behalf of different racer");
   }
+  auto& racer = *controlledRacer;
 
   protocol::AcCmdCRHurdleClearResultOK response{
     .characterOid = command.characterOid,
@@ -2205,15 +2455,13 @@ void RaceNetworkHandler::HandleStartingRate(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
 
-  auto& racer = raceInstance.GetTracker().GetRacer(
-    clientContext.characterUid);
-
-  // TODO: Revise this in NPC races
-  if (command.characterOid != racer.oid)
+  auto* const controlledRacer = FindControlledRacer(raceInstance, clientContext, command.characterOid);
+  if (controlledRacer == nullptr)
   {
     throw std::runtime_error(
       "Client tried to perform action on behalf of different racer");
   }
+  auto& racer = *controlledRacer;
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(raceInstance.GetGameModeId()));
@@ -2246,15 +2494,13 @@ void RaceNetworkHandler::HandleRaceUserPos(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  auto& racer = raceInstance.GetTracker().GetRacer(
-    clientContext.characterUid);
-
-  // TODO: Revise this in NPC races
-  if (command.oid != racer.oid)
+  auto* const controlledRacer = FindControlledRacer(raceInstance, clientContext, command.oid);
+  if (controlledRacer == nullptr)
   {
     throw std::runtime_error(
       "Client tried to perform action on behalf of different racer");
   }
+  auto& racer = *controlledRacer;
 
   // TODO: player position anticheat
 
@@ -2567,14 +2813,15 @@ void RaceNetworkHandler::HandleRequestMagicItem(
   }
 
   auto& tracker = raceInstance.GetTracker();
-  auto& racer = tracker.GetRacer(clientContext.characterUid);
 
-  // TODO: Revise this on NPC races
-  if (command.characterOid != racer.oid)
+  auto* const controlledRacer = FindControlledRacer(raceInstance, clientContext, command.characterOid);
+  if (controlledRacer == nullptr)
   {
     spdlog::warn("Client tried to perform action on behalf of different racer");
     return;
   }
+  auto& racer = *controlledRacer;
+  const data::Uid racerUid = tracker.GetCharacterUidByOid(command.characterOid);
 
   const auto& gameModeTemplate = GetServerInstance().GetCourseRegistry().GetCourseGameModeInfo(
     static_cast<uint8_t>(parameters.gameMode));
@@ -2621,26 +2868,27 @@ void RaceNetworkHandler::HandleRequestMagicItem(
       return starPointResponse;
     });
 
-  GrantMagicItem(raceInstance, clientId, clientContext.characterUid, racer);
+  GrantMagicItem(raceInstance, clientId, racerUid, clientContext.characterUid, racer);
 }
 
 void RaceNetworkHandler::GrantMagicItem(
   RaceInstance& raceInstance,
   const ClientId clientId,
-  const data::Uid characterUid,
+  const data::Uid racerUid,
+  const data::Uid senderCharacterUid,
   tracker::RaceTracker::Racer& racer)
 {
   const auto& magicItemSlotInfo = race::MagicSystem::RandomMagicItem(
     _serverInstance.GetMagicRegistry(),
     raceInstance.GetTracker(),
-    characterUid);
+    racerUid);
   racer.magicItem.emplace(magicItemSlotInfo.type);
   ++racer.magicItemGeneration;
 
   spdlog::info(
     "Racer '{}' (uid '{}') was granted magic item {}",
     racer.oid,
-    characterUid,
+    racerUid,
     magicItemSlotInfo.type);
 
   const protocol::AcCmdCRRequestMagicItemOK response{
@@ -2659,7 +2907,171 @@ void RaceNetworkHandler::GrantMagicItem(
   const protocol::AcCmdCRRequestMagicItemNotify notify{
     .magicItemId = response.magicItemId,
     .characterOid = response.characterOid};
-  this->BroadcastExceptCharacterUid(raceInstance, notify, characterUid);
+  this->BroadcastExceptCharacterUid(raceInstance, notify, senderCharacterUid);
+
+  if (racer.IsBot())
+    ScheduleBotMagicCast(raceInstance, racerUid);
+}
+
+void RaceNetworkHandler::ScheduleBotMagicCast(
+  RaceInstance& raceInstance,
+  const data::Uid botUid)
+{
+  auto& bot = raceInstance.GetTracker().GetRacer(botUid);
+  if (not bot.IsBot() || not bot.magicItem.has_value())
+    return;
+
+  const auto& slotInfo = GetServerInstance().GetMagicRegistry().GetSlotInfo(
+    bot.magicItem.value());
+  if (slotInfo.basicType != race::MagicType::FireBall)
+    return;
+
+  // Cast 2 to 5 seconds after the pickup.
+  std::uniform_int_distribution<uint32_t> delayDist(2000, 4999);
+  const auto castDelay = std::chrono::milliseconds(
+    delayDist(server::util::GetRandomEngine()));
+
+  _scheduler.Queue(
+    [this, roomUid = raceInstance.GetRoomUid(), botUid, generation = bot.magicItemGeneration]()
+    {
+      std::scoped_lock raceInstanceLock(_raceInstancesMutex);
+
+      const auto raceInstanceIter = _raceInstances.find(roomUid);
+      if (raceInstanceIter == _raceInstances.cend())
+        return;
+
+      auto& raceInstance = raceInstanceIter->second;
+      if (raceInstance.GetStage() != RaceInstance::Stage::Racing
+        || not raceInstance.GetTracker().IsRacer(botUid))
+      {
+        return;
+      }
+
+      const auto& queuedBot = raceInstance.GetTracker().GetRacer(botUid);
+      // The bot finished, lost the spell or got a new one in the meantime.
+      if (queuedBot.state != tracker::RaceTracker::Racer::State::Racing
+        || not queuedBot.magicItem.has_value()
+        || queuedBot.magicItemGeneration != generation)
+      {
+        return;
+      }
+
+      CastBotMagicItem(raceInstance, botUid);
+    },
+    Scheduler::Clock::now() + castDelay);
+}
+
+void RaceNetworkHandler::CastBotMagicItem(
+  RaceInstance& raceInstance,
+  const data::Uid botUid)
+{
+  auto& tracker = raceInstance.GetTracker();
+  auto& bot = tracker.GetRacer(botUid);
+
+  const auto controllerClientId = FindRacerClientId(raceInstance, botUid);
+  if (not controllerClientId)
+    return;
+
+  // Rank the racers still in the race by progress, leader first.
+  std::vector<const tracker::RaceTracker::Racer*> ranking;
+  for (const auto& racer : tracker.GetRacers() | std::views::values)
+  {
+    if (racer.state == tracker::RaceTracker::Racer::State::Disconnected)
+      continue;
+    ranking.emplace_back(&racer);
+  }
+
+  std::ranges::stable_sort(
+    ranking,
+    [](const auto* lhs, const auto* rhs)
+    {
+      return lhs->raceProgress > rhs->raceProgress;
+    });
+
+  const auto placeIter = std::ranges::find(ranking, &bot);
+  const auto place = static_cast<size_t>(std::distance(ranking.begin(), placeIter));
+
+  constexpr float TargetRange = 0.02f;
+  const auto isInRange = [&bot](const tracker::RaceTracker::Racer& racer)
+  {
+    return racer.raceProgress < bot.raceProgress + TargetRange;
+  };
+
+  auto& randomEngine = server::util::GetRandomEngine();
+  std::uniform_int_distribution<uint32_t> levelDist(0, 3);
+  std::uniform_int_distribution<uint32_t> permilleDist(0, 999);
+
+  std::vector<tracker::Oid> requestedTargets;
+  if (placeIter != ranking.end()
+    && place > 0
+    && levelDist(randomEngine) < bot.botConfig->aiDifficulty)
+  {
+    size_t targetPlace = place - 1;
+    for (const uint32_t chance : {700u, 300u})
+    {
+      if (targetPlace > 0
+        && isInRange(*ranking[targetPlace - 1])
+        && permilleDist(randomEngine) < chance)
+      {
+        --targetPlace;
+      }
+    }
+
+    if (isInRange(*ranking[targetPlace]))
+      requestedTargets.emplace_back(ranking[targetPlace]->oid);
+  }
+
+  const auto& magicSlotInfo = ConsumeCriticalAura(
+    raceInstance,
+    bot,
+    GetServerInstance().GetMagicRegistry().GetSlotInfo(bot.magicItem.value()));
+
+  const auto targetList = ResolveMagicTargets(raceInstance, magicSlotInfo, requestedTargets);
+  const uint16_t effectInstanceId = tracker.GetNextEffectInstanceIdAndIncrementBy(1u);
+
+  spdlog::debug(
+    "Bot '{}' (uid '{}') casts magic item {} with target list {}",
+    bot.oid,
+    botUid,
+    magicSlotInfo.type,
+    targetList);
+
+  // The controller gets the reply it would get had it cast the spell itself,
+  // everyone else the usual notify.
+  const protocol::AcCmdCRUseMagicItemOK response{
+    .characterOid = bot.oid,
+    .magicItemId = magicSlotInfo.type,
+    .targetList = targetList,
+    .effectInstanceId = effectInstanceId,
+    .unk4 = magicSlotInfo.castingTime};
+
+  _commandServer.QueueCommand<decltype(response)>(
+    *controllerClientId,
+    [response]
+    {
+      return response;
+    });
+
+  const protocol::AcCmdCRUseMagicItemNotify usageNotify{
+    .characterOid = bot.oid,
+    .magicItemId = magicSlotInfo.type,
+    .targetList = targetList,
+    .effectInstanceId = effectInstanceId,
+    .unk4 = magicSlotInfo.castingTime};
+
+  this->BroadcastExceptCharacterUid(
+    raceInstance,
+    usageNotify,
+    raceInstance.GetBotControllerUid());
+
+  ApplyImmediateMagicEffects(
+    raceInstance,
+    bot,
+    magicSlotInfo,
+    effectInstanceId,
+    static_cast<uint16_t>(targetList.size()));
+
+  bot.magicItem.reset();
 }
 
 void RaceNetworkHandler::GrantOnePlusOneMagicItem(
@@ -2682,11 +3094,16 @@ void RaceNetworkHandler::GrantOnePlusOneMagicItem(
     return;
   }
 
-  const auto attackerClientId = FindClientIdByCharacterUid(attackerIter->first);
+  const auto attackerClientId = FindRacerClientId(raceInstance, attackerIter->first);
   if (not attackerClientId)
     return;
 
-  GrantMagicItem(raceInstance, *attackerClientId, attackerIter->first, attackerRacer);
+  // The item goes to the client simulating the racer: the racer itself, or a bot's controller.
+  const data::Uid receiverUid = attackerRacer.IsBot()
+    ? raceInstance.GetBotControllerUid()
+    : attackerIter->first;
+
+  GrantMagicItem(raceInstance, *attackerClientId, attackerIter->first, receiverUid, attackerRacer);
 }
 
 void RaceNetworkHandler::AcknowledgeEmptyMagicUse(
@@ -2816,6 +3233,12 @@ void RaceNetworkHandler::QueueIceWallExpiry(
       if (raceInstanceIter == _raceInstances.cend())
         return;
 
+      for (uint16_t index = 0; index < obstacleInstanceCount; ++index)
+      {
+        raceInstanceIter->second.GetTracker().RemoveIceWallObstacle(
+          static_cast<uint16_t>(firstObstacleInstanceId + index));
+      }
+
       this->Broadcast(
         raceInstanceIter->second,
         protocol::AcCmdRCMagicExpire{
@@ -2878,14 +3301,13 @@ void RaceNetworkHandler::HandleUseMagicItem(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  auto& racer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
-
-  // TODO: Revise this in NPC races
-  if (command.characterOid != racer.oid)
+  auto* const controlledRacer = FindControlledRacer(raceInstance, clientContext, command.characterOid);
+  if (controlledRacer == nullptr)
   {
     spdlog::warn("Client tried to perform action on behalf of different racer");
     return;
   }
+  auto& racer = *controlledRacer;
 
   // Nothing to cast — acknowledge anyway so the client drops its held item indicator.
   if (not racer.magicItem.has_value() || command.magicItemId == 0)
@@ -2953,6 +3375,20 @@ void RaceNetworkHandler::HandleUseMagicItem(
   const uint16_t effectInstanceId = raceInstance.GetTracker().GetNextEffectInstanceIdAndIncrementBy(
     race::MagicSystem::IsIceWall(magicSlotInfo.type) ? obstacleInstanceCount : 1u);
 
+  // Remember where the icicles are, to tell who actually ran into them.
+  if (race::MagicSystem::IsIceWall(magicSlotInfo.type)
+    && command.iceWallProperties.has_value())
+  {
+    const auto& placement = command.iceWallProperties->member1;
+    const protocol::Vector3 icePosition{placement[0], placement[1], placement[2]};
+
+    for (uint16_t index = 0; index < obstacleInstanceCount; ++index)
+    {
+      raceInstance.GetTracker().AddIceWallObstacle(
+        static_cast<uint16_t>(effectInstanceId + index), icePosition);
+    }
+  }
+
   const protocol::AcCmdCRUseMagicItemOK response{
     .characterOid = command.characterOid,
     .magicItemId = magicSlotInfo.type,
@@ -3001,7 +3437,7 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
   std::scoped_lock lock(_raceInstancesMutex);
 
   auto& raceInstance = GetRaceInstance(clientContext);
-  auto& racer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
+  auto& senderRacer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
 
   // Check event items first (eggs, etc.)
   const auto eventItemOid = raceInstance.GetTracker().FindEventItem(
@@ -3035,10 +3471,19 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
     this->Broadcast(raceInstance, itemGet);
 
     raceInstance.GetTracker().RemoveEventItem(clientContext.characterUid, command.itemDeckId);
-    racer.trackedDecks.erase(command.itemDeckId);
+    senderRacer.trackedDecks.erase(command.itemDeckId);
 
     return;
   }
+
+  auto* const controlledRacer = FindControlledRacer(raceInstance, clientContext, command.characterOid);
+  if (controlledRacer == nullptr)
+  {
+    spdlog::warn("Client tried to perform action on behalf of different racer");
+    return;
+  }
+  auto& racer = *controlledRacer;
+  const data::Uid racerUid = raceInstance.GetTracker().GetCharacterUidByOid(command.characterOid);
 
   auto& items = raceInstance.GetTracker().GetItemDecks();
   const auto deckIter = items.find(command.itemDeckId);
@@ -3068,7 +3513,7 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
   // so it remains available for them immediately
   for (auto& [otherUid, otherRacer] : raceInstance.GetTracker().GetRacers())
   {
-    if (otherUid != clientContext.characterUid)
+    if (otherUid != racerUid)
     {
       otherRacer.deckCooldown.erase(command.itemDeckId);
     }
@@ -3158,7 +3603,7 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
           const auto& magicItemSlotInfo = race::MagicSystem::RandomMagicItem(
             _serverInstance.GetMagicRegistry(),
             raceInstance.GetTracker(),
-            clientContext.characterUid);
+            racerUid);
           magicItem = magicItemSlotInfo.type;
         }
 
@@ -3193,9 +3638,12 @@ void RaceNetworkHandler::HandleUserRaceItemGet(
         spdlog::info(
           "Racer '{}' (uid '{}') picked up magic item {} from item deck {}",
           racer.oid,
-          clientContext.characterUid,
+          racerUid,
           magicItem,
           command.itemDeckId);
+
+        if (racer.IsBot())
+          ScheduleBotMagicCast(raceInstance, racerUid);
       }
       else
       {
@@ -3247,10 +3695,10 @@ void RaceNetworkHandler::HandleStartMagicTarget(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  const auto& racer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
 
-  // TODO: Revise this in NPC races
-  if (command.casterOid != racer.oid && command.targetOid != racer.oid)
+  // Either side may be this client's own racer or a bot it simulates.
+  if (FindControlledRacer(raceInstance, clientContext, command.casterOid) == nullptr
+    && FindControlledRacer(raceInstance, clientContext, command.targetOid) == nullptr)
   {
     spdlog::warn("Racer OID mismatch in HandleStartMagicTarget");
     return;
@@ -3311,13 +3759,13 @@ void RaceNetworkHandler::HandleChangeMagicTarget(
 
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
-  auto& racer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
-
-  if (command.targetOid!= racer.oid)
+  auto* const controlledRacer = FindControlledRacer(raceInstance, clientContext, command.targetOid);
+  if (controlledRacer == nullptr)
   {
     spdlog::warn("Character OID mismatch in HandleChangeMagicTarget");
     return;
   }
+  auto& racer = *controlledRacer;
 
   spdlog::info(
     "Racer '{}' (uid '{}') changed target for magic effect instance id {}, with caster {}, to target OID {} - target OID2  {}",
@@ -3479,16 +3927,13 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
   std::scoped_lock lock(_raceInstancesMutex);
   auto& raceInstance = GetRaceInstance(clientContext);
 
-  auto& targetRacer = raceInstance.GetTracker().GetRacer(clientContext.characterUid);
-
-  // A racer reports the magic that landed on themselves. Everything below assumes the
-  // sender is the target, so reject any attempt to report a hit on somebody else.
-  // TODO: Revise this in NPC races
-  if (command.targetOid != targetRacer.oid)
+  auto* const controlledTargetRacer = FindControlledRacer(raceInstance, clientContext, command.targetOid);
+  if (controlledTargetRacer == nullptr)
   {
     spdlog::warn("Client tried to perform action on behalf of different racer");
     return;
   }
+  auto& targetRacer = *controlledTargetRacer;
 
   spdlog::info(
     "Racer '{}' (uid '{}') requested skill effect activation (target OID {}, effectId {}, attacker OID {}, instance {})",
@@ -3519,6 +3964,24 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
 
   if (race::MagicSystem::IsIceWall(magicSlotInfo->type))
   {
+    const auto* icePosition = raceInstance.GetTracker().FindIceWallObstacle(
+      command.effectInstanceId);
+    auto* const casterBot = FindControlledRacer(raceInstance, clientContext, command.attackerOid);
+    if (icePosition != nullptr
+      && casterBot != nullptr
+      && casterBot->IsBot()
+      && not targetRacer.IsBot())
+    {
+      const float casterDistance = (casterBot->worldPosition - *icePosition).Length();
+      const float targetDistance = (targetRacer.worldPosition - *icePosition).Length();
+      if (casterDistance < targetDistance)
+      {
+        return;
+      }
+    }
+
+    raceInstance.GetTracker().RemoveIceWallObstacle(command.effectInstanceId);
+
     this->Broadcast(
       raceInstance,
       protocol::AcCmdRCMagicExpire{
@@ -3556,7 +4019,9 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
         GetServerInstance().GetHorseRegistry(), targetRacer.potential))
     {
       QueueHeldMagicItemStrip(
-        raceInstance, clientContext.characterUid, targetRacer.magicItemGeneration);
+        raceInstance,
+        raceInstance.GetTracker().GetCharacterUidByOid(command.targetOid),
+        targetRacer.magicItemGeneration);
     }
 
     if (magicSlotInfo->basicType == race::MagicType::FireBall)
@@ -3694,13 +4159,15 @@ void RaceNetworkHandler::StripEffectsOnAttack(
 }
 
 void RaceNetworkHandler::DrainGauge(
+  RaceInstance& raceInstance,
   const data::Uid targetCharacterUid,
   tracker::RaceTracker::Racer& targetRacer)
 {
   targetRacer.starPointValue = 0;
 
-  // The gauge is only ever reported to its own owner, who may have already left.
-  const auto targetClientId = FindClientIdByCharacterUid(targetCharacterUid);
+  // The gauge is only ever reported to its own owner (or a bot's controller),
+  // who may have already left.
+  const auto targetClientId = FindRacerClientId(raceInstance, targetCharacterUid);
 
   if (not targetClientId)
     return;
@@ -3837,7 +4304,7 @@ RaceNetworkHandler::EffectVerdict RaceNetworkHandler::ScheduleSkillEffect(
     StripEffectsOnAttack(raceInstance, targetRacer, magicSlotInfo);
 
     if (race::MagicSystem::DrainsGaugeOnHit(magicSlotInfo))
-      DrainGauge(targetCharacterUid, targetRacer);
+      DrainGauge(raceInstance, targetCharacterUid, targetRacer);
   }
 
   QueueEffectExpiry(

@@ -399,6 +399,14 @@ struct Character
   dao::Field<std::map<uint32_t, Mission>> missions{};
 
   dao::Field<std::vector<Uid>> quests{};
+
+  struct TrainingRecord
+  {
+    uint32_t mapBlockId{};
+    uint8_t gameMode{};
+    uint8_t clearedDifficulty{};
+  };
+  dao::Field<std::vector<TrainingRecord>> trainingRecords{};
 };
 
 struct Horse

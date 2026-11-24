@@ -44,6 +44,7 @@
 #include "server/telemetry/Telemetry.hpp"
 
 #include <libserver/data/DataDirector.hpp>
+#include <libserver/registry/AiRiderRegistry.hpp>
 #include <libserver/registry/BreedingRegistry.hpp>
 #include <libserver/registry/CharacterRegistry.hpp>
 #include <libserver/registry/CourseRegistry.hpp>
@@ -145,6 +146,10 @@ public:
   //! Returns reference to the Magic registry.
   //! @returns Reference to the Magic registry.
   registry::MagicRegistry& GetMagicRegistry();
+
+  //! Returns reference to the AI rider registry.
+  //! @returns Reference to the AI rider registry.
+  registry::AiRiderRegistry& GetAiRiderRegistry();
 
   //! Returns reference to the system content registry.
   //! @returns Reference to the system content registry.
@@ -322,6 +327,8 @@ private:
   registry::QuestRegistry _questRegistry;
   //! A registry of missions.
   registry::MissionRegistry _missionRegistry;
+  //! A registry of AI riders.
+  registry::AiRiderRegistry _aiRiderRegistry;
   //! The system content registry.
   registry::SystemContentRegistry _systemContentRegistry;
   //! A registry of breeding config data.
