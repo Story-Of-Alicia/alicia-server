@@ -22,7 +22,10 @@
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
+#include <algorithm>
+#include <ranges>
 #include <stdexcept>
+#include <vector>
 
 namespace server::registry
 {
@@ -80,6 +83,7 @@ uint32_t ReadSlotInfo(const YAML::Node& section, Magic::SlotInfo& slot)
 void MagicRegistry::Clear()
 {
   _slotInfo.clear();
+  _slotTypeByEffectId.clear();
   _soloPool.clear();
   _teamPool.clear();
   _statScalings.clear();
@@ -117,6 +121,33 @@ void MagicRegistry::ReadConfig(const std::filesystem::path& configPath)
     Magic::SlotInfo slot;
     const auto type = ReadSlotInfo(entry, slot);
     _slotInfo.emplace(type, std::move(slot));
+  }
+
+  {
+    std::vector<uint32_t> types;
+    types.reserve(_slotInfo.size());
+    for (const auto& type : _slotInfo | std::views::keys)
+      types.push_back(type);
+    std::ranges::sort(types);
+
+    for (const auto type : types)
+    {
+      const auto& slot = _slotInfo.at(type);
+      const auto [iter, inserted] = _slotTypeByEffectId.try_emplace(slot.skillEffectId, type);
+      if (inserted)
+        continue;
+
+      const auto& existing = _slotInfo.at(iter->second);
+      const bool preferNew = slot.type == slot.basicType && existing.type != existing.basicType;
+      spdlog::warn(
+        "Magic slots {} and {} share skill effect id {}; using slot {} for effect lookups",
+        existing.type,
+        slot.type,
+        slot.skillEffectId,
+        preferNew ? slot.type : existing.type);
+      if (preferNew)
+        iter->second = type;
+    }
   }
 
   // Pre-build the pick pools and positional weights so RandomMagicItem never has to filter at runtime.
@@ -230,12 +261,17 @@ const Magic::SlotInfo& MagicRegistry::GetSlotInfo(uint32_t type) const
 
 const Magic::SlotInfo& MagicRegistry::GetSlotInfoByEffectId(uint32_t effectId) const
 {
-  for (const auto& [type, slot] : _slotInfo)
-  {
-    if (slot.skillEffectId == effectId)
-      return slot;
-  }
+  if (const auto* slot = FindSlotInfoByEffectId(effectId))
+    return *slot;
   throw std::runtime_error("Magic slot not found for effect ID: " + std::to_string(effectId));
+}
+
+const Magic::SlotInfo* MagicRegistry::FindSlotInfoByEffectId(uint32_t effectId) const
+{
+  const auto typeIter = _slotTypeByEffectId.find(effectId);
+  if (typeIter == _slotTypeByEffectId.cend())
+    return nullptr;
+  return &_slotInfo.at(typeIter->second);
 }
 
 const std::unordered_map<uint32_t, Magic::SlotInfo>& MagicRegistry::GetSlotInfoMap() const

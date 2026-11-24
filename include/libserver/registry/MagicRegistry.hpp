@@ -129,6 +129,7 @@ public:
 
   [[nodiscard]] const Magic::SlotInfo& GetSlotInfo(uint32_t type) const;
   [[nodiscard]] const Magic::SlotInfo& GetSlotInfoByEffectId(uint32_t effectId) const;
+  [[nodiscard]] const Magic::SlotInfo* FindSlotInfoByEffectId(uint32_t effectId) const;
   [[nodiscard]] const std::unordered_map<uint32_t, Magic::SlotInfo>& GetSlotInfoMap() const;
 
   //! Basic-type slot IDs available in solo mode (teamMode == 0).
@@ -153,6 +154,7 @@ public:
 
 private:
   std::unordered_map<uint32_t, Magic::SlotInfo> _slotInfo{};
+  std::unordered_map<uint32_t, uint32_t> _slotTypeByEffectId{};
   std::vector<uint32_t> _soloPool{};
   std::vector<uint32_t> _teamPool{};
   Magic::RegenInfo _regenInfo{};

@@ -129,7 +129,7 @@ magic:
       - type: 6               # Booster
         basicType: 6
         criticalType: 7
-        skillEffectId: 5
+        skillEffectId: 4
         attackValue: 0
         defenseValue: 0
         castingTime: 0.0

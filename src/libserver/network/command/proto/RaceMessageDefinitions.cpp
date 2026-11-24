@@ -1922,6 +1922,7 @@ void AcCmdRCAddSkillEffect::Write(
       stream.Write(command.shieldEffect.value().unk0)
         .Write(command.shieldEffect.value().unk1);
       break;
+    case 4:
     case 5:
     case 6:
     case 7:
@@ -1950,6 +1951,7 @@ void AcCmdRCAddSkillEffect::Read(
       stream.Read(command.shieldEffect.emplace().unk0)
         .Read(command.shieldEffect.value().unk1);
       break;
+    case 4:
     case 5:
     case 6:
     case 7:

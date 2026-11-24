@@ -3500,7 +3500,16 @@ void RaceNetworkHandler::HandleActivateSkillEffect(
     command.effectInstanceId);
 
   const auto& magicRegistry = GetServerInstance().GetMagicRegistry();
-  const auto* magicSlotInfo = &magicRegistry.GetSlotInfoByEffectId(command.effectId);
+  const auto* magicSlotInfo = magicRegistry.FindSlotInfoByEffectId(command.effectId);
+  if (magicSlotInfo == nullptr)
+  {
+    spdlog::warn(
+      "Racer '{}' (uid '{}') reported unknown skill effect id {}",
+      targetRacer.oid,
+      clientContext.characterUid,
+      command.effectId);
+    return;
+  }
 
   const bool isDarkFireBurning = targetRacer.effects[race::SkillEffect::DarkFire]
     || targetRacer.effects[race::SkillEffect::DarkFireCritical];
@@ -3770,7 +3779,7 @@ RaceNetworkHandler::EffectVerdict RaceNetworkHandler::ScheduleSkillEffect(
   if (not race::MagicSystem::IsValidSkillEffectId(magicSlotInfo.skillEffectId))
   {
     spdlog::error(
-      "ScheduleSkillEffect: magic type {} has unusable skillEffectId {} (max {}, 4 unused)",
+      "ScheduleSkillEffect: magic type {} has unusable skillEffectId {} (max {})",
       magicSlotInfo.type,
       magicSlotInfo.skillEffectId,
       tracker::RaceTracker::Racer::EffectCount - 1);

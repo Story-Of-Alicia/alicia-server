@@ -98,10 +98,7 @@ bool MagicSystem::IsIceWall(const uint32_t magicType)
 
 bool MagicSystem::IsValidSkillEffectId(const uint32_t skillEffectId)
 {
-  constexpr uint32_t ClientCrashingEffectId = 4;
-
-  return skillEffectId < tracker::RaceTracker::Racer::EffectCount
-    && skillEffectId != ClientCrashingEffectId;
+  return skillEffectId < tracker::RaceTracker::Racer::EffectCount;
 }
 
 bool MagicSystem::IsDowned(const tracker::RaceTracker::Racer& racer)
@@ -130,6 +127,7 @@ bool MagicSystem::IsStrippedByAttack(
       return attackSlotInfo.removeMagic && attackSlotInfo.attackRank >= HeavyAttackRank;
 
     case SkillEffect::Booster:
+    case SkillEffect::BoosterCritical:
     case SkillEffect::BufSpeed:
     case SkillEffect::BufSpeedCritical:
       return attackSlotInfo.removeMagic
