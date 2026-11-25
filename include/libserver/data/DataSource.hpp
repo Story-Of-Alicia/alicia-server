@@ -23,6 +23,7 @@
 #include "libserver/data/DataDefinitions.hpp"
 #include "server/Config.hpp"
 
+#include <optional>
 #include <string_view>
 
 namespace server
@@ -41,7 +42,9 @@ public:
   //! Retrieves the user from the data source.
   //! @param name Name of the user.
   //! @param user User to retrieve.
-  virtual void RetrieveUser(const std::string_view& name, data::User& user) = 0;
+  //! @returns `true` if the user was retrieved, `false` if the user does not exist,
+  //!          `std::nullopt` if the user could not be retrieved due to an error.
+  virtual std::optional<bool> RetrieveUser(const std::string_view& name, data::User& user) = 0;
   //! Stores the user on the data source.
   //! @param name Name of the user.
   //! @param user User to store.
@@ -86,6 +89,11 @@ public:
   //! Returns whether the character name is unique.
   //! @return `server::data::InvalidUid` if the character name is unique, otherwise returns the existing character UID.
   virtual bool IsCharacterNameUnique(const std::string_view& name) = 0;
+  //! Atomically assigns the name to the character, unless another character holds the name.
+  //! @param uid UID of the character.
+  //! @param name Name to claim.
+  //! @return `true` if the name was claimed, `false` if another character holds the name.
+  virtual bool ClaimCharacterName(data::Uid uid, const std::string_view& name) = 0;
 
   //! Creates the horse in the data source.
   //! @param horse Horse to create.
@@ -194,6 +202,12 @@ public:
   //! Returns whether the guild name is unique.
   //! @return `true` if the guild name is unique, otherwise returns `false`.
   virtual bool IsGuildNameUnique(const std::string_view& name) = 0;
+  //! Atomically assigns the name to the guild, unless another guild holds the name.
+  //! The name of a guild is assigned only by the claim, the store of the guild does not change it.
+  //! @param uid UID of the guild.
+  //! @param name Name to claim.
+  //! @return `true` if the name was claimed, `false` if another guild holds the name.
+  virtual bool ClaimGuildName(data::Uid uid, const std::string_view& name) = 0;
 
   //! Creates the settings in the data source.
   //! @param settings Settings to create.

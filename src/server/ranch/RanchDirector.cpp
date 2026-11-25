@@ -3515,9 +3515,37 @@ void RanchDirector::HandleCreateGuild(
       std::format("Failed to create guild for user '{}'", clientContext.userName));
   }
 
+  auto createdGuildUid = data::InvalidUid;
+  guildRecord.Immutable([&createdGuildUid](const data::Guild& guild)
+  {
+    createdGuildUid = guild.uid();
+  });
+
+  // Claim the name, the uniqueness check above might have raced with another claim.
+  const bool isNameClaimed = GetServerInstance().GetDataDirector().GetDataSource().ClaimGuildName(
+    createdGuildUid,
+    command.name);
+  if (not isNameClaimed)
+  {
+    GetServerInstance().GetDataDirector().GetGuildCache().Delete(createdGuildUid);
+
+    protocol::AcCmdCRCreateGuildCancel cancel{
+      .status = 0,
+      .member2 = 0}; // TODO: Unidentified
+
+    _commandServer.QueueCommand<decltype(cancel)>(
+      clientId,
+      [cancel]()
+      {
+        return cancel;
+      });
+    return;
+  }
+
   guildRecord.Mutable([&response, command, characterUid = clientContext.characterUid](data::Guild& guild)
   {
     response.uid = guild.uid();
+    // The name is claimed in the data source, keep the record consistent with it.
     guild.name = command.name;
     guild.description = command.description;
     guild.owner = characterUid;
@@ -3637,8 +3665,9 @@ void RanchDirector::HandleWithdrawGuild(
     ? command.characterUid
     : clientContext.characterUid;
 
+  // The guild is always the guild of the caller, a kick can only target a member of that guild.
   data::Uid guildUid{data::InvalidUid};
-  GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
+  GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
     [&guildUid](const data::Character& character)
     {
       guildUid = character.guildUid();
@@ -3646,40 +3675,85 @@ void RanchDirector::HandleWithdrawGuild(
 
   std::optional<protocol::GuildError> error{};
   const auto& guildRecord = GetServerInstance().GetDataDirector().GetGuild(guildUid);
-  guildRecord.Mutable([&characterUid, &error, option = command.option](data::Guild& guild)
+  if (guildUid == data::InvalidUid || not guildRecord.IsAvailable())
   {
-    if (option == WithdrawOption::Disband)
+    error.emplace(protocol::GuildError::NoGuild);
+  }
+  else
+  {
+    guildRecord.Mutable([&characterUid, &error, option = command.option,
+      callerUid = clientContext.characterUid](data::Guild& guild)
     {
-      if (guild.owner() != characterUid)
+      if (not std::ranges::contains(guild.members(), characterUid))
       {
-        // Command was to disband guild but caller is not the owner, report
-        error.emplace(protocol::GuildError::NoAuthority);
-        spdlog::warn("Character {} tried to disband guild {} but is not owner",
+        // The character to withdraw is not a member of the guild of the caller
+        error.emplace(protocol::GuildError::NoUserOrOffline);
+        spdlog::warn("Character {} tried to withdraw character {} who is not a member of guild {}",
+          callerUid,
           characterUid,
           guild.uid());
         return;
       }
 
-      const auto& guildMembers = guild.members();
-      // Check that there is only 1 guild member and that member is the owner
-      bool lastGuildMemberIsOwner = guildMembers.size() == 1 && guildMembers[0] == characterUid;
-      if (not lastGuildMemberIsOwner || guild.officers().size() > 0)
+      if (option == WithdrawOption::Leave && guild.owner() == characterUid)
       {
-        // Command was to disband guild but guild has members (somehow)
-        error.emplace(protocol::GuildError::NotAlone);
-        spdlog::warn("Character {} tried to disband guild {} with members and/or officers present",
+        // The owner must transfer the ownership or disband the guild, a guild always has an owner
+        error.emplace(protocol::GuildError::NoAuthority);
+        spdlog::warn("Character {} tried to leave guild {} which they own",
           characterUid,
           guild.uid());
         return;
       }
-    }
-    
-    // Make sure there is no trace of ex-member in the guild
-    if (std::ranges::find(guild.members(), characterUid) != guild.members().cend())
-      guild.members().erase(std::ranges::find(guild.members(), characterUid));
-    if (std::ranges::find(guild.officers(), characterUid) != guild.officers().cend())
-      guild.officers().erase(std::ranges::find(guild.officers(), characterUid));
-  });
+
+      if (option == WithdrawOption::Kicked)
+      {
+        const bool isCallerOwner = guild.owner() == callerUid;
+        const bool isCallerOfficer = std::ranges::contains(guild.officers(), callerUid);
+        const bool isTargetPrivileged = guild.owner() == characterUid
+          || std::ranges::contains(guild.officers(), characterUid);
+
+        if (not isCallerOwner && not (isCallerOfficer && not isTargetPrivileged))
+        {
+          error.emplace(protocol::GuildError::NoAuthority);
+          spdlog::warn("Character {} tried to kick character {} from guild {} without authority",
+            callerUid,
+            characterUid,
+            guild.uid());
+          return;
+        }
+      }
+
+      if (option == WithdrawOption::Disband)
+      {
+        if (guild.owner() != characterUid)
+        {
+          // Command was to disband guild but caller is not the owner, report
+          error.emplace(protocol::GuildError::NoAuthority);
+          spdlog::warn("Character {} tried to disband guild {} but is not owner",
+            characterUid,
+            guild.uid());
+          return;
+        }
+
+        const auto& guildMembers = guild.members();
+        // Check that there is only 1 guild member and that member is the owner
+        bool lastGuildMemberIsOwner = guildMembers.size() == 1 && guildMembers[0] == characterUid;
+        if (not lastGuildMemberIsOwner || guild.officers().size() > 0)
+        {
+          error.emplace(protocol::GuildError::NotAlone);
+          spdlog::warn("Character {} tried to disband guild {} with members and/or officers present",
+            characterUid,
+            guild.uid());
+          return;
+        }
+      }
+      
+      if (std::ranges::find(guild.members(), characterUid) != guild.members().cend())
+        guild.members().erase(std::ranges::find(guild.members(), characterUid));
+      if (std::ranges::find(guild.officers(), characterUid) != guild.officers().cend())
+        guild.officers().erase(std::ranges::find(guild.officers(), characterUid));
+    });
+  }
 
   if (error.has_value())
   {
@@ -3699,7 +3773,8 @@ void RanchDirector::HandleWithdrawGuild(
   GetServerInstance().GetDataDirector().GetCharacter(characterUid).Mutable(
     [&guildUid](data::Character& character)
     {
-      character.guildUid() = data::InvalidUid;
+      if (character.guildUid() == guildUid)
+        character.guildUid() = data::InvalidUid;
     });
 
   // On disband the guild no longer has any members, so delete its record.
@@ -6151,11 +6226,15 @@ void RanchDirector::HandleChangeNickname(
 
   // todo: automod for the nickname
 
+  bool hasItem = false;
+  bool isNameClaimed = false;
   bool itemConsumed = false;
   uint32_t remainingItemCount = 0;
+  std::string previousName{};
 
   characterRecord.Mutable(
-    [this, &itemConsumed, &remainingItemCount](data::Character& character)
+    [this, &hasItem, &isNameClaimed, &itemConsumed, &remainingItemCount, &previousName, newName = command.newNickname](
+      data::Character& character)
     {
       const data::Tid CharacterRenameItem = 46002;
 
@@ -6163,11 +6242,34 @@ void RanchDirector::HandleChangeNickname(
       //       to rename the character. This would allow us to not remember `CharacterRenameItem` and
       //       to use the item UID to find the item.
 
+      // Check for the item first so that a name is not claimed without the item being consumed.
+      hasItem = GetServerInstance().GetItemSystem().CountItem(character, CharacterRenameItem) > 0;
+      if (not hasItem)
+        return;
+
+      // Claim the name, the uniqueness check above might have raced with another claim.
+      isNameClaimed = GetServerInstance().GetDataDirector().GetDataSource().ClaimCharacterName(
+        character.uid(), newName);
+      if (not isNameClaimed)
+        return;
+
+      // The name is claimed in the data source, keep the record consistent with it.
+      previousName = character.name();
+      character.name() = newName;
+
       const auto consumeResult = GetServerInstance().GetItemSystem().ConsumeItem(
         character, CharacterRenameItem, 1);
       itemConsumed = consumeResult.itemConsumed;
       remainingItemCount = consumeResult.remainingItemCount;
     });
+
+  if (not isNameClaimed and hasItem)
+  {
+    SendChangeNicknameCancel(
+      clientId,
+      protocol::ChangeNicknameError::DuplicateNickname);
+    return;
+  }
 
   if (not itemConsumed)
   {
@@ -6176,13 +6278,6 @@ void RanchDirector::HandleChangeNickname(
       protocol::ChangeNicknameError::NoOrIncorrectItem);
     return;
   }
-
-  std::string previousName{};
-  characterRecord.Mutable([newName = command.newNickname, &previousName](data::Character& character)
-  {
-    previousName = character.name();
-    character.name() = newName;
-  });
 
   const auto userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
     clientContext.characterUid).userName;
@@ -7759,7 +7854,7 @@ void RanchDirector::HandleExpandMountSlot(
   characterRecord.Mutable([&newHorseSlotCount](data::Character& character)
   {
     character.horseSlotCount() += 1;
-    newHorseSlotCount = character.horseSlotCount();
+    newHorseSlotCount = static_cast<uint8_t>(character.horseSlotCount());
   });
 
   const protocol::AcCmdCRExpandMountSlotOK response{

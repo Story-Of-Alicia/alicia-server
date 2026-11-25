@@ -22,6 +22,7 @@
 
 #include "libserver/data/Record.hpp"
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <functional>
@@ -30,6 +31,9 @@
 #include <span>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
+
+#include <spdlog/spdlog.h>
 
 namespace server
 {
@@ -74,7 +78,26 @@ public:
 
     // Process the queued operations.
     ProcessRetrieveQueue();
-    ProcessStoreQueue();
+
+    // The failed stores are retried right away, ignoring the backoff.
+    for (uint32_t attempt = 0; attempt < TerminateStoreAttempts; ++attempt)
+    {
+      ProcessStoreQueue(true);
+
+      std::scoped_lock lock(_storeQueue.mutex);
+      if (_storeQueue.data.empty())
+        break;
+    }
+
+    {
+      std::scoped_lock lock(_storeQueue.mutex);
+      for (const auto& key : _storeQueue.data)
+      {
+        spdlog::critical("Datum {} could not be stored before termination, its changes are lost", key);
+      }
+      _storeQueue.data.clear();
+    }
+
     ProcessDeleteQueue();
 
     {
@@ -394,10 +417,16 @@ private:
     _retrieveQueue.data.clear();
   }
 
-  void ProcessStoreQueue()
+  //! Stores the queued data. A datum which failed to store stays queued
+  //! and is retried with an exponential backoff, so that its changes are never dropped.
+  //! @param ignoreBackoff Whether the data waiting for their backoff are stored too.
+  void ProcessStoreQueue(const bool ignoreBackoff = false)
   {
-    if (not _storeQueue.dataFlag.exchange(false, std::memory_order::relaxed))
+    if (not _storeQueue.dataFlag.exchange(false, std::memory_order::relaxed) && not ignoreBackoff)
       return;
+
+    const auto now = std::chrono::steady_clock::now();
+    std::vector<Key> retryKeys;
 
     std::scoped_lock queueLock(_storeQueue.mutex);
     for (const auto& key : _storeQueue.data)
@@ -411,10 +440,52 @@ private:
         continue;
 
       auto& entry = entryIter->second;
-      if (entry.available)
-        _dataSourceStoreListener(key, entry.value);
+      if (not entry.available)
+        continue;
+
+      // Wait for the backoff of a datum which failed to store.
+      if (not ignoreBackoff
+        && entry.storeFailureCount.load(std::memory_order::relaxed) > 0
+        && now < entry.nextStoreAttempt.load(std::memory_order::relaxed))
+      {
+        retryKeys.emplace_back(key);
+        continue;
+      }
+
+      if (_dataSourceStoreListener(key, entry.value))
+      {
+        const auto failureCount = entry.storeFailureCount.exchange(0, std::memory_order::relaxed);
+        if (failureCount > 0)
+        {
+          spdlog::info("Datum {} was stored after {} failed attempts", key, failureCount);
+        }
+        entry.dirty.store(false, std::memory_order::relaxed);
+        continue;
+      }
+
+      // The datum has unsaved changes, it is retried after the backoff.
+      const auto failureCount = entry.storeFailureCount.fetch_add(1, std::memory_order::relaxed) + 1;
+      const auto backoff = std::min(
+        std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+          StoreRetryBaseBackoff * (1u << std::min(failureCount - 1, 6u))),
+        std::chrono::duration_cast<std::chrono::steady_clock::duration>(StoreRetryMaxBackoff));
+      entry.nextStoreAttempt.store(now + backoff, std::memory_order::relaxed);
+      entry.dirty.store(true, std::memory_order::relaxed);
+      retryKeys.emplace_back(key);
+
+      spdlog::warn(
+        "Datum {} failed to store {} time(s) in a row, retrying in {}s",
+        key,
+        failureCount,
+        std::chrono::duration_cast<std::chrono::seconds>(backoff).count());
     }
+
     _storeQueue.data.clear();
+    if (not retryKeys.empty())
+    {
+      _storeQueue.data.insert(retryKeys.begin(), retryKeys.end());
+      _storeQueue.dataFlag.store(true, std::memory_order::relaxed);
+    }
   }
 
   void ProcessDeleteQueue()
@@ -449,6 +520,10 @@ private:
     std::atomic_uint32_t retrieveFailureCount{0};
     //! A time point of the first of the consecutive failed retrievals.
     std::atomic<std::chrono::steady_clock::time_point> firstRetrieveFailure{};
+    //! A count of consecutive failed stores of the datum to the data source.
+    std::atomic_uint32_t storeFailureCount{0};
+    //! A time point after which the failed store of the datum is attempted again.
+    std::atomic<std::chrono::steady_clock::time_point> nextStoreAttempt{};
     Record<Data>::PatchListener listener;
     std::shared_mutex mutex{};
     Data value;
@@ -460,6 +535,13 @@ private:
     std::atomic_bool dataFlag;
     std::unordered_set<Key> data;
   };
+
+  //! Backoff of the first retry of a failed store, doubled with every further failure.
+  static constexpr std::chrono::seconds StoreRetryBaseBackoff{1};
+  //! Maximum backoff between the retries of a failed store.
+  static constexpr std::chrono::seconds StoreRetryMaxBackoff{60};
+  //! Attempts to store the queued data on termination.
+  static constexpr uint32_t TerminateStoreAttempts = 3;
 
   Queue _retrieveQueue;
   Queue _storeQueue;
