@@ -2106,7 +2106,7 @@ void RaceNetworkHandler::ScheduleHorseInjury(
 
   // Whether the horse can get injured this race at all depends on its luck (0 to 4),
   // as last shown to the player. Chances per mille, by luck.
-  constexpr std::array<uint32_t, 5> InjuryChancePerMille{134, 100, 67, 34, 0};
+  constexpr std::array<uint32_t, 5> InjuryChancePerMille{230, 172, 115, 57, 0};
   const auto luck = std::min<uint32_t>(horse.luckState(), 4);
   const uint32_t chancePerMille = InjuryChancePerMille[luck];
 
