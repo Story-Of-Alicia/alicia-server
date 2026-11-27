@@ -20,6 +20,7 @@
 #include "server/ranch/RanchDirector.hpp"
 
 #include "server/ServerInstance.hpp"
+#include "server/system/InjuryRules.hpp"
 #include "server/system/ItemSystem.hpp"
 
 #include <libserver/data/helper/ProtocolHelper.hpp>
@@ -631,6 +632,7 @@ void RanchDirector::Initialize()
   _breedingMarket.Initialize();
 
   ScheduleFoalMaturityCheck();
+  ScheduleHorseLuckCheck();
 
   spdlog::debug(
     "Ranch server listening on {}:{}",
@@ -670,10 +672,63 @@ void RanchDirector::ScheduleFoalMaturityCheck() noexcept
     Scheduler::Clock::now() + FoalMaturityCheckInterval);
 }
 
+void RanchDirector::ScheduleHorseLuckCheck() noexcept
+{
+  _scheduler.Queue(
+    [this]()
+    {
+      try
+      {
+        RunHorseLuckCheck();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Horse luck check failed: {}", x.what());
+      }
+
+      ScheduleHorseLuckCheck();
+    },
+    Scheduler::Clock::now() + HorseSystem::HorseLuckCheckInterval);
+}
+
+void RanchDirector::RunHorseLuckCheck()
+{
+  const auto now = data::Clock::now();
+
+  std::scoped_lock lock(_clientsMutex);
+  for (auto& [clientId, clientContext] : _clients)
+  {
+    if (not clientContext.isAuthenticated
+      || clientContext.characterUid == data::InvalidUid
+      || now < clientContext.nextHorseLuckCheck)
+    {
+      continue;
+    }
+
+    clientContext.nextHorseLuckCheck = GetServerInstance().GetHorseSystem().RefreshHorseLuck(
+      clientContext.characterUid,
+      [this, clientId, characterUid = clientContext.characterUid](const data::Horse& horse)
+      {
+        protocol::AcCmdRCUpdateMountInfoNotify notify{
+          .characterUid = characterUid,
+          .action = protocol::AcCmdRCUpdateMountInfoNotify::Action::SomethingWithHorseLuck};
+        protocol::BuildProtocolHorse(notify.horse, horse);
+
+        _commandServer.QueueCommand<decltype(notify)>(
+          clientId,
+          [notify]()
+          {
+            return notify;
+          });
+      });
+  }
+}
+
 void RanchDirector::RunFoalMaturityCheck()
 {
   const auto now = data::Clock::now();
 
+  std::scoped_lock lock(_clientsMutex);
   for (auto& [clientId, clientContext] : _clients)
   {
     if (not clientContext.isAuthenticated
@@ -868,6 +923,8 @@ void RanchDirector::HandleClientConnected(ClientId clientId)
     "Client {} connected to the ranch server from {}",
     clientId,
     _commandServer.GetClientAddress(clientId).to_string());
+
+  std::scoped_lock lock(_clientsMutex);
   _clients.try_emplace(clientId);
 }
 
@@ -881,6 +938,7 @@ void RanchDirector::HandleClientDisconnected(ClientId clientId)
     HandleRanchLeave(clientId);
   }
 
+  std::scoped_lock lock(_clientsMutex);
   _clients.erase(clientId);
 }
 
@@ -1318,11 +1376,15 @@ bool RanchDirector::HandleEnterRanch(
   clientContext.userName = _serverInstance.GetLobbyDirector().GetUserByCharacterUid(
     clientContext.characterUid).userName;
 
+  std::vector<data::Uid> naturallyHealedHorseUids;
+
   if (command.characterUid == command.rancherUid)
   {
     RefreshMaturingFoals(command.characterUid, clientContext);
     GetServerInstance().GetHorseSystem().RepairLineages(command.characterUid);
     GetServerInstance().GetHorseSystem().ApplyDailyCareTick(command.characterUid);
+    naturallyHealedHorseUids = GetServerInstance().GetHorseSystem().HealRecoveredInjuries(
+      command.characterUid);
   }
 
   protocol::AcCmdCREnterRanchOK response{
@@ -1621,6 +1683,26 @@ bool RanchDirector::HandleEnterRanch(
   for (const auto& notify : idleMountNotifies)
   {
     _commandServer.QueueCommand<protocol::AcCmdRCAddIdleMountInfoNotify>(
+      clientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
+
+  for (const auto horseUid : naturallyHealedHorseUids)
+  {
+    protocol::AcCmdRCUpdateMountInfoNotify notify{
+      .characterUid = command.characterUid,
+      .action = protocol::AcCmdRCUpdateMountInfoNotify::Action::NaturalHealingInjury};
+
+    GetServerInstance().GetDataDirector().GetHorse(horseUid).Immutable(
+      [&notify](const data::Horse& horse)
+      {
+        protocol::BuildProtocolHorse(notify.horse, horse);
+      });
+
+    _commandServer.QueueCommand<decltype(notify)>(
       clientId,
       [notify]()
       {
@@ -4605,13 +4687,42 @@ bool RanchDirector::HandleUsePlayItem(
 
 bool RanchDirector::HandleUseCureItem(
   [[maybe_unused]] const data::Uid characterUid,
-  [[maybe_unused]] const data::Uid mountUid,
-  [[maybe_unused]] const data::Tid usedItemTid,
+  const data::Uid mountUid,
+  const data::Tid usedItemTid,
   protocol::AcCmdCRUseItemOK& response)
 {
   response.type = protocol::AcCmdCRUseItemOK::ActionType::Cure;
 
-  // TODO: Update the horse's stats based on the cure item used.
+  const auto itemTemplate = GetServerInstance().GetItemRegistry().GetItem(usedItemTid);
+  if (not itemTemplate || not itemTemplate->cureParameters)
+    return false;
+
+  const uint32_t curedInjury = itemTemplate->cureParameters->injury;
+
+  bool isCured = false;
+  GetServerInstance().GetDataDirector().GetHorse(mountUid).Mutable(
+    [curedInjury, &isCured](data::Horse& horse)
+    {
+      // Each cure item only cures its own injury.
+      if (horse.mountCondition.injury() == injury::State::None
+        || horse.mountCondition.injury() != curedInjury)
+      {
+        return;
+      }
+
+      horse.mountCondition.injury() = injury::State::None;
+      horse.mountCondition.injuryHealCount() = 0;
+      isCured = true;
+    });
+
+  if (not isCured)
+  {
+    spdlog::warn(
+      "Cure item {} used on horse {} that does not have its injury",
+      usedItemTid,
+      mountUid);
+    return false;
+  }
 
   response.experiencePoints = 1;
 
@@ -4710,19 +4821,23 @@ void RanchDirector::HandleUseItem(
       usedItemTid,
       response);
 
-    protocol::AcCmdCRMountInjuryHealOK cure{
-      .horseUid = horseUid,
-      .unk1 = 0,
-      .unk2 = 0,
-      .updatedCarrotCount = carrotCount
-    };
+    // The wrong cure item heals nothing and is not used up.
+    if (consumeItem)
+    {
+      protocol::AcCmdCRMountInjuryHealOK cure{
+        .horseUid = horseUid,
+        .unk1 = 0,
+        .unk2 = 0,
+        .updatedCarrotCount = carrotCount
+      };
 
-    _commandServer.QueueCommand<decltype(cure)>(
-      clientId,
-      [cure]()
-      {
-        return cure;
-      });
+      _commandServer.QueueCommand<decltype(cure)>(
+        clientId,
+        [cure]()
+        {
+          return cure;
+        });
+    }
   }
   else if (usedItemTid == InstantGrowUpItemTid)
   {

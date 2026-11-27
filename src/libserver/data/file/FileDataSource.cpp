@@ -688,6 +688,7 @@ void server::FileDataSource::RetrieveHorse(data::Uid uid, data::Horse& horse)
     .charm = mountCondition.value("charm", uint32_t{}),
     .friendliness = mountCondition.value("friendliness", uint32_t{}),
     .injury = mountCondition.value("injury", uint32_t{}),
+    .injuryHealCount = mountCondition.value("injuryHealCount", uint32_t{}),
     .plenitude = mountCondition.value("plenitude", uint32_t{}),
     .bodyDirtiness = mountCondition.value("bodyDirtiness", uint32_t{}),
     .maneDirtiness = mountCondition.value("maneDirtiness", uint32_t{}),
@@ -793,6 +794,7 @@ void server::FileDataSource::StoreHorse(data::Uid uid, const data::Horse& horse)
   mountCondition["charm"] = horse.mountCondition.charm();
   mountCondition["friendliness"] = horse.mountCondition.friendliness();
   mountCondition["injury"] = horse.mountCondition.injury();
+  mountCondition["injuryHealCount"] = horse.mountCondition.injuryHealCount();
   mountCondition["plenitude"] = horse.mountCondition.plenitude();
   mountCondition["bodyDirtiness"] = horse.mountCondition.bodyDirtiness();
   mountCondition["maneDirtiness"] = horse.mountCondition.maneDirtiness();

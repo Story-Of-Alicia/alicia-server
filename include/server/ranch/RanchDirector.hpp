@@ -31,6 +31,7 @@
 #include "libserver/network/command/proto/RanchMessageDefinitions.hpp"
 #include "libserver/network/command/proto/CommonMessageDefinitions.hpp"
 
+#include <mutex>
 #include <optional>
 #include <random>
 #include <unordered_map>
@@ -154,8 +155,11 @@ private:
     //! for horse records to load. Capped so the client isn't stuck forever.
     uint32_t enterRanchDeferAttempts{0};
 
-    //! Number of times a deferred breeding attempt has been retried 
+    //! Number of times a deferred breeding attempt has been retried
     uint32_t tryBreedingDeferAttempts{0};
+
+    //! When the luck of the client's horses next needs a refresh.
+    data::Clock::time_point nextHorseLuckCheck{};
   };
 
   struct RanchInstance
@@ -213,6 +217,9 @@ private:
   //! Queues the next foal maturity check on the scheduler, re-scheduling
   //! itself so the sweep runs on a fixed interval.
   void ScheduleFoalMaturityCheck() noexcept;
+
+  void RunHorseLuckCheck();
+  void ScheduleHorseLuckCheck() noexcept;
 
   //! Announces that a foal grew up to an adult to the owning client and the
   //! visitors of its ranch.
@@ -626,6 +633,8 @@ private:
 
   //!
   std::unordered_map<ClientId, ClientContext> _clients;
+  //! sweeps that run over the clients on the tick thread.
+  std::mutex _clientsMutex;
   //!
   std::unordered_map<data::Uid, RanchInstance> _ranches;
 

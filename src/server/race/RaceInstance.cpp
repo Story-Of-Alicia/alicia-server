@@ -23,6 +23,7 @@
 #include "server/race/RaceInstance.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
 
+#include <libserver/data/helper/ProtocolHelper.hpp>
 #include <libserver/util/Util.hpp>
 
 #include <spdlog/spdlog.h>
@@ -116,6 +117,9 @@ void RaceInstance::Stop()
     }
   }
 
+  // Horses whose minor injury healed with this race.
+  std::vector<protocol::AcCmdRCUpdateMountInfoNotify> naturallyHealed;
+
   // Build the score board.
   for (const auto& [characterUid, racer] : _tracker.GetRacers())
   {
@@ -201,7 +205,7 @@ void RaceInstance::Stop()
 
     score.teamColor = racer.team;
 
-    characterRecord.Mutable([this, &score, &racer](data::Character& character)
+    characterRecord.Mutable([this, &score, &racer, &naturallyHealed](data::Character& character)
     {
       character.carrots() += score.carrots;
       character.experience() += score.experience;
@@ -226,7 +230,8 @@ void RaceInstance::Stop()
         return;
 
       horseRecord.Mutable(
-        [this, &score, &racer, characterLevel = character.level()](data::Horse& horse)
+        [this, &score, &racer, &naturallyHealed, characterUid = character.uid(),
+          characterLevel = character.level()](data::Horse& horse)
         {
           score.mountName = horse.name();
           score.horseClass = static_cast<uint8_t>(horse.clazz());
@@ -244,6 +249,16 @@ void RaceInstance::Stop()
             horse,
             characterLevel,
             score.staminaDecRatio);
+
+          if (not racer.injuredHorse
+            && HorseSystem::CountDownInjuryHealing(horse, 1))
+          {
+            auto& notify = naturallyHealed.emplace_back(
+              protocol::AcCmdRCUpdateMountInfoNotify{
+                .characterUid = characterUid,
+                .action = protocol::AcCmdRCUpdateMountInfoNotify::Action::NaturalHealingInjury});
+            protocol::BuildProtocolHorse(notify.horse, horse);
+          }
         });
     });
   }
@@ -274,6 +289,20 @@ void RaceInstance::Stop()
 
   // Broadcast the race result
   _raceNetworkHandler.Broadcast(*this, raceResult);
+
+  for (const auto& notify : naturallyHealed)
+  {
+    const auto clientId = _raceNetworkHandler.FindClientIdByCharacterUid(notify.characterUid);
+    if (not clientId)
+      continue;
+
+    _raceNetworkHandler.GetCommandServer().QueueCommand<protocol::AcCmdRCUpdateMountInfoNotify>(
+      *clientId,
+      [notify]()
+      {
+        return notify;
+      });
+  }
 
   // The race counts towards every racer's ranch bonus, which pays out on each
   // twentieth race. The client expects the update to follow the race result.

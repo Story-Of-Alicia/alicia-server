@@ -19,6 +19,7 @@
 
 #include "server/race/MagicSystem.hpp"
 #include "server/race/RaceNetworkHandler.hpp"
+#include "server/system/InjuryRules.hpp"
 #include "server/system/PotentialSystem.hpp"
 
 #include "server/ServerInstance.hpp"
@@ -36,6 +37,16 @@
 
 namespace server
 {
+
+namespace
+{
+bool IsHorseInjuryEnabled(const protocol::GameMode gameMode)
+{
+  return gameMode == protocol::GameMode::Speed
+    || gameMode == protocol::GameMode::Magic;
+}
+
+} // anon namespace
 
 RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
@@ -93,6 +104,12 @@ RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
     [this](ClientId clientId, const auto& message)
     {
       HandleUserRaceFinal(clientId, message);
+    });
+
+  _commandServer.RegisterCommandHandler<protocol::AcCmdCRMountInjuryPlayEvent>(
+    [this](ClientId clientId, const auto& message)
+    {
+      HandleMountInjuryPlayEvent(clientId, message);
     });
 
   _commandServer.RegisterCommandHandler<protocol::AcCmdCRRaceResult>(
@@ -292,6 +309,60 @@ void RaceNetworkHandler::Initialize()
     GetConfig().listen.port);
 
   _commandServer.BeginHost(GetConfig().listen.address, GetConfig().listen.port);
+
+  ScheduleHorseLuckCheck();
+}
+
+void RaceNetworkHandler::ScheduleHorseLuckCheck() noexcept
+{
+  _scheduler.Queue(
+    [this]()
+    {
+      try
+      {
+        RunHorseLuckCheck();
+      }
+      catch (const std::exception& x)
+      {
+        spdlog::error("Horse luck check failed: {}", x.what());
+      }
+
+      ScheduleHorseLuckCheck();
+    },
+    Scheduler::Clock::now() + HorseSystem::HorseLuckCheckInterval);
+}
+
+void RaceNetworkHandler::RunHorseLuckCheck()
+{
+  const auto now = data::Clock::now();
+
+  std::scoped_lock lock(_clientsMutex);
+  for (auto& [clientId, clientContext] : _clients)
+  {
+    if (not clientContext.isAuthenticated
+      || clientContext.characterUid == data::InvalidUid
+      || now < clientContext.nextHorseLuckCheck)
+    {
+      continue;
+    }
+
+    clientContext.nextHorseLuckCheck = GetServerInstance().GetHorseSystem().RefreshHorseLuck(
+      clientContext.characterUid,
+      [this, clientId, characterUid = clientContext.characterUid](const data::Horse& horse)
+      {
+        protocol::AcCmdRCUpdateMountInfoNotify notify{
+          .characterUid = characterUid,
+          .action = protocol::AcCmdRCUpdateMountInfoNotify::Action::SomethingWithHorseLuck};
+        protocol::BuildProtocolHorse(notify.horse, horse);
+
+        _commandServer.QueueCommand<decltype(notify)>(
+          clientId,
+          [notify]()
+          {
+            return notify;
+          });
+      });
+  }
 }
 
 void RaceNetworkHandler::Terminate()
@@ -435,7 +506,10 @@ void RaceNetworkHandler::SendDailyQuestNotificationToCharacter(
 
 void RaceNetworkHandler::HandleClientConnected(ClientId clientId)
 {
-  _clients.try_emplace(clientId);
+  {
+    std::scoped_lock lock(_clientsMutex);
+    _clients.try_emplace(clientId);
+  }
 
   spdlog::debug(
     "Client {} connected to the race server from {}",
@@ -467,6 +541,8 @@ void RaceNetworkHandler::HandleClientDisconnected(ClientId clientId)
   }
 
   spdlog::info("Client {} disconnected from the race server", clientId);
+
+  std::scoped_lock lock(_clientsMutex);
   _clients.erase(clientId);
 }
 
@@ -1479,6 +1555,8 @@ void RaceNetworkHandler::HandleStartRace(
         }
       }
 
+      notify.isHorseInjuryEnabled = IsHorseInjuryEnabled(notify.raceGameMode);
+
       const bool isEligibleForSkills = (notify.raceGameMode == protocol::GameMode::Speed
         || notify.raceGameMode == protocol::GameMode::Magic)
         && notify.raceTeamMode == protocol::TeamMode::FFA;
@@ -1614,11 +1692,17 @@ void RaceNetworkHandler::HandleLoadingComplete(
 
   // Snapshot mount stats so per-tick magic calculations don't hit the data store on every pos-update.
   GetServerInstance().GetDataDirector().GetCharacter(clientContext.characterUid).Immutable(
-    [this, &racer](const data::Character& character)
+    [this, &racer, isInjuryEnabled = IsHorseInjuryEnabled(parameters.gameMode)](
+      const data::Character& character)
     {
       GetServerInstance().GetDataDirector().GetHorse(character.mountUid()).Immutable(
-        [&racer](const data::Horse& horse)
+        [this, &racer, isInjuryEnabled, characterLevel = character.level()](const data::Horse& horse)
         {
+          racer.injuryTimePoint.reset();
+          racer.injuredHorse = false;
+          if (isInjuryEnabled)
+            ScheduleHorseInjury(racer, characterLevel, horse);
+
           racer.mountStats = {
             .agility = horse.stats.agility(),
             .ambition = horse.stats.ambition(),
@@ -2003,6 +2087,132 @@ void RaceNetworkHandler::HandleStarPointGet(
     });
 }
 
+void RaceNetworkHandler::ScheduleHorseInjury(
+  tracker::RaceTracker::Racer& racer,
+  const uint32_t characterLevel,
+  const data::Horse& horse)
+{
+  racer.injuryTimePoint.reset();
+
+  // Characters below the starting injury level never injure their horse.
+  constexpr uint32_t StartingInjuryLevelKey = 24;
+  constexpr int32_t DefaultStartingInjuryLevel = 3;
+  const int32_t startingInjuryLevel = GetServerInstance()
+    .GetSystemContentRegistry()
+    .GetValue(StartingInjuryLevelKey)
+    .value_or(DefaultStartingInjuryLevel);
+  if (static_cast<int64_t>(characterLevel) < startingInjuryLevel)
+    return;
+
+  // Whether the horse can get injured this race at all depends on its luck (0 to 4),
+  // as last shown to the player. Chances per mille, by luck.
+  constexpr std::array<uint32_t, 5> InjuryChancePerMille{134, 100, 67, 34, 0};
+  const auto luck = std::min<uint32_t>(horse.luckState(), 4);
+  const uint32_t chancePerMille = InjuryChancePerMille[luck];
+
+  auto& randomEngine = server::util::GetRandomEngine();
+  std::uniform_int_distribution<uint32_t> chanceDist(0, 999);
+  const uint32_t roll = chanceDist(randomEngine);
+  const bool isInjuryPossible = roll < chancePerMille;
+
+  if (not isInjuryPossible)
+    return;
+
+  // The first play event that can injure the horse from 30 to 149 seconds
+  // into the race does.
+  std::uniform_int_distribution<uint32_t> delayDist(30, 149);
+  const uint32_t delaySeconds = delayDist(randomEngine);
+  racer.injuryTimePoint = std::chrono::steady_clock::now()
+    + std::chrono::seconds(delaySeconds);
+}
+
+void RaceNetworkHandler::HandleMountInjuryPlayEvent(
+  const ClientId clientId,
+  const protocol::AcCmdCRMountInjuryPlayEvent& command)
+{
+  const auto& clientContext = GetClientContext(clientId);
+
+  std::scoped_lock lock(_raceInstancesMutex);
+  auto& raceInstance = GetRaceInstance(clientContext);
+
+  TryInjureHorse(raceInstance, clientContext.characterUid, command.playEvent, false);
+}
+
+void RaceNetworkHandler::TryInjureHorse(
+  RaceInstance& raceInstance,
+  const data::Uid characterUid,
+  const uint32_t playEvent,
+  const bool isServerCheck)
+{
+  if (raceInstance.GetStage() != RaceInstance::Stage::Racing
+    || not IsHorseInjuryEnabled(raceInstance.GetParameters().gameMode)
+    || not raceInstance.GetTracker().IsRacer(characterUid))
+  {
+    return;
+  }
+
+  auto& racer = raceInstance.GetTracker().GetRacer(characterUid);
+
+  // A healthy horse only gets injured once its injury time of this race came.
+  // An already injured horse gets worse whenever the client reports a play
+  // event that aggravates its injury, in this race or a later one.
+  const bool isNewInjuryDue = racer.injuryTimePoint.has_value()
+    && std::chrono::steady_clock::now() >= racer.injuryTimePoint.value();
+
+  protocol::AcCmdRCUpdateMountInfoNotify notify{
+    .characterUid = characterUid,
+    .action = protocol::AcCmdRCUpdateMountInfoNotify::Action::UpdateInjuryState};
+  uint32_t injury = injury::State::None;
+
+  data::Uid mountUid = data::InvalidUid;
+  GetServerInstance().GetDataDirector().GetCharacter(characterUid).Immutable(
+    [&mountUid](const data::Character& character)
+    {
+      mountUid = character.mountUid();
+    });
+
+  const auto horseRecord = GetServerInstance().GetDataDirector().GetHorse(mountUid);
+  if (not horseRecord.IsAvailable())
+    return;
+
+  horseRecord.Mutable(
+    [&notify, &injury, playEvent, isServerCheck, isNewInjuryDue](data::Horse& horse)
+    {
+      if (horse.mountCondition.injury() == injury::State::None
+        && not isNewInjuryDue)
+      {
+        return;
+      }
+
+      const auto nextInjury = injury::GetInjuryForEvent(
+        playEvent, horse.mountCondition.injury(), isServerCheck);
+      if (not nextInjury.has_value())
+        return;
+
+      // Low grade horses do not get the heavier kinds of injury.
+      const auto* injuryInfo = injury::FindInjuryInfo(nextInjury.value());
+      if (injuryInfo == nullptr || horse.grade() < injuryInfo->minGrade)
+        return;
+
+      horse.mountCondition.injury() = nextInjury.value();
+      // A minor injury heals on its own after a few races and days, a severe one does not.
+      horse.mountCondition.injuryHealCount() = injury::IsMinorInjury(nextInjury.value())
+        ? injury::NaturalHealCount
+        : 0;
+      protocol::BuildProtocolHorse(notify.horse, horse);
+      injury = nextInjury.value();
+    });
+
+  if (injury == injury::State::None)
+    return;
+
+  // At most one new injury per race, it can still get worse afterwards.
+  racer.injuryTimePoint.reset();
+  racer.injuredHorse = true;
+
+  this->Broadcast(raceInstance, notify);
+}
+
 void RaceNetworkHandler::HandleRequestSpur(
   ClientId clientId,
   const protocol::AcCmdCRRequestSpur& command)
@@ -2055,6 +2265,8 @@ void RaceNetworkHandler::HandleRequestSpur(
     {
       return starPointResponse;
     });
+
+  TryInjureHorse(raceInstance, clientContext.characterUid, injury::PlayEvent::Spur, true);
 }
 
 void RaceNetworkHandler::HandleHurdleClearResult(
@@ -2990,6 +3202,11 @@ void RaceNetworkHandler::HandleUseMagicItem(
     obstacleInstanceCount);
 
   racer.magicItem.reset();
+
+  if (magicSlotInfo.basicType == race::MagicType::Booster)
+    TryInjureHorse(raceInstance, clientContext.characterUid, injury::PlayEvent::Booster, true);
+  else if (magicSlotInfo.basicType == race::MagicType::HotRodding)
+    TryInjureHorse(raceInstance, clientContext.characterUid, injury::PlayEvent::HotRodding, true);
 }
 
 void RaceNetworkHandler::HandleUserRaceItemGet(

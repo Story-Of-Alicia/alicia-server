@@ -23,7 +23,9 @@
 #include <libserver/data/DataDefinitions.hpp>
 
 #include <chrono>
+#include <functional>
 #include <unordered_map>
+#include <vector>
 
 namespace server
 {
@@ -55,6 +57,27 @@ public:
   //! Called on ranch entry, mirroring PromoteMaturedFoals's lazy catch-up.
   //! @param characterUid UID of the owning character.
   void ApplyDailyCareTick(data::Uid characterUid);
+
+  static constexpr auto HorseLuckCheckInterval = std::chrono::minutes(1);
+
+  //! A horse's luck (0 to 4) at a point in time.
+  struct HorseLuck
+  {
+    uint8_t luck{};
+    data::Clock::time_point nextChange{};
+  };
+
+  [[nodiscard]] static HorseLuck CalculateHorseLuck(
+    data::Uid horseUid,
+    data::Clock::time_point now);
+
+  data::Clock::time_point RefreshHorseLuck(
+    data::Uid characterUid,
+    const std::function<void(const data::Horse&)>& onLuckChanged);
+
+  static bool CountDownInjuryHealing(data::Horse& horse, uint32_t count);
+
+  std::vector<data::Uid> HealRecoveredInjuries(data::Uid characterUid);
 
   //! Checks whether the food matches the horse's dynamic food preference.
   [[nodiscard]] static bool IsHorseFavoredFood(
@@ -152,6 +175,12 @@ public:
   static constexpr uint32_t LowLevelThreshold = 15;
 
 private:
+  static void ReduceInjuryHealCount(data::Horse& horse, uint32_t count);
+
+  void ForEachCharacterHorse(
+    data::Uid characterUid,
+    const std::function<void(data::Uid, data::Horse&)>& function);
+
   ServerInstance& _serverInstance;
 };
 

@@ -495,6 +495,7 @@ struct Horse
     dao::Field<uint32_t> charm{};
     dao::Field<uint32_t> friendliness{};
     dao::Field<uint32_t> injury{};
+    dao::Field<uint32_t> injuryHealCount{};
     dao::Field<uint32_t> plenitude{};
     dao::Field<uint32_t> bodyDirtiness{};
     dao::Field<uint32_t> maneDirtiness{};

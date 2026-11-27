@@ -20,9 +20,11 @@
 #include "server/system/HorseSystem.hpp"
 
 #include "server/ServerInstance.hpp"
+#include "server/system/InjuryRules.hpp"
 
 #include <spdlog/spdlog.h>
 
+#include <array>
 #include <vector>
 
 namespace server
@@ -144,7 +146,9 @@ int64_t CareDayIndex(const data::Clock::time_point time)
 
 } // namespace
 
-void HorseSystem::ApplyDailyCareTick(const data::Uid characterUid)
+void HorseSystem::ForEachCharacterHorse(
+  const data::Uid characterUid,
+  const std::function<void(data::Uid, data::Horse&)>& function)
 {
   const auto characterRecord = _serverInstance.GetDataDirector().GetCharacter(characterUid);
   if (not characterRecord)
@@ -157,22 +161,123 @@ void HorseSystem::ApplyDailyCareTick(const data::Uid characterUid)
     horseUids.emplace_back(character.mountUid());
   });
 
-  const auto now = data::Clock::now();
-  const auto currentDay = CareDayIndex(now);
-
   for (const auto& horseUid : horseUids)
   {
     const auto horseRecord = _serverInstance.GetDataDirector().GetHorse(horseUid);
     if (not horseRecord)
       continue;
 
-    horseRecord.Mutable([currentDay, now](data::Horse& horse)
+    horseRecord.Mutable([horseUid, &function](data::Horse& horse)
+    {
+      function(horseUid, horse);
+    });
+  }
+}
+
+void HorseSystem::ReduceInjuryHealCount(data::Horse& horse, const uint32_t count)
+{
+  if (not injury::IsMinorInjury(horse.mountCondition.injury()))
+    return;
+
+  const uint32_t healCount = horse.mountCondition.injuryHealCount();
+  horse.mountCondition.injuryHealCount() = healCount > count ? healCount - count : 0;
+}
+
+bool HorseSystem::CountDownInjuryHealing(data::Horse& horse, const uint32_t count)
+{
+  if (not injury::IsMinorInjury(horse.mountCondition.injury()))
+    return false;
+
+  ReduceInjuryHealCount(horse, count);
+  if (horse.mountCondition.injuryHealCount() != 0)
+    return false;
+
+  horse.mountCondition.injury() = injury::State::None;
+  return true;
+}
+
+std::vector<data::Uid> HorseSystem::HealRecoveredInjuries(const data::Uid characterUid)
+{
+  std::vector<data::Uid> healedHorseUids;
+
+  ForEachCharacterHorse(
+    characterUid,
+    [&healedHorseUids](const data::Uid horseUid, data::Horse& horse)
+    {
+      // A zero count heals an injury whose countdown already ran out.
+      if (CountDownInjuryHealing(horse, 0))
+        healedHorseUids.emplace_back(horseUid);
+    });
+
+  return healedHorseUids;
+}
+
+HorseSystem::HorseLuck HorseSystem::CalculateHorseLuck(
+  const data::Uid horseUid,
+  const data::Clock::time_point now)
+{
+  static constexpr std::array<uint8_t, 9> LuckCycle{4, 3, 2, 1, 0, 1, 2, 3, 4};
+  static constexpr int64_t StepSeconds = 400;
+  static constexpr int64_t CycleSeconds = StepSeconds * static_cast<int64_t>(LuckCycle.size());
+
+  const int64_t offsetSeconds = static_cast<int64_t>(horseUid % LuckCycle.size()) * StepSeconds;
+
+  const auto nowSeconds = std::chrono::duration_cast<std::chrono::seconds>(
+    now.time_since_epoch()).count();
+
+  int64_t cycleSeconds = (nowSeconds - offsetSeconds) % CycleSeconds;
+  if (cycleSeconds < 0)
+    cycleSeconds += CycleSeconds;
+
+  const int64_t secondsIntoStep = cycleSeconds % StepSeconds;
+
+  return HorseLuck{
+    .luck = LuckCycle[static_cast<size_t>(cycleSeconds / StepSeconds)],
+    .nextChange = now + std::chrono::seconds(StepSeconds - secondsIntoStep)};
+}
+
+data::Clock::time_point HorseSystem::RefreshHorseLuck(
+  const data::Uid characterUid,
+  const std::function<void(const data::Horse&)>& onLuckChanged)
+{
+  const auto now = data::Clock::now();
+
+  constexpr auto MaxRefreshInterval = std::chrono::seconds(60);
+  auto nextRefresh = now + MaxRefreshInterval;
+
+  ForEachCharacterHorse(
+    characterUid,
+    [now, &nextRefresh, &onLuckChanged](const data::Uid horseUid, data::Horse& horse)
+    {
+      const auto horseLuck = CalculateHorseLuck(horseUid, now);
+      nextRefresh = std::min(nextRefresh, horseLuck.nextChange);
+
+      if (horse.luckState() == horseLuck.luck)
+        return;
+
+      horse.luckState() = horseLuck.luck;
+      onLuckChanged(horse);
+    });
+
+  return nextRefresh;
+}
+
+void HorseSystem::ApplyDailyCareTick(const data::Uid characterUid)
+{
+  const auto now = data::Clock::now();
+  const auto currentDay = CareDayIndex(now);
+
+  ForEachCharacterHorse(
+    characterUid,
+    [currentDay, now](data::Uid, data::Horse& horse)
     {
       const auto daysPassed = currentDay - CareDayIndex(horse.mountCondition.lastDailyCareTick());
       if (daysPassed <= 0)
         return;
 
       const auto ticks = static_cast<uint32_t>(daysPassed);
+
+      ReduceInjuryHealCount(horse, ticks);
 
       horse.mountCondition.boredom() = std::min<uint32_t>(
         MaxBoredom,
@@ -195,7 +300,6 @@ void HorseSystem::ApplyDailyCareTick(const data::Uid characterUid)
 
       horse.mountCondition.lastDailyCareTick() = now;
     });
-  }
 }
 
 bool HorseSystem::IsHorseFavoredFood(

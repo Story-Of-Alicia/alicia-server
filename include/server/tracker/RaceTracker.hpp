@@ -137,6 +137,9 @@ public:
       bool started{false};
     };
     std::optional<MagicTargetInfo> pendingMagicTarget{};
+
+    std::optional<std::chrono::steady_clock::time_point> injuryTimePoint{};
+    bool injuredHorse{false};
   };
 
   //! An item deck.

@@ -93,6 +93,8 @@ public:
   ServerInstance& GetServerInstance();
   CommandServer& GetCommandServer();
 
+  std::optional<ClientId> FindClientIdByCharacterUid(data::Uid characterUid);
+
   template <WritableStruct C>
   void Broadcast(
     const RaceInstance& raceInstance,
@@ -150,6 +152,7 @@ private:
     data::Uid roomUid{data::InvalidUid};
     bool isAuthenticated = false;
     std::string userName;
+    data::Clock::time_point nextHorseLuckCheck{};
   };
 
   race::P2dId GetOrCreateP2dId(ClientId clientId);
@@ -157,9 +160,11 @@ private:
   ClientContext& GetClientContext(
     ClientId clientId,
     bool requireAuthorized = true);
-  std::optional<ClientId> FindClientIdByCharacterUid(data::Uid characterUid);
   ClientId GetClientIdByCharacterUid(data::Uid characterUid);
   ClientContext& GetClientContextByCharacterUid(data::Uid characterUid);
+
+  void RunHorseLuckCheck();
+  void ScheduleHorseLuckCheck() noexcept;
 
   RaceInstance& GetRaceInstance(
     const ClientContext& clientContext,
@@ -313,6 +318,21 @@ private:
     ClientId clientId,
     const protocol::AcCmdCRStarPointGet& command);
 
+  void HandleMountInjuryPlayEvent(
+    ClientId clientId,
+    const protocol::AcCmdCRMountInjuryPlayEvent& command);
+
+  void ScheduleHorseInjury(
+    tracker::RaceTracker::Racer& racer,
+    uint32_t characterLevel,
+    const data::Horse& horse);
+
+  void TryInjureHorse(
+    RaceInstance& raceInstance,
+    data::Uid characterUid,
+    uint32_t playEvent,
+    bool isServerCheck);
+
   void HandleRequestSpur(
     ClientId clientId,
     const protocol::AcCmdCRRequestSpur& command);
@@ -427,6 +447,8 @@ private:
   CommandServer _commandServer;
   //! A map of all client contexts.
   std::unordered_map<ClientId, ClientContext> _clients;
+  //! sweeps that run over the clients on the tick thread.
+  std::mutex _clientsMutex;
   //! A map of all p2ds for UDP relay.
   std::unordered_map<ClientId, race::P2dId> _p2dIds;
   //! A pool for active race clients with P2dIds.

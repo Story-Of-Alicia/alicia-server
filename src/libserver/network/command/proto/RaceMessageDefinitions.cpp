@@ -571,6 +571,20 @@ void AcCmdCRLoadingComplete::Read(
   // Empty.
 }
 
+void AcCmdCRMountInjuryPlayEvent::Write(
+  const AcCmdCRMountInjuryPlayEvent&,
+  SinkStream&)
+{
+  throw std::logic_error("Not implemented.");
+}
+
+void AcCmdCRMountInjuryPlayEvent::Read(
+  AcCmdCRMountInjuryPlayEvent& command,
+  SourceStream& stream)
+{
+  stream.Read(command.playEvent);
+}
+
 void AcCmdCRLoadingCompleteNotify::Write(
   const AcCmdCRLoadingCompleteNotify& command,
   SinkStream& stream)
