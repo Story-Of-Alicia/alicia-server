@@ -2116,7 +2116,16 @@ void RaceNetworkHandler::ScheduleHorseInjury(
   const bool isInjuryPossible = roll < chancePerMille;
 
   if (not isInjuryPossible)
+  {
+    spdlog::debug(
+      "Racer '{}' horse '{}' (luck {}) can not get injured this race (rolled {} against {} per mille)",
+      racer.oid,
+      horse.uid(),
+      luck,
+      roll,
+      chancePerMille);
     return;
+  }
 
   // The first play event that can injure the horse from 30 to 149 seconds
   // into the race does.
@@ -2124,6 +2133,15 @@ void RaceNetworkHandler::ScheduleHorseInjury(
   const uint32_t delaySeconds = delayDist(randomEngine);
   racer.injuryTimePoint = std::chrono::steady_clock::now()
     + std::chrono::seconds(delaySeconds);
+
+  spdlog::debug(
+    "Racer '{}' horse '{}' (luck {}) can get injured this race from {} seconds in (rolled {} against {} per mille)",
+    racer.oid,
+    horse.uid(),
+    luck,
+    delaySeconds,
+    roll,
+    chancePerMille);
 }
 
 void RaceNetworkHandler::HandleMountInjuryPlayEvent(
@@ -2153,11 +2171,14 @@ void RaceNetworkHandler::TryInjureHorse(
 
   auto& racer = raceInstance.GetTracker().GetRacer(characterUid);
 
-  // A healthy horse only gets injured once its injury time of this race came.
-  // An already injured horse gets worse whenever the client reports a play
-  // event that aggravates its injury, in this race or a later one.
-  const bool isNewInjuryDue = racer.injuryTimePoint.has_value()
-    && std::chrono::steady_clock::now() >= racer.injuryTimePoint.value();
+  // The client reports play events all the time, so both a new injury and an
+  // already injured horse getting worse go through the luck roll of the race,
+  // and only happen once its injury time came.
+  if (not racer.injuryTimePoint.has_value()
+    || std::chrono::steady_clock::now() < racer.injuryTimePoint.value())
+  {
+    return;
+  }
 
   protocol::AcCmdRCUpdateMountInfoNotify notify{
     .characterUid = characterUid,
@@ -2176,14 +2197,8 @@ void RaceNetworkHandler::TryInjureHorse(
     return;
 
   horseRecord.Mutable(
-    [&notify, &injury, playEvent, isServerCheck, isNewInjuryDue](data::Horse& horse)
+    [&notify, &injury, playEvent, isServerCheck](data::Horse& horse)
     {
-      if (horse.mountCondition.injury() == injury::State::None
-        && not isNewInjuryDue)
-      {
-        return;
-      }
-
       const auto nextInjury = injury::GetInjuryForEvent(
         playEvent, horse.mountCondition.injury(), isServerCheck);
       if (not nextInjury.has_value())
@@ -2206,9 +2221,16 @@ void RaceNetworkHandler::TryInjureHorse(
   if (injury == injury::State::None)
     return;
 
-  // At most one new injury per race, it can still get worse afterwards.
+  // At most one injury per race.
   racer.injuryTimePoint.reset();
   racer.injuredHorse = true;
+
+  spdlog::debug(
+    "Racer '{}' (uid '{}') injured their horse ({}) on play event {}",
+    racer.oid,
+    characterUid,
+    injury,
+    playEvent);
 
   this->Broadcast(raceInstance, notify);
 }
