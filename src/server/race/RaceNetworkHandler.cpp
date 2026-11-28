@@ -37,6 +37,51 @@
 namespace server
 {
 
+namespace
+{
+uint32_t GetRaceWeatherType(
+  const registry::SystemContentRegistry& systemContent,
+  const registry::WeatherRegistry& weather)
+{
+  // Weather types.
+  constexpr uint32_t NoWeather = 0;
+  constexpr uint32_t SnowLight = 1;
+  constexpr uint32_t SnowModerate = 2;
+  constexpr uint32_t SnowHeavy = 4;
+
+  constexpr uint32_t InGameWeatherKey = 66;
+  constexpr uint32_t ForceMatchWeatherKey = 67;
+
+  // 0:Not specified, 1:Light snow, 2:Moderate snow, 3:Heavy snow, -1:No snow
+  switch (systemContent.GetValue(InGameWeatherKey).value_or(0))
+  {
+    case 1: return SnowLight;
+    case 2: return SnowModerate;
+    case 3: return SnowHeavy;
+    case -1: return NoWeather;
+    default: break;
+  }
+
+  // 0:Not specified, 1:No snow, 2:Light snow 01, 3:Light snow 02,
+  // 4:Moderate snow, 5:Heavy snow (forecast levels), 6:Random every race.
+  constexpr int32_t RandomEveryRace = 6;
+  const int32_t forcedLevel = systemContent.GetValue(ForceMatchWeatherKey).value_or(0);
+  if (forcedLevel == RandomEveryRace)
+    return weather.RollRandomRaceWeather();
+
+  const auto today = util::TimePointToLocalDateTime(util::Clock::now());
+  const auto todaySeed = static_cast<uint32_t>(today.years) * 10000
+    + today.months * 100 + today.days;
+
+  const uint32_t level = forcedLevel >= 1 && forcedLevel <= 5
+    ? static_cast<uint32_t>(forcedLevel)
+    : weather.RollForecastLevel(todaySeed);
+
+  return weather.RollRaceWeather(level);
+}
+
+} // anon namespace
+
 RaceNetworkHandler::RaceNetworkHandler(ServerInstance& serverInstance)
   : _serverInstance(serverInstance)
   , _commandServer(*this)
@@ -1478,6 +1523,10 @@ void RaceNetworkHandler::HandleStartRace(
             break;
         }
       }
+
+      notify.weatherType = GetRaceWeatherType(
+        GetServerInstance().GetSystemContentRegistry(),
+        GetServerInstance().GetWeatherRegistry());
 
       const bool isEligibleForSkills = (notify.raceGameMode == protocol::GameMode::Speed
         || notify.raceGameMode == protocol::GameMode::Magic)

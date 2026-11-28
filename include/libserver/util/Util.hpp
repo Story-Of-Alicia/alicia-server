@@ -91,6 +91,11 @@ Clock::time_point AliciaShopTimeToTimePoint(const std::array<uint32_t, 3>& times
 /// @return Alicia shop timestamp representing the date and time
 std::array<uint32_t, 3> TimePointToAliciaShopTime(const Clock::time_point& timestamp);
 
+//! Converts a time point to the date and time in the local time zone.
+//! @param timePoint Time point.
+//! @returns Local date and time of the time point.
+DateTime TimePointToLocalDateTime(const Clock::time_point& timePoint);
+
 //! Converts a steady clock's time point to a race clock's time point.
 //! @param timePoint Time point.
 //! @return Race clock time point.

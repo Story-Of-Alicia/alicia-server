@@ -80,6 +80,7 @@ add_library(alicia-libserver STATIC
         src/libserver/registry/QuestRegistry.cpp
         src/libserver/registry/SpeedRegistry.cpp
         src/libserver/registry/SystemContentRegistry.cpp
+        src/libserver/registry/WeatherRegistry.cpp
         src/libserver/util/Locale.cpp
         src/libserver/util/Scheduler.cpp
         src/libserver/util/Stream.cpp

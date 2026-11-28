@@ -303,6 +303,7 @@ void ServerInstance::LoadConfigurations()
   _petRegistry.ReadConfig(_resourceDirectory / "config/game/pets.yaml");
   _questRegistry.ReadConfig(_resourceDirectory / "config/game/quests.yaml");
   _speedRegistry.ReadConfig(_resourceDirectory / "config/game/speed.yaml");
+  _weatherRegistry.ReadConfig(_resourceDirectory / "config/game/weather.yaml");
 }
 
 AuthenticationService& ServerInstance::GetAuthenticationService()
@@ -393,6 +394,11 @@ registry::MagicRegistry& ServerInstance::GetMagicRegistry()
 registry::SystemContentRegistry& ServerInstance::GetSystemContentRegistry()
 {
   return _systemContentRegistry;
+}
+
+registry::WeatherRegistry& ServerInstance::GetWeatherRegistry()
+{
+  return _weatherRegistry;
 }
 
 registry::BreedingRegistry& ServerInstance::GetBreedingRegistry()

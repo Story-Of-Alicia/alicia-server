@@ -259,9 +259,9 @@
   name: "Egg hatching/boosting time ratio (10000%)"
   description: ""
 - type: 65
-  value: false
+  value: 0
   name: "Ranch Weather Features"
-  description: ""
+  description: "0:Off,1:Light snow,2:Moderate snow,4:Heavy snow,16:Light rain,32:Moderate rain,64:Heavy rain"
 - type: 66
   value: 0
   name: "In-Game Weather"
@@ -269,7 +269,7 @@
 - type: 67
   value: 0
   name: "Force random weather during match"
-  description: "0:Not specified,1:No snow,2:Light snow 01,3:Light snow 02,4:Moderate snow,5:Heavy snow"
+  description: "0:Not specified,1:No snow,2:Light snow 01,3:Light snow 02,4:Moderate snow,5:Heavy snow,6:Random every race"
 - type: 68
   value: false
   name: "PC specification log"

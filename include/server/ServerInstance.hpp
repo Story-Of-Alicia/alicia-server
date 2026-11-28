@@ -56,6 +56,7 @@
 #include <libserver/registry/QuestRegistry.hpp>
 #include <libserver/registry/SpeedRegistry.hpp>
 #include <libserver/registry/SystemContentRegistry.hpp>
+#include <libserver/registry/WeatherRegistry.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -149,6 +150,10 @@ public:
   //! Returns reference to the system content registry.
   //! @returns Reference to the system content registry.
   registry::SystemContentRegistry& GetSystemContentRegistry();
+
+  //! Returns reference to the weather registry.
+  //! @returns Reference to the weather registry.
+  registry::WeatherRegistry& GetWeatherRegistry();
 
   //! Returns reference to the breeding registry.
   //! @returns Reference to the breeding registry.
@@ -328,6 +333,8 @@ private:
   registry::BreedingRegistry _breedingRegistry;
   //! A registry of speed config data.
   registry::SpeedRegistry _speedRegistry;
+  //! A registry of weather config data.
+  registry::WeatherRegistry _weatherRegistry;
 
   //! A chat system.
   ChatSystem _chatSystem;

@@ -19,6 +19,7 @@
 
 #include "libserver/util/Util.hpp"
 
+#include <ctime>
 #include <ranges>
 
 namespace server::util
@@ -273,6 +274,25 @@ std::vector<std::string> TokenizeString(const std::string& value, char delimiter
   }
 
   return tokens;
+}
+
+DateTime TimePointToLocalDateTime(const Clock::time_point& timePoint)
+{
+  const std::time_t time = Clock::to_time_t(timePoint);
+  std::tm local{};
+#ifdef _WIN32
+  localtime_s(&local, &time);
+#else
+  localtime_r(&time, &local);
+#endif
+
+  return DateTime{
+    .years = local.tm_year + 1900,
+    .months = static_cast<uint32_t>(local.tm_mon + 1),
+    .days = static_cast<uint32_t>(local.tm_mday),
+    .hours = local.tm_hour,
+    .minutes = local.tm_min,
+    .seconds = local.tm_sec};
 }
 
 uint64_t TimePointToRaceTimePoint(const std::chrono::steady_clock::time_point& timePoint)

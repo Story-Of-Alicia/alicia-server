@@ -1,0 +1,34 @@
+weather:
+  # Mirrors the client's WeatherSnowRatio table (other/ini/libconfig_c.dat in soa-content).
+  # Keep both in sync: the client rolls the daily forecast from it too.
+  #
+  # level:   The forecast level (1: no snow, 2: light snow 01, 3: light snow 02,
+  #          4: moderate snow, 5: heavy snow).
+  # ratio:   The weight of this level being picked as the daily forecast
+  #          (*Ratio* column).
+  # chances: The weight of each weather in a race at this level (*Init columns),
+  #          keyed by weather type: 0 none, 1 light snow, 2 moderate snow, 4 heavy snow.
+  # add:     The *Add columns. Not used yet, their meaning is not known.
+  forecastLevels:
+    - level: 1
+      ratio: 80
+      chances: { 0: 100, 1: 0, 2: 0, 4: 0 }
+      add: { 0: 0, 1: 0, 2: 0, 4: 0 }
+    - level: 2
+      ratio: 100
+      chances: { 0: 90, 1: 10, 2: 0, 4: 0 }
+      add: { 0: 0, 1: 0, 2: 5, 4: 0 }
+    - level: 3
+      ratio: 40
+      chances: { 0: 80, 1: 0, 2: 0, 4: 0 }
+      add: { 0: 0, 1: 10, 2: 0, 4: 0 }
+    - level: 4
+      ratio: 30
+      chances: { 0: 50, 1: 32, 2: 15, 4: 3 }
+      add: { 0: 10, 1: 20, 2: 5, 4: 0 }
+    - level: 5
+      ratio: 10
+      chances: { 0: 0, 1: 50, 2: 20, 4: 10 }
+      add: { 0: 5, 1: 5, 2: 5, 4: 1 }
+
+  randomEveryRace: { 0: 40, 1: 15, 2: 10, 4: 5, 16: 0, 32: 0, 64: 0 }
